@@ -1,0 +1,196 @@
+{
+    "common": {
+        "appName": "CashFlow",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "add": "Agregar",
+        "close": "Cerrar",
+        "back": "Atrás",
+        "next": "Siguiente",
+        "finish": "Finalizar",
+        "loading": "Cargando...",
+        "error": "Ocurrió un error",
+        "success": "Éxito",
+        "confirm": "Confirmar",
+        "search": "Buscar...",
+        "noResults": "Sin resultados",
+        "required": "Obligatorio",
+        "optional": "Opcional",
+        "yes": "Sí",
+        "no": "No",
+        "currency": "Moneda",
+        "date": "Fecha",
+        "amount": "Monto",
+        "description": "Descripción",
+        "status": "Estado",
+        "actions": "Acciones",
+        "total": "Total",
+        "month": "Mes",
+        "year": "Año"
+    },
+    "auth": {
+        "login": "Iniciar Sesión",
+        "register": "Crear Cuenta",
+        "logout": "Cerrar Sesión",
+        "email": "Correo electrónico",
+        "password": "Contraseña",
+        "confirmPassword": "Confirmar Contraseña",
+        "fullName": "Nombre Completo",
+        "forgotPassword": "¿Olvidaste tu contraseña?",
+        "noAccount": "¿No tienes cuenta?",
+        "hasAccount": "¿Ya tienes cuenta?",
+        "signUp": "Registrarse",
+        "signIn": "Ingresar",
+        "welcomeBack": "Bienvenido de nuevo",
+        "createAccount": "Crea tu cuenta",
+        "subtitle": "Gestiona tus finanzas con precisión"
+    },
+    "onboarding": {
+        "selectProfile": "Elige tu tipo de perfil",
+        "selectProfileDesc": "Selecciona el tipo de gestión financiera que necesitas. Puedes crear organizaciones adicionales después.",
+        "personal": "Personal",
+        "personalDesc": "Controla ingresos, gastos, presupuesto, deudas y patrimonio personal.",
+        "business": "Empresa",
+        "businessDesc": "Gestiona ingresos, costos, márgenes operativos, presupuesto vs real y pronósticos.",
+        "stepConfig": "Configuración",
+        "stepAccounts": "Cuentas",
+        "stepCategories": "Categorías",
+        "stepBudget": "Presupuesto",
+        "stepDebtsGoals": "Deudas y Metas",
+        "stepIdentity": "Identidad",
+        "stepStructure": "Estructura Financiera",
+        "stepGL": "Plan de Cuentas",
+        "stepForecast": "Pronóstico",
+        "stepDetracciones": "Detracciones"
+    },
+    "nav": {
+        "dashboard": "Panel",
+        "transactions": "Transacciones",
+        "accounts": "Cuentas",
+        "categories": "Categorías",
+        "budget": "Presupuesto",
+        "forecast": "Pronóstico",
+        "settings": "Configuración",
+        "import": "Importar",
+        "ledger": "Libro Mayor",
+        "costCenters": "Centros de Costo",
+        "customers": "Clientes",
+        "vendors": "Proveedores",
+        "detracciones": "Detracciones"
+    },
+    "finance": {
+        "netCashFlow": {
+            "label": "Flujo de Caja Neto",
+            "tooltip": "Total de dinero que entra menos total de dinero que sale en este período.",
+            "formula": "Ingresos - Gastos"
+        },
+        "savingsRate": {
+            "label": "Tasa de Ahorro",
+            "tooltip": "Porcentaje de tus ingresos que estás guardando como ahorro.",
+            "formula": "(Ingresos - Gastos) / Ingresos"
+        },
+        "netWorth": {
+            "label": "Patrimonio Neto",
+            "tooltip": "Valor total de todo lo que posees menos todo lo que debes.",
+            "formula": "Activos - Pasivos"
+        },
+        "emergencyFund": {
+            "label": "Fondo de Emergencia",
+            "tooltip": "Cuántos meses de gastos podrías cubrir con tu efectivo líquido.",
+            "formula": "Efectivo Líquido / Gasto Mensual Promedio"
+        },
+        "budgetVsActual": {
+            "label": "Presupuesto vs Real",
+            "tooltip": "Comparación del gasto planeado versus el gasto real por categoría.",
+            "formula": "Real - Presupuestado"
+        },
+        "revenue": {
+            "label": "Ingresos",
+            "tooltip": "Ingresos totales por operaciones principales del negocio (ventas, servicios)."
+        },
+        "cogs": {
+            "label": "Costo de Ventas",
+            "tooltip": "Costos directos para producir lo que vendes (materiales, mano de obra, manufactura).",
+            "formula": "Suma de todas las entradas de Costo de Ventas"
+        },
+        "grossProfit": {
+            "label": "Utilidad Bruta",
+            "tooltip": "Ingresos restantes después de restar los costos directos de producción.",
+            "formula": "Ingresos - Costo de Ventas"
+        },
+        "opex": {
+            "label": "Gastos Operativos",
+            "tooltip": "Costos del día a día para operar el negocio, excluyendo costos de producción.",
+            "formula": "Costos Fijos + Costos Variables"
+        },
+        "fixedCosts": {
+            "label": "Costos Fijos",
+            "tooltip": "Costos que permanecen constantes sin importar el volumen de producción (renta, salarios, seguros)."
+        },
+        "variableCosts": {
+            "label": "Costos Variables",
+            "tooltip": "Costos que cambian proporcionalmente con el volumen de producción o ventas (marketing, comisiones)."
+        },
+        "ebit": {
+            "label": "EBIT",
+            "tooltip": "Ganancias Antes de Intereses e Impuestos. Medida de rentabilidad operativa.",
+            "formula": "Ingresos - Costo de Ventas - Gastos Operativos"
+        },
+        "operatingMargin": {
+            "label": "Margen Operativo",
+            "tooltip": "Porcentaje de ingresos que queda después de todos los costos operativos. Métrica clave de rentabilidad.",
+            "formula": "EBIT / Ingresos"
+        },
+        "operatingIncome": {
+            "label": "Utilidad Operativa",
+            "tooltip": "Ganancia de las operaciones principales del negocio, antes de intereses e impuestos.",
+            "formula": "Ingresos - Costo de Ventas - Gastos Operativos"
+        },
+        "detracciones": {
+            "label": "Detracciones",
+            "tooltip": "Mecanismo de retención tributaria. Los montos se retienen como Efectivo Restringido y se usan para pagar impuestos."
+        },
+        "restrictedCash": {
+            "label": "Efectivo Restringido",
+            "tooltip": "Efectivo reservado para un propósito específico, no disponible para uso general (ej. saldo de Detracciones)."
+        },
+        "accrualBasis": {
+            "label": "Base Devengado",
+            "tooltip": "Método contable donde los ingresos y gastos se registran cuando se generan o incurren, sin importar cuándo se recibe o paga el efectivo."
+        },
+        "cashBasis": {
+            "label": "Base Efectivo",
+            "tooltip": "Método contable donde los ingresos y gastos se registran solo cuando el efectivo se recibe o paga efectivamente."
+        },
+        "forecast": {
+            "label": "Pronóstico",
+            "tooltip": "Proyección financiera basada en supuestos sobre crecimiento de ingresos, costos y partidas extraordinarias."
+        }
+    },
+    "grid": {
+        "addRow": "Agregar Fila",
+        "deleteRow": "Eliminar Fila",
+        "editCell": "Haz clic para editar",
+        "pasteHint": "Pegar desde portapapeles (Ctrl+V)",
+        "runningBalance": "Saldo Acumulado",
+        "variance": "Variación",
+        "variancePct": "Variación %",
+        "actual": "Real",
+        "budgeted": "Presupuestado",
+        "noTransactions": "Aún no hay transacciones. Agrega la primera o importa desde Excel/CSV."
+    },
+    "import": {
+        "title": "Importar Datos",
+        "upload": "Subir Archivo",
+        "dragDrop": "Arrastra y suelta tu archivo Excel o CSV aquí",
+        "mapping": "Mapeo de Columnas",
+        "preview": "Vista Previa",
+        "processing": "Procesando...",
+        "results": "Resultados de Importación",
+        "inserted": "Insertados",
+        "skipped": "Omitidos (duplicados)",
+        "errors": "Errores"
+    }
+}

@@ -1,0 +1,55 @@
+import { expect, test } from "@playwright/test";
+
+const authEmail = process.env.E2E_USER_EMAIL;
+const authPassword = process.env.E2E_USER_PASSWORD;
+
+test.describe("Auth + onboarding + transactions (optional)", () => {
+    test.skip(
+        !authEmail || !authPassword,
+        "Define E2E_USER_EMAIL y E2E_USER_PASSWORD para habilitar este flujo completo"
+    );
+
+    test("usuario autenticado puede completar onboarding y crear/eliminar transacción", async ({ page }) => {
+        const uniqueDescription = `E2E tx ${Date.now()}`;
+
+        page.on("dialog", (dialog) => dialog.accept());
+
+        await page.goto("/login");
+        await page.getByLabel("Email").fill(authEmail!);
+        await page.getByLabel("Password").fill(authPassword!);
+        await page.getByRole("button", { name: /Sign In/i }).click();
+
+        await page.waitForURL(/\/(dashboard|onboarding\/select-profile)/, { timeout: 45_000 });
+
+        if (page.url().includes("/onboarding/select-profile")) {
+            await page.getByRole("button", { name: /Personal/i }).click();
+            await page.getByRole("button", { name: /Continue with Personal/i }).click();
+            await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
+        }
+
+        await page.goto("/dashboard/transactions/new");
+
+        const accountSelect = page.getByRole("combobox").first();
+        const accountOptions = accountSelect.locator("option");
+        const optionCount = await accountOptions.count();
+
+        test.skip(
+            optionCount <= 1,
+            "No hay cuentas disponibles para crear transacciones; crea una cuenta de prueba"
+        );
+
+        await page.getByPlaceholder("0.00").fill("123.45");
+        await page.getByPlaceholder("e.g. Grocery Store, Client Payment").fill(uniqueDescription);
+
+        await page.getByRole("button", { name: /Create Transaction/i }).click();
+
+        await page.waitForURL(/\/dashboard\/transactions/, { timeout: 45_000 });
+
+        const row = page.locator("tr", { hasText: uniqueDescription });
+        await expect(row).toBeVisible();
+
+        await row.getByRole("button", { name: "Delete" }).click();
+
+        await expect(row).not.toBeVisible({ timeout: 20_000 });
+    });
+});

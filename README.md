@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CashFlow
 
-## Getting Started
+Aplicación financiera para gestión personal y empresarial con Next.js + Supabase.
 
-First, run the development server:
+## Documentación técnica (Fase 4)
+
+- `docs/README.md`
+- `docs/architecture.md`
+- `docs/data-model.md`
+- `docs/project-structure.md`
+- `docs/runbooks/local.md`
+- `docs/runbooks/production.md`
+- `docs/branch-protection.md`
+- `docs/adr/README.md`
+- `docs/contributing.md`
+- `docs/pr-checklist.md`
+
+## Requisitos
+
+- Node.js 18+
+- npm
+- Variables de entorno de Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Calidad
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quality Gate (Fase 5)
 
-## Learn More
+```bash
+npm run check:migrations
+npm run test:coverage:critical
+npm run ci:quality
+```
 
-To learn more about Next.js, take a look at the following resources:
+CI en GitHub: `.github/workflows/ci.yml`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Testing (Fase 3)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Unit tests (Vitest + RTL)
 
-## Deploy on Vercel
+```bash
+npm run test
+# o
+npm run test:unit
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Suite completa de Vitest (unit + integration)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run test:all
+```
+
+### Coverage
+
+```bash
+npm run test:coverage
+```
+
+### Integration tests con DB de prueba (Supabase)
+
+```bash
+npm run test:integration
+```
+
+Variables esperadas para habilitar integración real:
+
+- `TEST_SUPABASE_URL` (opcional, fallback a `NEXT_PUBLIC_SUPABASE_URL`)
+- `TEST_SUPABASE_ANON_KEY` (opcional, fallback a `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- `TEST_USER_EMAIL` (requerida)
+- `TEST_USER_PASSWORD` (requerida)
+
+Si faltan variables, los tests de integración se marcan como `skipped`.
+
+### E2E con Playwright
+
+```bash
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Smoke test público:
+
+```bash
+npm run test:e2e -- tests/e2e/public-smoke.spec.ts
+```
+
+Flujo completo opcional (auth + onboarding + transacciones):
+
+- `E2E_USER_EMAIL`
+- `E2E_USER_PASSWORD`
+
+Si no están definidos, ese archivo e2e se omite automáticamente.

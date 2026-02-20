@@ -8,6 +8,9 @@
 
 # testing
 /coverage
+/coverage-critical
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -19,6 +22,7 @@
 # misc
 .DS_Store
 *.pem
+.run/
 
 # debug
 npm-debug.log*
