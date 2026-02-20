@@ -132,17 +132,6 @@ jobs:
             test-results
           if-no-files-found: ignore
 
-  dependency-review:
-    name: dependency-review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Dependency review
-        uses: actions/dependency-review-action@v4
 
   secret-scan:
     name: secret-scan

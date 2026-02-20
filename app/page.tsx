@@ -231,7 +231,7 @@ export default function HomePage() {
 
                   <h3 className="text-lg font-extrabold text-[#14324a]">{feature.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#4b677f]">{feature.description}</p>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#5f7a8f]">{feature.note}</p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#4a6275]">{feature.note}</p>
                 </article>
               ))}
             </div>
@@ -273,7 +273,7 @@ export default function HomePage() {
                   className="animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_12px_28px_rgba(9,62,93,0.08)]"
                   style={{ animationDelay: `${index * 120}ms` }}
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#58788f]">Paso {index + 1}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#4a6275]">Paso {index + 1}</p>
                   <h3 className="mt-2 text-xl font-extrabold text-[#123149]">{step.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#4b667c]">{step.description}</p>
                 </article>
