@@ -17,7 +17,7 @@ test.describe("Public routes smoke", () => {
 
         await expect(page.getByRole("heading", { name: /Bienvenido de nuevo/i })).toBeVisible();
         await expect(page.getByLabel("Correo electrónico")).toBeVisible();
-        await expect(page.getByLabel("Contraseña")).toBeVisible();
+        await expect(page.locator("#password")).toBeVisible();
         await expect(page.getByRole("button", { name: /Ingresar/i })).toBeVisible();
     });
 });

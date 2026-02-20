@@ -103,15 +103,15 @@ function HeroPanel() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <article className="rounded-2xl border border-[#e5edf4] bg-[#f8fbfd] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6b7f91]">Flujo de caja</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#4a6275]">Flujo de caja</p>
             <p className="mt-2 text-sm font-medium text-[#163047]">Lectura mensual de ingresos y gastos</p>
           </article>
           <article className="rounded-2xl border border-[#e5edf4] bg-[#f8fbfd] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6b7f91]">Patrimonio</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#4a6275]">Patrimonio</p>
             <p className="mt-2 text-sm font-medium text-[#163047]">Consolidación de activos y pasivos</p>
           </article>
           <article className="rounded-2xl border border-[#e5edf4] bg-[#f8fbfd] p-4 sm:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6b7f91]">Tendencia de actividad</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#4a6275]">Tendencia de actividad</p>
             <svg
               viewBox="0 0 520 120"
               className="mt-4 h-auto w-full"
