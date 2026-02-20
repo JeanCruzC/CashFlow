@@ -1,10 +1,20 @@
 "use server";
 
-import { transactionSchema, TransactionInput } from "@/lib/validations/schemas";
 import { revalidatePath } from "next/cache";
+import { transactionSchema, TransactionInput } from "@/lib/validations/schemas";
 import { requireOrgContext } from "@/lib/server/context";
+import { assertRateLimit } from "@/lib/server/rate-limit";
+import { logError } from "@/lib/server/logger";
 
 const SORTABLE_COLUMNS = new Set(["date", "description", "amount", "created_at"]);
+
+export interface TransactionFilters {
+    accountId?: string;
+    categoryId?: string;
+    direction?: "income" | "expense" | "all";
+    dateFrom?: string;
+    dateTo?: string;
+}
 
 export async function getTransactions({
     page = 1,
@@ -12,19 +22,25 @@ export async function getTransactions({
     sort = "date",
     sortDir = "desc",
     search = "",
+    accountId,
+    categoryId,
+    direction = "all",
+    dateFrom,
+    dateTo,
 }: {
     page?: number;
     pageSize?: number;
     sort?: string;
     sortDir?: "asc" | "desc";
     search?: string;
-}) {
+} & TransactionFilters) {
     const { supabase, orgId } = await requireOrgContext();
     const safeSort = SORTABLE_COLUMNS.has(sort) ? sort : "date";
     const safeSortDir: "asc" | "desc" = sortDir === "asc" ? "asc" : "desc";
     const safePage = Number.isFinite(page) && page > 0 ? page : 1;
     const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
     const safeSearch = search.trim();
+    const safeDirection = direction === "income" || direction === "expense" ? direction : "all";
 
     let query = supabase
         .from("transactions")
@@ -35,10 +51,29 @@ export async function getTransactions({
         query = query.ilike("description", `%${safeSearch}%`);
     }
 
-    // Order
+    if (accountId) {
+        query = query.eq("account_id", accountId);
+    }
+
+    if (categoryId) {
+        query = query.eq("category_gl_id", categoryId);
+    }
+
+    if (safeDirection === "income") {
+        query = query.gt("amount", 0);
+    } else if (safeDirection === "expense") {
+        query = query.lt("amount", 0);
+    }
+
+    if (dateFrom) {
+        query = query.gte("date", dateFrom);
+    }
+    if (dateTo) {
+        query = query.lte("date", dateTo);
+    }
+
     query = query.order(safeSort, { ascending: safeSortDir === "asc" });
 
-    // Pagination
     const from = (safePage - 1) * safePageSize;
     const to = from + safePageSize - 1;
     query = query.range(from, to);
@@ -46,11 +81,33 @@ export async function getTransactions({
     const { data, error, count } = await query;
 
     if (error) {
-        console.error("Error fetching transactions:", error);
-        throw new Error("Failed to fetch transactions");
+        logError("Error fetching transactions", error, {
+            orgId,
+            sort: safeSort,
+            sortDir: safeSortDir,
+        });
+        throw new Error("No se pudieron cargar las transacciones");
     }
 
     return { data, count: count || 0 };
+}
+
+export async function getTransactionById(id: string) {
+    const { supabase, orgId } = await requireOrgContext();
+
+    const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .maybeSingle();
+
+    if (error) {
+        logError("Error fetching transaction by id", error, { orgId, transactionId: id });
+        throw new Error("No se pudo cargar la transacción");
+    }
+
+    return data;
 }
 
 export async function createTransaction(input: TransactionInput) {
@@ -61,6 +118,16 @@ export async function createTransaction(input: TransactionInput) {
 
     const { supabase, user, orgId } = await requireOrgContext();
 
+    try {
+        assertRateLimit({
+            key: `create-transaction:${user.id}`,
+            limit: 50,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
     const { error } = await supabase.from("transactions").insert({
         ...validation.data,
         org_id: orgId,
@@ -68,8 +135,8 @@ export async function createTransaction(input: TransactionInput) {
     });
 
     if (error) {
-        console.error("Error creating transaction:", error);
-        return { error: "Failed to create transaction" };
+        logError("Error creating transaction", error, { orgId, userId: user.id });
+        return { error: "No se pudo crear la transacción" };
     }
 
     revalidatePath("/dashboard");
@@ -77,8 +144,60 @@ export async function createTransaction(input: TransactionInput) {
     return { success: true };
 }
 
+export async function updateTransaction(id: string, input: TransactionInput) {
+    const validation = transactionSchema.safeParse(input);
+    if (!validation.success) {
+        return { error: validation.error.message };
+    }
+
+    const { supabase, user, orgId } = await requireOrgContext();
+
+    try {
+        assertRateLimit({
+            key: `update-transaction:${user.id}`,
+            limit: 50,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
+    const { data, error } = await supabase
+        .from("transactions")
+        .update({
+            ...validation.data,
+        })
+        .eq("id", id)
+        .eq("org_id", orgId)
+        .select("id");
+
+    if (error) {
+        logError("Error updating transaction", error, { orgId, userId: user.id, transactionId: id });
+        return { error: "No se pudo actualizar la transacción" };
+    }
+    if (!data || data.length === 0) {
+        return { error: "Transacción no encontrada o sin permisos" };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/transactions");
+    revalidatePath(`/dashboard/transactions/${id}/edit`);
+    return { success: true };
+}
+
 export async function deleteTransaction(id: string) {
-    const { supabase, orgId } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgContext();
+
+    try {
+        assertRateLimit({
+            key: `delete-transaction:${user.id}`,
+            limit: 40,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
     const { error, count } = await supabase
         .from("transactions")
         .delete({ count: "exact" })
@@ -86,11 +205,11 @@ export async function deleteTransaction(id: string) {
         .eq("org_id", orgId);
 
     if (error) {
-        console.error("Error deleting transaction:", error);
-        return { error: "Failed to delete transaction" };
+        logError("Error deleting transaction", error, { orgId, userId: user.id, transactionId: id });
+        return { error: "No se pudo eliminar la transacción" };
     }
     if (!count || count === 0) {
-        return { error: "Transaction not found or not allowed" };
+        return { error: "Transacción no encontrada o sin permisos" };
     }
 
     revalidatePath("/dashboard");

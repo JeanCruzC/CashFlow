@@ -18,3 +18,9 @@ Este directorio centraliza la documentacion de arquitectura, decisiones tecnicas
 
 La documentacion describe el estado real del repositorio en la fecha de actualizacion.
 Si cambias arquitectura, esquema, flujo de despliegue o convenciones, debes actualizar estos archivos en la misma PR.
+
+Workflows operativos relevantes:
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy.yml`
+- `.github/workflows/ux-audit.yml`

@@ -1,6 +1,7 @@
 "use server";
 
 import { getOrgContextOrNull } from "@/lib/server/context";
+import { logError } from "@/lib/server/logger";
 
 export interface DashboardKPIs {
     netWorth: number;
@@ -14,38 +15,38 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     if (!context) return { netWorth: 0, cashFlow: 0, savingsRate: 0, emergencyFundMonths: 0 };
     const { supabase, orgId } = context;
 
-    // Calculate Net Worth (Sum of all account balances)
-    const { data: accounts } = await supabase
+    const { data: accounts, error: accountsError } = await supabase
         .from("accounts")
         .select("opening_balance, account_type")
         .eq("org_id", orgId);
+    if (accountsError) {
+        logError("Error fetching accounts for dashboard", accountsError, { orgId });
+        throw new Error("No se pudo cargar el dashboard");
+    }
 
     const netWorth = accounts?.reduce((sum, acc) => sum + Number(acc.opening_balance), 0) || 0;
 
-    // Calculate Cash Flow (Income - Expenses this month)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonthIso = startOfMonth.toISOString().slice(0, 10);
 
-    const { data: transactions } = await supabase
+    const { data: transactions, error: transactionsError } = await supabase
         .from("transactions")
-        .select(`
-      amount,
-      categories_gl!inner(kind)
-    `)
+        .select("amount")
         .eq("org_id", orgId)
-        .gte("date", startOfMonth.toISOString());
+        .gte("date", startOfMonthIso);
+    if (transactionsError) {
+        logError("Error fetching transactions for dashboard", transactionsError, { orgId });
+        throw new Error("No se pudo cargar el dashboard");
+    }
 
     let income = 0;
     let expenses = 0;
 
-    // Define strict type for query result without any
     interface TransactionKPIResult {
         amount: number;
-        categories_gl: { kind: string } | { kind: string }[] | null;
     }
 
-    // Cast the fetch result to known type for iteration
     const txns = transactions as unknown as TransactionKPIResult[] | null;
 
     txns?.forEach((txn) => {
@@ -56,7 +57,6 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     const cashFlow = income - expenses;
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 
-    // Emergency Fund: Liquid Cash / Avg Expenses
     interface AccountWithBalance {
         opening_balance: number;
         account_type: string;
@@ -83,12 +83,16 @@ export async function getRecentTransactions() {
     if (!context) return [];
     const { supabase, orgId } = context;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from("transactions")
         .select("*, accounts(name), categories_gl(name)")
         .eq("org_id", orgId)
         .order("date", { ascending: false })
         .limit(5);
+    if (error) {
+        logError("Error fetching recent transactions", error, { orgId });
+        return [];
+    }
 
     return data || [];
 }

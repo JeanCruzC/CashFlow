@@ -26,7 +26,7 @@ describe("lib/server/onboarding", () => {
         expect(orgId).toBe("org-personal-1");
         expect(rpc).toHaveBeenCalledWith("create_org_with_onboarding", {
             p_profile_type: "personal",
-            p_org_name: "My Finances",
+            p_org_name: "Mis Finanzas",
             p_country: "US",
             p_currency: "USD",
         });
@@ -44,7 +44,7 @@ describe("lib/server/onboarding", () => {
         expect(orgId).toBe("org-business-1");
         expect(rpc).toHaveBeenCalledWith("create_org_with_onboarding", {
             p_profile_type: "business",
-            p_org_name: "My Business",
+            p_org_name: "Mi Negocio",
             p_country: "US",
             p_currency: "USD",
         });
@@ -68,7 +68,7 @@ describe("lib/server/onboarding", () => {
         } as never);
 
         await expect(createOrganizationWithOnboarding("business")).rejects.toThrow(
-            "Failed to create organization"
+            "No se pudo crear la organización"
         );
     });
 });

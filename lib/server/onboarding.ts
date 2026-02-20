@@ -1,8 +1,9 @@
 import { requireUserContext } from "@/lib/server/context";
 import { OrgType } from "@/lib/types/finance";
+import { logError } from "@/lib/server/logger";
 
 function defaultOrgName(profileType: OrgType) {
-    return profileType === "personal" ? "My Finances" : "My Business";
+    return profileType === "personal" ? "Mis Finanzas" : "Mi Negocio";
 }
 
 export async function createOrganizationWithOnboarding(profileType: OrgType) {
@@ -15,8 +16,11 @@ export async function createOrganizationWithOnboarding(profileType: OrgType) {
         p_currency: "USD",
     });
 
-    if (error) throw error;
-    if (!data) throw new Error("Failed to create organization");
+    if (error) {
+        logError("Error calling onboarding RPC", error, { profileType });
+        throw error;
+    }
+    if (!data) throw new Error("No se pudo crear la organización");
 
     return String(data);
 }

@@ -1,5 +1,18 @@
 import { getAccounts } from "@/app/actions/accounts";
+import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { Account } from "@/lib/types/finance";
+
+function accountTypeLabel(type: Account["account_type"]) {
+    const labels: Record<Account["account_type"], string> = {
+        cash: "Efectivo",
+        bank: "Banco",
+        credit_card: "Tarjeta de crédito",
+        loan: "Préstamo",
+        investment: "Inversión",
+    };
+
+    return labels[type];
+}
 
 export default async function AccountsPage() {
     const accounts = (await getAccounts()) as Account[];
@@ -14,43 +27,41 @@ export default async function AccountsPage() {
 
     return (
         <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold">Accounts</h1>
-                    <p className="text-muted mt-1">Manage your financial accounts</p>
+                    <h1 className="text-2xl font-bold">Cuentas</h1>
+                    <p className="text-muted mt-1">Administra tus cuentas y su saldo inicial</p>
                 </div>
-                <button className="btn-primary text-sm opacity-60 cursor-not-allowed" disabled>
-                    Add Account (Soon)
-                </button>
+            </div>
+
+            <div className="mb-6">
+                <AccountCreateForm />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="card p-4">
-                    <p className="text-sm text-muted mb-1">Total Assets</p>
+                    <p className="text-sm text-muted mb-1">Activos totales</p>
                     <p className="text-xl font-semibold amount-positive">
-                        ${totalAssets.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        ${totalAssets.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
                     </p>
                 </div>
                 <div className="card p-4">
-                    <p className="text-sm text-muted mb-1">Total Liabilities</p>
+                    <p className="text-sm text-muted mb-1">Pasivos totales</p>
                     <p className="text-xl font-semibold amount-negative">
-                        ${totalLiabilities.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        ${totalLiabilities.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
                     </p>
                 </div>
                 <div className="card p-4">
-                    <p className="text-sm text-muted mb-1">Net Worth</p>
+                    <p className="text-sm text-muted mb-1">Patrimonio neto</p>
                     <p className="text-xl font-semibold">
-                        ${(totalAssets - totalLiabilities).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        ${(totalAssets - totalLiabilities).toLocaleString("es-PE", { minimumFractionDigits: 2 })}
                     </p>
                 </div>
             </div>
 
             {accounts.length === 0 ? (
                 <div className="card p-8 text-center">
-                    <p className="text-sm text-muted">No accounts found yet.</p>
-                    <p className="text-xs text-muted mt-2">
-                        Account creation UI will be enabled in upcoming iteration.
-                    </p>
+                    <p className="text-sm text-muted">Todavía no hay cuentas registradas.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -75,13 +86,13 @@ export default async function AccountsPage() {
                                     <div>
                                         <p className="font-medium text-sm">{account.name}</p>
                                         <p className="text-xs text-muted capitalize">
-                                            {account.account_type.replace("_", " ")}
+                                            {accountTypeLabel(account.account_type)}
                                         </p>
                                     </div>
                                 </div>
                                 <span className={`font-semibold ${balance >= 0 ? "amount-positive" : "amount-negative"}`}>
                                     {balance >= 0 ? "" : "-"}$
-                                    {Math.abs(balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                    {Math.abs(balance).toLocaleString("es-PE", { minimumFractionDigits: 2 })}
                                 </span>
                             </div>
                         );

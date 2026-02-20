@@ -1,6 +1,11 @@
 "use server";
 
+import { budgetSchema, BudgetInput } from "@/lib/validations/schemas";
 import { getOrgContextOrNull } from "@/lib/server/context";
+import { requireOrgContext } from "@/lib/server/context";
+import { revalidatePath } from "next/cache";
+import { assertRateLimit } from "@/lib/server/rate-limit";
+import { logError } from "@/lib/server/logger";
 
 interface BudgetRow {
     category: string;
@@ -117,4 +122,68 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
         totalRemaining,
         rows,
     };
+}
+
+export async function upsertBudget(input: BudgetInput) {
+    const validation = budgetSchema.safeParse(input);
+    if (!validation.success) return { error: validation.error.message };
+
+    const { supabase, orgId, user } = await requireOrgContext();
+    const payload = validation.data;
+
+    try {
+        assertRateLimit({
+            key: `upsert-budget:${user.id}`,
+            limit: 40,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
+    const { data: existing, error: existingError } = await supabase
+        .from("budgets")
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("month", payload.month)
+        .eq("category_gl_id", payload.category_gl_id)
+        .is("cost_center_id", null)
+        .maybeSingle();
+
+    if (existingError) {
+        logError("Error checking budget existence", existingError, { orgId, userId: user.id });
+        return { error: "No se pudo validar el presupuesto actual" };
+    }
+
+    if (existing?.id) {
+        const { error } = await supabase
+            .from("budgets")
+            .update({
+                amount: payload.amount,
+            })
+            .eq("id", existing.id)
+            .eq("org_id", orgId);
+
+        if (error) {
+            logError("Error updating budget", error, { orgId, userId: user.id, budgetId: existing.id });
+            return { error: "No se pudo actualizar el presupuesto" };
+        }
+    } else {
+        const { error } = await supabase.from("budgets").insert({
+            org_id: orgId,
+            month: payload.month,
+            category_gl_id: payload.category_gl_id,
+            cost_center_id: null,
+            amount: payload.amount,
+        });
+
+        if (error) {
+            logError("Error creating budget", error, { orgId, userId: user.id });
+            return { error: "No se pudo crear el presupuesto" };
+        }
+    }
+
+    revalidatePath("/dashboard/budget");
+    revalidatePath("/dashboard");
+    return { success: true };
 }

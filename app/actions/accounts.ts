@@ -3,6 +3,8 @@
 import { accountSchema, AccountInput } from "@/lib/validations/schemas";
 import { revalidatePath } from "next/cache";
 import { requireOrgContext } from "@/lib/server/context";
+import { assertRateLimit } from "@/lib/server/rate-limit";
+import { logError } from "@/lib/server/logger";
 
 export async function getAccounts() {
     const { supabase, orgId } = await requireOrgContext();
@@ -21,14 +23,27 @@ export async function createAccount(input: AccountInput) {
     const validation = accountSchema.safeParse(input);
     if (!validation.success) return { error: validation.error.message };
 
-    const { supabase, orgId } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgContext();
+
+    try {
+        assertRateLimit({
+            key: `create-account:${user.id}`,
+            limit: 20,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
 
     const { error } = await supabase.from("accounts").insert({
         ...validation.data,
         org_id: orgId,
     });
 
-    if (error) return { error: error.message };
+    if (error) {
+        logError("Error creating account", error, { orgId, userId: user.id });
+        return { error: error.message };
+    }
 
     revalidatePath("/dashboard/accounts");
     return { success: true };

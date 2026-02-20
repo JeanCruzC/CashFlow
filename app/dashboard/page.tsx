@@ -1,7 +1,6 @@
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
 import { KPICard } from "@/components/ui/KPICard";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 interface DashboardKPI {
     label: string;
@@ -19,30 +18,30 @@ export default async function DashboardPage() {
 
     const dashboardKPIs: DashboardKPI[] = [
         {
-            label: "Net Cash Flow",
+            label: "Flujo de caja neto",
             value: kpis.cashFlow,
-            tooltip: "Total money coming in minus total money going out this period.",
+            tooltip: "Total de dinero que entra menos total de dinero que sale en este periodo.",
             format: "currency",
             variant: kpis.cashFlow >= 0 ? "positive" : "negative",
         },
         {
-            label: "Savings Rate",
+            label: "Tasa de ahorro",
             value: kpis.savingsRate,
-            tooltip: "Percentage of your income that you're keeping as savings.",
+            tooltip: "Porcentaje de tus ingresos que estás conservando como ahorro.",
             format: "percent",
             variant: kpis.savingsRate > 20 ? "positive" : kpis.savingsRate > 0 ? "warning" : "negative",
         },
         {
-            label: "Net Worth",
+            label: "Patrimonio neto",
             value: kpis.netWorth,
-            tooltip: "Total value of everything you own minus everything you owe.",
+            tooltip: "Valor total de tus activos menos tus pasivos.",
             format: "currency",
             variant: "default",
         },
         {
-            label: "Emergency Fund",
+            label: "Fondo de emergencia",
             value: kpis.emergencyFundMonths,
-            tooltip: "How many months of expenses you could cover with your liquid cash.",
+            tooltip: "Cuántos meses de gastos podrías cubrir con tu liquidez actual.",
             format: "months",
             variant: kpis.emergencyFundMonths > 6 ? "positive" : kpis.emergencyFundMonths > 3 ? "default" : "warning",
         },
@@ -51,8 +50,8 @@ export default async function DashboardPage() {
     return (
         <div className="animate-fade-in">
             <div className="mb-8">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
-                <p className="text-muted mt-1">Overview of your financial health</p>
+                <h1 className="text-2xl font-bold">Resumen financiero</h1>
+                <p className="text-muted mt-1">Visión general de la salud financiera de tu organización</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -60,12 +59,12 @@ export default async function DashboardPage() {
                     <KPICard
                         key={kpi.label}
                         label={kpi.label}
-                        value={kpi.format === 'currency'
-                            ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(kpi.value))
-                            : kpi.format === 'percent'
+                        value={kpi.format === "currency"
+                            ? new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD" }).format(Number(kpi.value))
+                            : kpi.format === "percent"
                                 ? `${Number(kpi.value).toFixed(1)}%`
-                                : kpi.format === 'months'
-                                    ? `${Number(kpi.value).toFixed(1)} months`
+                                : kpi.format === "months"
+                                    ? `${Number(kpi.value).toFixed(1)} meses`
                                     : String(kpi.value)
                         }
                         tooltip={kpi.tooltip}
@@ -74,18 +73,18 @@ export default async function DashboardPage() {
                 ))}
             </div>
 
-            {/* Recent Transactions */}
             <div className="card p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold">Recent Transactions</h2>
+                    <h2 className="text-lg font-semibold">Transacciones recientes</h2>
                     <Link href="/dashboard/transactions" className="text-sm text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1">
-                        View all <ArrowRight size={14} />
+                        Ver todas
                     </Link>
                 </div>
 
                 {recentTransactions.length === 0 ? (
                     <div className="text-center py-8 text-muted">
-                        No transactions found. <Link href="/dashboard/transactions" className="text-brand-500 hover:underline">Add your first transaction</Link>
+                        No hay transacciones todavía.{" "}
+                        <Link href="/dashboard/transactions" className="text-brand-500 hover:underline">Crea la primera transacción</Link>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -94,7 +93,7 @@ export default async function DashboardPage() {
                                 <div>
                                     <p className="font-medium text-sm">{t.description}</p>
                                     <p className="text-xs text-muted">
-                                        {t.categories_gl?.name || 'Uncategorized'} &middot; {new Date(t.date).toLocaleDateString()}
+                                        {t.categories_gl?.name || "Sin categoría"} &middot; {new Date(t.date).toLocaleDateString("es-PE")}
                                     </p>
                                 </div>
                                 <span className={`font-medium text-sm ${t.amount >= 0 ? "amount-positive" : "amount-negative"}`}>

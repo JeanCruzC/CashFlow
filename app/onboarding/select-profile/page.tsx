@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
             router.push("/dashboard");
             router.refresh();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to create profile");
+            setError(err instanceof Error ? err.message : "No se pudo crear el perfil.");
         } finally {
             setLoading(false);
         }
@@ -33,8 +33,8 @@ export default function SelectProfilePage() {
         <div className="min-h-screen flex items-center justify-center px-6 py-12">
             <div className="w-full max-w-2xl animate-fade-in">
                 <div className="text-center mb-10">
-                    <h1 className="text-2xl font-bold mb-2">Choose your profile type</h1>
-                    <p className="text-muted">Select the type of financial management you need. You can create additional organizations later.</p>
+                    <h1 className="text-2xl font-bold mb-2">Elige tu tipo de perfil</h1>
+                    <p className="text-muted">Selecciona el tipo de gestión financiera que necesitas. Luego podrás crear más organizaciones si lo requieres.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -44,11 +44,11 @@ export default function SelectProfilePage() {
                             <User size={24} />
                         </div>
                         <h3 className="text-lg font-semibold mb-2">Personal</h3>
-                        <p className="text-sm text-muted leading-relaxed">Track personal income, expenses, budget, debts, and net worth.</p>
+                        <p className="text-sm text-muted leading-relaxed">Controla ingresos, gastos, presupuesto, deudas y patrimonio personal.</p>
                         <ul className="mt-4 space-y-1.5 text-xs text-surface-500 dark:text-surface-400">
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Net Cash Flow & Savings Rate</li>
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Budget vs Actual tracking</li>
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Net Worth & Emergency Fund</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Flujo neto y tasa de ahorro</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Seguimiento de presupuesto vs real</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Patrimonio y fondo de emergencia</li>
                         </ul>
                     </button>
 
@@ -57,12 +57,12 @@ export default function SelectProfilePage() {
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${selected === "business" ? "bg-brand-500 text-white" : "bg-surface-100 dark:bg-surface-800 text-surface-500"}`}>
                             <Building2 size={24} />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Business</h3>
-                        <p className="text-sm text-muted leading-relaxed">Manage revenue, costs, operating margins, budget vs actual, and forecasts.</p>
+                        <h3 className="text-lg font-semibold mb-2">Negocio</h3>
+                        <p className="text-sm text-muted leading-relaxed">Gestiona ingresos, costos, margen operativo, presupuesto y pronóstico.</p>
                         <ul className="mt-4 space-y-1.5 text-xs text-surface-500 dark:text-surface-400">
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Revenue, COGS & EBIT</li>
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Operating Margin & Cash Flow</li>
-                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Forecast & Detracciones</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Ingresos, costos y EBIT</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Margen operativo y flujo de caja</li>
+                            <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-brand-500" />Pronóstico y detracciones</li>
                         </ul>
                     </button>
                 </div>
@@ -72,7 +72,7 @@ export default function SelectProfilePage() {
                 <button onClick={handleContinue} disabled={!selected || loading}
                     className="btn-primary w-full flex items-center justify-center gap-2">
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                    Continue with {selected === "personal" ? "Personal" : selected === "business" ? "Business" : "..."}
+                    Continuar con {selected === "personal" ? "perfil personal" : selected === "business" ? "perfil de negocio" : "..."}
                 </button>
             </div>
         </div>

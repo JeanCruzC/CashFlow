@@ -2,24 +2,25 @@
 
 Aplicación financiera para gestión personal y empresarial con Next.js + Supabase.
 
-## Documentación técnica (Fase 4)
+## Estado actual del producto
 
-- `docs/README.md`
-- `docs/architecture.md`
-- `docs/data-model.md`
-- `docs/project-structure.md`
-- `docs/runbooks/local.md`
-- `docs/runbooks/production.md`
-- `docs/branch-protection.md`
-- `docs/adr/README.md`
-- `docs/contributing.md`
-- `docs/pr-checklist.md`
+Módulos disponibles:
+
+- Dashboard con KPIs sobre datos reales.
+- Transacciones: listado, búsqueda, filtros, creación, edición, eliminación, import/export CSV.
+- Cuentas: alta y listado.
+- Categorías: alta y listado.
+- Presupuesto mensual: overview + set budget.
+- Forecast: supuestos mensuales.
+- Settings: configuración de organización.
 
 ## Requisitos
 
 - Node.js 18+
 - npm
-- Variables de entorno de Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- Variables de entorno de Supabase:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ## Desarrollo
 
@@ -33,72 +34,83 @@ npm run dev
 ```bash
 npm run lint
 npm run typecheck
+npm run test
 npm run build
 ```
 
-## Quality Gate (Fase 5)
+Quality gate completo:
 
 ```bash
-npm run check:migrations
-npm run test:coverage:critical
 npm run ci:quality
 ```
 
-CI en GitHub: `.github/workflows/ci.yml`
+## Testing
 
-## Testing (Fase 3)
-
-### Unit tests (Vitest + RTL)
+Unit:
 
 ```bash
-npm run test
-# o
 npm run test:unit
 ```
 
-### Suite completa de Vitest (unit + integration)
-
-```bash
-npm run test:all
-```
-
-### Coverage
-
-```bash
-npm run test:coverage
-```
-
-### Integration tests con DB de prueba (Supabase)
+Integración (Supabase real):
 
 ```bash
 npm run test:integration
 ```
 
-Variables esperadas para habilitar integración real:
-
-- `TEST_SUPABASE_URL` (opcional, fallback a `NEXT_PUBLIC_SUPABASE_URL`)
-- `TEST_SUPABASE_ANON_KEY` (opcional, fallback a `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-- `TEST_USER_EMAIL` (requerida)
-- `TEST_USER_PASSWORD` (requerida)
-
-Si faltan variables, los tests de integración se marcan como `skipped`.
-
-### E2E con Playwright
+E2E:
 
 ```bash
-npm run test:e2e:install
-npm run test:e2e
+npm run test:e2e:smoke
+npm run test:e2e:a11y
 ```
 
-Smoke test público:
-
-```bash
-npm run test:e2e -- tests/e2e/public-smoke.spec.ts
-```
-
-Flujo completo opcional (auth + onboarding + transacciones):
+Variables opcionales para suite e2e completa:
 
 - `E2E_USER_EMAIL`
 - `E2E_USER_PASSWORD`
 
-Si no están definidos, ese archivo e2e se omite automáticamente.
+## Operación
+
+Smoke checks:
+
+```bash
+SMOKE_BASE_URL=https://tu-dominio.com npm run smoke:check
+```
+
+Seed de fixtures de prueba:
+
+```bash
+npm run seed:test
+```
+
+Backup/restore:
+
+```bash
+npm run ops:backup
+npm run ops:restore -- backups/archivo.sql
+```
+
+## CI/CD y seguridad
+
+- CI principal: `.github/workflows/ci.yml`
+  - `quality-gate`
+  - `test-integration`
+  - `test-e2e`
+  - `dependency-review`
+  - `secret-scan`
+- Deploy: `.github/workflows/deploy.yml` (staging + production + rollback por smoke).
+- Auditoría UX: `.github/workflows/ux-audit.yml` (Lighthouse + Playwright a11y).
+
+## Documentación técnica
+
+- `docs/README.md`
+- `docs/architecture.md`
+- `docs/data-model.md`
+- `docs/project-structure.md`
+- `docs/runbooks/local.md`
+- `docs/runbooks/production.md`
+- `docs/branch-protection.md`
+- `docs/adr/README.md`
+- `docs/contributing.md`
+- `docs/pr-checklist.md`

@@ -8,12 +8,6 @@ export default async function NewTransactionPage() {
         getCategories(),
     ]);
 
-    if (!accounts || accounts.length === 0) {
-        // Handle edge case: User has no accounts. 
-        // Should probably redirect to create account or show message.
-        // For now, let the form handle empty accounts gracefully or show alert.
-    }
-
     return (
         <TransactionForm
             accounts={accounts || []}

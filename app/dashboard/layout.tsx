@@ -3,27 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import {
-    LayoutDashboard,
-    ArrowLeftRight,
-    Wallet,
-    Tags,
-    Target,
-    BarChart3,
-    Settings,
-    LogOut,
-    ChevronLeft,
-    ChevronRight,
-} from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
-    { href: "/dashboard/accounts", label: "Accounts", icon: Wallet },
-    { href: "/dashboard/categories", label: "Categories", icon: Tags },
-    { href: "/dashboard/budget", label: "Budget", icon: Target },
-    { href: "/dashboard/forecast", label: "Forecast", icon: BarChart3, disabled: true },
+    { href: "/dashboard", label: "Resumen" },
+    { href: "/dashboard/transactions", label: "Transacciones" },
+    { href: "/dashboard/accounts", label: "Cuentas" },
+    { href: "/dashboard/categories", label: "Categorías" },
+    { href: "/dashboard/budget", label: "Presupuesto" },
+    { href: "/dashboard/forecast", label: "Pronóstico" },
+    { href: "/dashboard/settings", label: "Configuración" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,33 +35,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     bg-[var(--sidebar-bg)] border-r transition-all duration-300
                     ${collapsed ? "w-16" : "w-60"}`}
             >
-                {/* Logo */}
                 <div className="flex items-center gap-2 px-4 h-16 border-b">
                     <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center flex-shrink-0">
-                        <BarChart3 size={18} className="text-white" />
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                        >
+                            <path d="M4 14L9 9L13 13L20 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M20 6V11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M20 6H15" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
                     </div>
                     {!collapsed && <span className="text-lg font-semibold truncate">CashFlow</span>}
                 </div>
 
-                {/* Nav */}
                 <nav className="flex-1 flex flex-col gap-1 px-3 py-4 overflow-y-auto scrollbar-thin">
-                    {NAV_ITEMS.map(({ href, label, icon: Icon, disabled }) => {
-                        const active = pathname === href;
-                        const disabledLabel = `${label} (Próximamente)`;
-
-                        if (disabled) {
-                            return (
-                                <div
-                                    key={href}
-                                    className="sidebar-link opacity-50 cursor-not-allowed"
-                                    title={collapsed ? disabledLabel : undefined}
-                                    aria-disabled="true"
-                                >
-                                    <Icon size={18} className="flex-shrink-0" />
-                                    {!collapsed && <span className="truncate">{disabledLabel}</span>}
-                                </div>
-                            );
-                        }
+                    {NAV_ITEMS.map(({ href, label }) => {
+                        const active =
+                            href === "/dashboard"
+                                ? pathname === href
+                                : pathname === href || pathname.startsWith(`${href}/`);
 
                         return (
                             <Link
@@ -81,47 +66,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 className={`sidebar-link ${active ? "sidebar-link-active" : ""}`}
                                 title={collapsed ? label : undefined}
                             >
-                                <Icon size={18} className="flex-shrink-0" />
+                                <span
+                                    aria-hidden="true"
+                                    className={`h-1.5 w-1.5 rounded-full transition-colors ${active ? "bg-brand-500" : "bg-surface-300 dark:bg-surface-600"}`}
+                                />
                                 {!collapsed && <span className="truncate">{label}</span>}
                             </Link>
                         );
                     })}
                 </nav>
 
-                {/* Bottom actions */}
                 <div className="border-t px-3 py-3 space-y-1">
-                    <div
-                        className="sidebar-link opacity-50 cursor-not-allowed"
-                        title={collapsed ? "Settings (Próximamente)" : undefined}
-                        aria-disabled="true"
-                    >
-                        <Settings size={18} className="flex-shrink-0" />
-                        {!collapsed && <span>Settings (Próximamente)</span>}
-                    </div>
                     <button
                         onClick={handleLogout}
                         className="sidebar-link w-full"
-                        title={collapsed ? "Sign Out" : undefined}
+                        title={collapsed ? "Cerrar sesión" : undefined}
                     >
-                        <LogOut size={18} className="flex-shrink-0" />
-                        {!collapsed && <span>Sign Out</span>}
+                        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-negative-500" />
+                        {!collapsed && <span>Cerrar sesión</span>}
                     </button>
                 </div>
 
-                {/* Collapse toggle */}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
                     className="absolute -right-3 top-20 w-6 h-6 rounded-full
                      bg-surface-0 dark:bg-surface-800 border shadow-sm
                      flex items-center justify-center text-surface-400
                      hover:text-surface-600 cursor-pointer transition-colors z-50"
-                    aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    aria-label={collapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
                 >
-                    {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+                    <span className="text-xs font-semibold">{collapsed ? ">" : "<"}</span>
                 </button>
             </aside>
 
-            {/* Main content */}
             <main
                 className={`flex-1 transition-all duration-300
                     ${collapsed ? "ml-16" : "ml-60"}`}

@@ -28,7 +28,7 @@ export async function getUserContextOrNull(): Promise<UserContext | null> {
 
 export async function requireUserContext(): Promise<UserContext> {
     const context = await getUserContextOrNull();
-    if (!context) throw new Error("Unauthorized");
+    if (!context) throw new Error("No autorizado");
     return context;
 }
 
@@ -57,8 +57,8 @@ export async function requireOrgContext(): Promise<OrgContext> {
     const context = await getOrgContextOrNull();
     if (!context) {
         const userContext = await getUserContextOrNull();
-        if (!userContext) throw new Error("Unauthorized");
-        throw new Error("No organization found");
+        if (!userContext) throw new Error("No autorizado");
+        throw new Error("No se encontró una organización activa");
     }
     return context;
 }

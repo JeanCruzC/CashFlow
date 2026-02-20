@@ -67,23 +67,25 @@ flowchart LR
 
 1. `getTransactions` aplica sanitizacion de sort/paginacion y filtro por `org_id`.
 2. `createTransaction` valida schema, inserta con `org_id` y `created_by`.
-3. `deleteTransaction` elimina por `id + org_id`, valida `count > 0`.
+3. `updateTransaction` y `deleteTransaction` operan por `id + org_id`, validan `count > 0`.
+4. Import/Export CSV viven en `app/api/transactions/*` con validacion, rate-limit y logging estructurado.
 
 ## Modulos implementados y en progreso
 
 - Implementados:
   - Dashboard (KPIs y transacciones recientes)
-  - Transacciones (listado + alta + eliminacion)
-  - Cuentas (lectura)
-  - Categorias (lectura)
-  - Presupuesto (overview)
-- En progreso (UI deshabilitada):
-  - Forecast
-  - Settings
+  - Transacciones (listado + filtros + alta + edicion + eliminacion + import/export CSV)
+  - Cuentas (lectura + alta)
+  - Categorias (lectura + alta)
+  - Presupuesto (overview + set budget)
+  - Forecast (supuestos mensuales)
+  - Settings (configuracion organizacional)
 
 ## Principios de escalabilidad aplicados
 
 - Aislamiento multi-tenant en todas las consultas criticas.
 - Seguridad en DB con RLS y constraints, no solo en UI.
 - Logica de negocio compartida en capa `lib/server/*`.
+- Observabilidad en servidor con `lib/server/logger.ts` + Sentry opcional.
+- Endurecimiento web con security headers en `next.config.mjs`.
 - Test strategy en tres niveles: unit, integration, e2e.
