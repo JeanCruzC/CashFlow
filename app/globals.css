@@ -1,27 +1,144 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #FAFBFF;
+    --foreground: #1a1a2e;
+    --sidebar-bg: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --border: #E8ECF4;
+    --muted: #6B7394;
+    --brand-primary: #0D4C7A;
+    --brand-accent: #14847B;
+    --surface-tint: #F3F8FC;
+    --font-body: "Manrope", system-ui, sans-serif;
+    --font-display: "Instrument Serif", Georgia, serif;
+  }
+
+  .dark {
+    --background: #0F172A;
+    --foreground: #F1F5F9;
+    --sidebar-bg: #020617;
+    --card-bg: #1E293B;
+    --border: #334155;
+    --muted: #94A3B8;
+  }
+
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  * {
+    border-color: var(--border);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .card {
+    @apply bg-[var(--card-bg)] rounded-xl border shadow-card transition-shadow duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  .btn-primary {
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-700 dark:text-surface-300 font-medium px-4 py-2.5 rounded-lg border transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-600 dark:text-surface-400 font-medium px-3 py-2 rounded-lg transition-colors duration-200 cursor-pointer;
+  }
+
+  .btn-danger {
+    @apply bg-negative-500 hover:bg-negative-600 text-white font-medium px-4 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-negative-500 focus:ring-offset-2;
+  }
+
+  .input-field {
+    @apply w-full px-3.5 py-2.5 rounded-lg border bg-[var(--card-bg)] text-[var(--foreground)] placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200;
+  }
+
+  .label {
+    @apply text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5 block;
+  }
+
+  .text-muted {
+    @apply text-surface-500 dark:text-surface-400;
+  }
+
+  .amount-positive {
+    @apply text-positive-600 dark:text-positive-400 font-medium;
+  }
+
+  .amount-negative {
+    @apply text-negative-600 dark:text-negative-400 font-medium;
+  }
+
+  .kpi-value {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .table-header {
+    @apply text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 transition-colors duration-200 cursor-pointer;
+  }
+
+  .sidebar-link-active {
+    @apply bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30;
+  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

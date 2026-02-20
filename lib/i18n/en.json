@@ -1,0 +1,196 @@
+{
+  "common": {
+    "appName": "CashFlow",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "confirm": "Confirm",
+    "search": "Search...",
+    "noResults": "No results found",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "currency": "Currency",
+    "date": "Date",
+    "amount": "Amount",
+    "description": "Description",
+    "status": "Status",
+    "actions": "Actions",
+    "total": "Total",
+    "month": "Month",
+    "year": "Year"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "logout": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "subtitle": "Manage your finances with precision"
+  },
+  "onboarding": {
+    "selectProfile": "Choose your profile type",
+    "selectProfileDesc": "Select the type of financial management you need. You can create additional organizations later.",
+    "personal": "Personal",
+    "personalDesc": "Track personal income, expenses, budget, debts, and net worth.",
+    "business": "Business",
+    "businessDesc": "Manage revenue, costs, operating margins, budget vs actual, and forecasts.",
+    "stepConfig": "Configuration",
+    "stepAccounts": "Accounts",
+    "stepCategories": "Categories",
+    "stepBudget": "Budget",
+    "stepDebtsGoals": "Debts & Goals",
+    "stepIdentity": "Identity",
+    "stepStructure": "Financial Structure",
+    "stepGL": "GL Classification",
+    "stepForecast": "Forecast",
+    "stepDetracciones": "Detracciones"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "categories": "Categories",
+    "budget": "Budget",
+    "forecast": "Forecast",
+    "settings": "Settings",
+    "import": "Import",
+    "ledger": "Ledger",
+    "costCenters": "Cost Centers",
+    "customers": "Customers",
+    "vendors": "Vendors",
+    "detracciones": "Detracciones"
+  },
+  "finance": {
+    "netCashFlow": {
+      "label": "Net Cash Flow",
+      "tooltip": "Total money coming in minus total money going out this period.",
+      "formula": "Income - Expenses"
+    },
+    "savingsRate": {
+      "label": "Savings Rate",
+      "tooltip": "Percentage of your income that you're keeping as savings.",
+      "formula": "(Income - Expenses) / Income"
+    },
+    "netWorth": {
+      "label": "Net Worth",
+      "tooltip": "Total value of everything you own minus everything you owe.",
+      "formula": "Assets - Liabilities"
+    },
+    "emergencyFund": {
+      "label": "Emergency Fund",
+      "tooltip": "How many months of expenses you could cover with your liquid cash.",
+      "formula": "Liquid Cash / Avg Monthly Expenses"
+    },
+    "budgetVsActual": {
+      "label": "Budget vs Actual",
+      "tooltip": "Comparison of planned spending versus actual spending by category.",
+      "formula": "Actual - Budget"
+    },
+    "revenue": {
+      "label": "Revenue",
+      "tooltip": "Total income from primary business operations (sales, services)."
+    },
+    "cogs": {
+      "label": "COGS",
+      "tooltip": "Cost of Goods Sold. Direct costs to produce what you sell (materials, labor, manufacturing).",
+      "formula": "Sum of all COGS entries"
+    },
+    "grossProfit": {
+      "label": "Gross Profit",
+      "tooltip": "Revenue remaining after subtracting the direct costs of production.",
+      "formula": "Revenue - COGS"
+    },
+    "opex": {
+      "label": "OPEX",
+      "tooltip": "Operating Expenses. Day-to-day costs of running the business excluding production costs.",
+      "formula": "Fixed Costs + Variable Costs"
+    },
+    "fixedCosts": {
+      "label": "Fixed Costs",
+      "tooltip": "Costs that remain constant regardless of production volume (rent, salaries, insurance)."
+    },
+    "variableCosts": {
+      "label": "Variable Costs",
+      "tooltip": "Costs that change proportionally with production or sales volume (marketing, commissions)."
+    },
+    "ebit": {
+      "label": "EBIT",
+      "tooltip": "Earnings Before Interest and Taxes. A measure of operating profitability.",
+      "formula": "Revenue - COGS - OPEX"
+    },
+    "operatingMargin": {
+      "label": "Operating Margin",
+      "tooltip": "Percentage of revenue remaining after all operating costs. A key profitability metric.",
+      "formula": "EBIT / Revenue"
+    },
+    "operatingIncome": {
+      "label": "Operating Income",
+      "tooltip": "Profit from core business operations, before interest and taxes.",
+      "formula": "Revenue - COGS - OPEX"
+    },
+    "detracciones": {
+      "label": "Detracciones",
+      "tooltip": "Tax withholding mechanism. Amounts are held as Restricted Cash and used to pay taxes."
+    },
+    "restrictedCash": {
+      "label": "Restricted Cash",
+      "tooltip": "Cash set aside for a specific purpose, not available for general use (e.g., Detracciones balance)."
+    },
+    "accrualBasis": {
+      "label": "Accrual Basis",
+      "tooltip": "Accounting method where revenue and expenses are recorded when earned or incurred, regardless of when cash is received or paid."
+    },
+    "cashBasis": {
+      "label": "Cash Basis",
+      "tooltip": "Accounting method where revenue and expenses are recorded only when cash is actually received or paid."
+    },
+    "forecast": {
+      "label": "Forecast",
+      "tooltip": "Financial projection based on assumptions about future revenue growth, costs, and one-off items."
+    }
+  },
+  "grid": {
+    "addRow": "Add Row",
+    "deleteRow": "Delete Row",
+    "editCell": "Click to edit",
+    "pasteHint": "Paste from clipboard (Ctrl+V)",
+    "runningBalance": "Running Balance",
+    "variance": "Variance",
+    "variancePct": "Variance %",
+    "actual": "Actual",
+    "budgeted": "Budgeted",
+    "noTransactions": "No transactions yet. Add your first one or import from Excel/CSV."
+  },
+  "import": {
+    "title": "Import Data",
+    "upload": "Upload File",
+    "dragDrop": "Drag & drop your Excel or CSV file here",
+    "mapping": "Column Mapping",
+    "preview": "Preview",
+    "processing": "Processing...",
+    "results": "Import Results",
+    "inserted": "Inserted",
+    "skipped": "Skipped (duplicates)",
+    "errors": "Errors"
+  }
+}
