@@ -2,96 +2,106 @@
 
 ## Objetivo
 
-Estandarizar despliegues y operacion de CashFlow en produccion con foco en seguridad multi-tenant y estabilidad.
+Estandarizar despliegues y operacion de CashFlow con foco en continuidad, seguridad multi-tenant y rollback controlado.
 
 ## 1) Prerrequisitos
 
 - Proyecto Supabase productivo con acceso administrativo.
-- Plataforma de despliegue para Next.js (ejemplo: Vercel, contenedor o similar).
-- Variables de entorno productivas cargadas.
+- Plataforma de despliegue para Next.js (Vercel, contenedor u otro).
+- GitHub Actions configurado con secretos operativos.
 
-Variables minimas:
+Variables minimas de app:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SENTRY_DSN` (opcional, recomendado)
 
-Variables adicionales segun operacion:
+Secretos recomendados para pipeline de deploy (`.github/workflows/deploy.yml`):
 
-- `SUPABASE_SERVICE_ROLE_KEY` (solo procesos server-side que lo requieran)
+- `DEPLOY_WEBHOOK_STAGING`
+- `STAGING_BASE_URL`
+- `DEPLOY_WEBHOOK_PRODUCTION`
+- `PRODUCTION_BASE_URL`
+- `ROLLBACK_WEBHOOK_PRODUCTION`
 
-## 2) Pre-deploy checklist
+## 2) Pipeline de despliegue
 
-Ejecutar en rama candidata:
+Workflow: `.github/workflows/deploy.yml`
+
+- Push a `main`: ejecuta quality gate + deploy staging + smoke staging.
+- `workflow_dispatch`: permite deploy a `staging`, `production` o `both`.
+- Si falla smoke en producción, dispara rollback automático vía webhook.
+
+## 3) Pre-deploy checklist
 
 ```bash
 npm ci
-npm run lint
-npm run test
-npm run build
-```
-
-Opcional recomendado:
-
-```bash
+npm run ci:quality
 npm run test:integration
-npm run test:e2e
+npm run test:e2e:smoke
 ```
 
-## 3) Orden de despliegue recomendado
-
-1. Aplicar migraciones en Supabase.
-2. Desplegar aplicacion Next.js.
-3. Ejecutar smoke checks de rutas publicas y auth.
-4. Verificar dashboard y modulo de transacciones.
-
-## 4) Aplicacion de migraciones
-
-Con pipeline o operador autorizado:
+## 4) Migraciones de base de datos
 
 ```bash
 supabase db push
 ```
 
-Regla: nunca editar migraciones ya aplicadas. Usa una nueva migracion incremental.
+Regla: nunca editar migraciones aplicadas. Siempre crear una migracion incremental.
 
 ## 5) Smoke checks post-deploy
 
-- Home publica (`/`)
-- Login (`/login`)
-- Register (`/register`)
-- Flujo auth -> `/dashboard`
-- Alta de transaccion y listado
+Script oficial:
 
-## 6) Monitoreo minimo
+```bash
+SMOKE_BASE_URL=https://tu-dominio.com npm run smoke:check
+```
 
-- Logs de aplicacion Next.js (errores 5xx, timeouts)
-- Logs de Auth en Supabase
-- Errores SQL/RLS en operaciones criticas:
-  - onboarding
-  - transacciones
-  - presupuesto
+Rutas por defecto:
 
-## 7) Manejo de incidentes
+- `/`
+- `/login`
+- `/register`
 
-## Error funcional post-deploy
+## 6) Observabilidad y alertas
+
+- Logging estructurado server-side: `lib/server/logger.ts`.
+- Error tracking opcional: Sentry (`sentry.*.config.ts`, `instrumentation.ts`).
+- Alertas recomendadas:
+  - tasa de errores 5xx
+  - fallos de onboarding/transacciones
+  - fallos en `quality-gate` y `test-e2e`
+
+## 7) Seguridad operativa
+
+- Security headers activos en `next.config.mjs` (CSP/HSTS/XFO/etc).
+- Rate limiting en acciones sensibles (`lib/server/rate-limit.ts`).
+- CI con `dependency-review` + `gitleaks`.
+
+## 8) Backup y restore
+
+Backup:
+
+```bash
+npm run ops:backup
+```
+
+Restore (requiere `SUPABASE_DB_URL`):
+
+```bash
+npm run ops:restore -- backups/cashflow-YYYYMMDD-HHMMSS.sql
+```
+
+Politica recomendada:
+
+- backup diario automático
+- retencion mínima 14 días
+- prueba mensual de restore en entorno staging
+
+## 9) Manejo de incidentes
 
 1. Confirmar alcance y reproducibilidad.
-2. Revisar cambios de app y migraciones del release.
-3. Si el fallo es de app, rollback a artefacto previo.
-4. Si el fallo es de esquema, crear migracion correctiva (no editar historial).
-
-## Degradacion por DB/politicas RLS
-
-1. Revisar politicas y constraints afectadas.
-2. Validar query exacta que falla y tenant involucrado.
-3. Aplicar parche con migracion versionada y validar en staging.
-
-## 8) Politica de rollback
-
-- App: redeploy de version anterior estable.
-- DB: migracion compensatoria versionada.
-- Siempre documentar:
-  - causa raiz
-  - tiempo de deteccion
-  - tiempo de resolucion
-  - acciones preventivas
+2. Verificar logs estructurados + Sentry.
+3. Si falla app: rollback de artefacto.
+4. Si falla esquema: migracion compensatoria versionada.
+5. Documentar causa raiz, tiempo de deteccion y acciones preventivas.

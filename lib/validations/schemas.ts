@@ -2,17 +2,17 @@ import { z } from "zod";
 
 // Auth schemas
 export const loginSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    email: z.string().email("Correo electrónico inválido"),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });
 
 export const registerSchema = loginSchema
     .extend({
         confirmPassword: z.string(),
-        fullName: z.string().min(2, "Name must be at least 2 characters"),
+        fullName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
     })
     .refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords don't match",
+        message: "Las contraseñas no coinciden",
         path: ["confirmPassword"],
     });
 
@@ -37,7 +37,7 @@ export const businessConfigSchema = z.object({
 });
 
 export const accountSchema = z.object({
-    name: z.string().min(1, "Account name is required"),
+    name: z.string().min(1, "El nombre de cuenta es obligatorio"),
     account_type: z.enum(["cash", "bank", "credit_card", "loan", "investment"]),
     currency: z.string().length(3),
     opening_balance: z.number(),
@@ -46,20 +46,20 @@ export const accountSchema = z.object({
 });
 
 export const categorySchema = z.object({
-    name: z.string().min(1, "Category name is required"),
+    name: z.string().min(1, "El nombre de categoría es obligatorio"),
     kind: z.string().min(1),
     fixed_cost: z.boolean().default(false),
     variable_cost: z.boolean().default(false),
 });
 
 export const transactionSchema = z.object({
-    date: z.string().min(1, "Date is required"),
-    description: z.string().min(1, "Description is required"),
-    account_id: z.string().uuid("Account is required"),
+    date: z.string().min(1, "La fecha es obligatoria"),
+    description: z.string().min(1, "La descripción es obligatoria"),
+    account_id: z.string().uuid("La cuenta es obligatoria"),
     category_gl_id: z.string().uuid().optional(),
     counterparty_id: z.string().uuid().optional(),
     cost_center_id: z.string().uuid().optional(),
-    amount: z.number().refine((v) => v !== 0, "Amount cannot be zero"),
+    amount: z.number().refine((v) => v !== 0, "El monto no puede ser cero"),
     currency: z.string().length(3),
     tax_amount: z.number().optional(),
     is_transfer: z.boolean().default(false),
@@ -70,7 +70,7 @@ export const transactionSchema = z.object({
 });
 
 export const budgetSchema = z.object({
-    month: z.string().regex(/^\d{4}-\d{2}$/, "Use YYYY-MM format"),
+    month: z.string().regex(/^\d{4}-\d{2}$/, "Usa formato YYYY-MM"),
     category_gl_id: z.string().uuid(),
     cost_center_id: z.string().uuid().optional(),
     amount: z.number().min(0),

@@ -1,4 +1,5 @@
 import { getCategories } from "@/app/actions/categories";
+import { CategoryCreateForm } from "@/components/categories/CategoryCreateForm";
 import { CategoryGL } from "@/lib/types/finance";
 
 const KIND_ORDER = [
@@ -14,7 +15,19 @@ const KIND_ORDER = [
 ];
 
 function normalizeKindLabel(kind: string) {
-    return kind.replaceAll("_", " ");
+    const labels: Record<string, string> = {
+        income: "Ingreso",
+        expense: "Gasto",
+        transfer: "Transferencia",
+        revenue: "Ingreso de negocio",
+        cogs: "Costo de ventas",
+        opex: "Gasto operativo",
+        other_income: "Otros ingresos",
+        other_expense: "Otros gastos",
+        tax: "Impuestos",
+    };
+
+    return labels[kind] ?? kind.replaceAll("_", " ");
 }
 
 export default async function CategoriesPage() {
@@ -37,22 +50,20 @@ export default async function CategoriesPage() {
 
     return (
         <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold">Categories</h1>
-                    <p className="text-muted mt-1">Organize your income and expenses</p>
+                    <h1 className="text-2xl font-bold">Categorías</h1>
+                    <p className="text-muted mt-1">Define y organiza la clasificación de tus movimientos</p>
                 </div>
-                <button className="btn-primary text-sm opacity-60 cursor-not-allowed" disabled>
-                    Add Category (Soon)
-                </button>
+            </div>
+
+            <div className="mb-6">
+                <CategoryCreateForm />
             </div>
 
             {categories.length === 0 ? (
                 <div className="card p-8 text-center">
-                    <p className="text-sm text-muted">No active categories found.</p>
-                    <p className="text-xs text-muted mt-2">
-                        Categories are usually seeded during onboarding.
-                    </p>
+                    <p className="text-sm text-muted">No hay categorías activas.</p>
                 </div>
             ) : (
                 sortedKinds.map((kind) => (

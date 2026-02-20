@@ -58,7 +58,7 @@ const STEPS = [
 ];
 
 const AVAILABLE_TODAY = [
-  "Dashboard con KPIs calculados desde tus datos.",
+  "Panel con KPIs calculados desde tus datos.",
   "Gestión de transacciones con búsqueda, orden y paginación.",
   "Módulos de cuentas, categorías y presupuesto mensual.",
   "Autenticación y aislamiento de datos por organización.",

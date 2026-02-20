@@ -17,11 +17,19 @@
     "test:coverage": "vitest run --coverage",
     "test:coverage:critical": "vitest run tests/unit --config vitest.critical.config.ts --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/e2e/public-smoke.spec.ts",
+    "test:e2e:a11y": "playwright test tests/e2e/accessibility.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
+    "security:audit": "npm audit --omit=dev --audit-level=high",
+    "smoke:check": "node scripts/smoke-check.mjs",
+    "seed:test": "node scripts/seed-test-fixtures.mjs",
+    "ops:backup": "./scripts/backup-supabase.sh",
+    "ops:restore": "./scripts/restore-supabase.sh",
     "ci:quality": "npm run check:migrations && npm run lint && npm run typecheck && npm run test && npm run test:coverage:critical && npm run build"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.39.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "@tanstack/react-table": "^8.21.3",
@@ -37,6 +45,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

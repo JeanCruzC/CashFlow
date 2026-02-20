@@ -15,15 +15,15 @@ test.describe("Auth + onboarding + transactions (optional)", () => {
         page.on("dialog", (dialog) => dialog.accept());
 
         await page.goto("/login");
-        await page.getByLabel("Email").fill(authEmail!);
-        await page.getByLabel("Password").fill(authPassword!);
-        await page.getByRole("button", { name: /Sign In/i }).click();
+        await page.getByLabel("Correo electrónico").fill(authEmail!);
+        await page.getByLabel("Contraseña").fill(authPassword!);
+        await page.getByRole("button", { name: /Ingresar/i }).click();
 
         await page.waitForURL(/\/(dashboard|onboarding\/select-profile)/, { timeout: 45_000 });
 
         if (page.url().includes("/onboarding/select-profile")) {
             await page.getByRole("button", { name: /Personal/i }).click();
-            await page.getByRole("button", { name: /Continue with Personal/i }).click();
+            await page.getByRole("button", { name: /Continuar con perfil personal/i }).click();
             await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
         }
 
@@ -39,16 +39,16 @@ test.describe("Auth + onboarding + transactions (optional)", () => {
         );
 
         await page.getByPlaceholder("0.00").fill("123.45");
-        await page.getByPlaceholder("e.g. Grocery Store, Client Payment").fill(uniqueDescription);
+        await page.getByPlaceholder("Ej. Compra de supermercado o cobro de servicio").fill(uniqueDescription);
 
-        await page.getByRole("button", { name: /Create Transaction/i }).click();
+        await page.getByRole("button", { name: /Crear transacción/i }).click();
 
         await page.waitForURL(/\/dashboard\/transactions/, { timeout: 45_000 });
 
         const row = page.locator("tr", { hasText: uniqueDescription });
         await expect(row).toBeVisible();
 
-        await row.getByRole("button", { name: "Delete" }).click();
+        await row.getByRole("button", { name: "Eliminar" }).click();
 
         await expect(row).not.toBeVisible({ timeout: 20_000 });
     });

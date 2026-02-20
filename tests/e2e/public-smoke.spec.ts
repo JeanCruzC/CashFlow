@@ -9,15 +9,15 @@ test.describe("Public routes smoke", () => {
 
         await page.getByRole("link", { name: "Crear cuenta" }).first().click();
         await expect(page).toHaveURL(/\/register$/);
-        await expect(page.getByRole("heading", { name: /Create your account/i })).toBeVisible();
+        await expect(page.getByRole("heading", { name: /Crea tu cuenta/i })).toBeVisible();
     });
 
     test("login renderiza formulario", async ({ page }) => {
         await page.goto("/login");
 
-        await expect(page.getByRole("heading", { name: /Welcome back/i })).toBeVisible();
-        await expect(page.getByLabel("Email")).toBeVisible();
-        await expect(page.getByLabel("Password")).toBeVisible();
-        await expect(page.getByRole("button", { name: /Sign In/i })).toBeVisible();
+        await expect(page.getByRole("heading", { name: /Bienvenido de nuevo/i })).toBeVisible();
+        await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+        await expect(page.getByLabel("Contraseña")).toBeVisible();
+        await expect(page.getByRole("button", { name: /Ingresar/i })).toBeVisible();
     });
 });

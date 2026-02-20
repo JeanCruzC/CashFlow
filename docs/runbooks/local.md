@@ -100,7 +100,8 @@ E2E:
 
 ```bash
 npm run test:e2e:install
-npm run test:e2e
+npm run test:e2e:smoke
+npm run test:e2e:a11y
 ```
 
 Variables para integracion:
@@ -115,7 +116,36 @@ Variables para e2e full:
 - `E2E_USER_EMAIL`
 - `E2E_USER_PASSWORD`
 
-## 7) Troubleshooting rapido
+## 7) Seed de datos de testing
+
+Para generar una organizacion completa de prueba (cuentas, transacciones, presupuesto y forecast):
+
+```bash
+npm run seed:test
+```
+
+Variables requeridas:
+
+- `TEST_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_URL`
+- `TEST_SUPABASE_ANON_KEY` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `TEST_USER_EMAIL`
+- `TEST_USER_PASSWORD`
+
+## 8) Backups y restore local
+
+Backup:
+
+```bash
+npm run ops:backup
+```
+
+Restore (requiere `SUPABASE_DB_URL`):
+
+```bash
+npm run ops:restore -- backups/cashflow-YYYYMMDD-HHMMSS.sql
+```
+
+## 9) Troubleshooting rapido
 
 ## `No encuentro el binario para backend`
 

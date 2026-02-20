@@ -18,13 +18,19 @@ Se debe aplicar en GitHub repository settings.
 - Restrict force pushes.
 - Restrict branch deletion.
 
-## Status checks requeridos
+## Status checks requeridos (minimo)
 
 Workflow: `CI`
 
 Job requerido:
 
 - `quality-gate`
+
+## Status checks recomendados adicionales
+
+- `test-integration`
+- `test-e2e`
+- `secret-scan`
 
 El job `quality-gate` ejecuta:
 
@@ -34,6 +40,8 @@ El job `quality-gate` ejecuta:
 4. `npm run test`
 5. `npm run test:coverage:critical`
 6. `npm run build`
+
+Los jobs `test-integration` y `test-e2e` ya estan definidos en CI, pero pueden depender de secretos de testing para cobertura completa.
 
 ## Cobertura minima (modulos criticos)
 

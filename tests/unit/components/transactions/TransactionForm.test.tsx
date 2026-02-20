@@ -82,14 +82,14 @@ describe("components/transactions/TransactionForm", () => {
 
         await user.type(screen.getByPlaceholderText("0.00"), "150");
         await user.type(
-            screen.getByPlaceholderText("e.g. Grocery Store, Client Payment"),
+            screen.getByPlaceholderText("Ej. Compra de supermercado o cobro de servicio"),
             "Compra supermercado"
         );
 
         const selects = screen.getAllByRole("combobox");
         await user.selectOptions(selects[1], "22222222-2222-4222-8222-222222222222");
 
-        await user.click(screen.getByRole("button", { name: "Create Transaction" }));
+        await user.click(screen.getByRole("button", { name: "Crear transacción" }));
 
         await waitFor(() => {
             expect(createTransactionMock).toHaveBeenCalledWith(
@@ -111,17 +111,17 @@ describe("components/transactions/TransactionForm", () => {
 
         render(<TransactionForm accounts={ACCOUNTS} categories={CATEGORIES} />);
 
-        await user.click(screen.getByRole("button", { name: "Income" }));
+        await user.click(screen.getByRole("button", { name: "Ingreso" }));
         await user.type(screen.getByPlaceholderText("0.00"), "2800");
         await user.type(
-            screen.getByPlaceholderText("e.g. Grocery Store, Client Payment"),
+            screen.getByPlaceholderText("Ej. Compra de supermercado o cobro de servicio"),
             "Pago cliente"
         );
 
         const selects = screen.getAllByRole("combobox");
         await user.selectOptions(selects[1], "33333333-3333-4333-8333-333333333333");
 
-        await user.click(screen.getByRole("button", { name: "Create Transaction" }));
+        await user.click(screen.getByRole("button", { name: "Crear transacción" }));
 
         await waitFor(() => {
             expect(createTransactionMock).toHaveBeenCalledWith(
@@ -140,12 +140,12 @@ describe("components/transactions/TransactionForm", () => {
 
         await user.type(screen.getByPlaceholderText("0.00"), "0");
         await user.type(
-            screen.getByPlaceholderText("e.g. Grocery Store, Client Payment"),
+            screen.getByPlaceholderText("Ej. Compra de supermercado o cobro de servicio"),
             "Intento inválido"
         );
-        await user.click(screen.getByRole("button", { name: "Create Transaction" }));
+        await user.click(screen.getByRole("button", { name: "Crear transacción" }));
 
-        expect(await screen.findByText("Please enter a valid amount")).toBeInTheDocument();
+        expect(await screen.findByText("Ingresa un monto válido.")).toBeInTheDocument();
         expect(createTransactionMock).not.toHaveBeenCalled();
     });
 });
