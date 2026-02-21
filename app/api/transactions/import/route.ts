@@ -5,6 +5,8 @@ import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 import { revalidatePath } from "next/cache";
 
+export const dynamic = "force-dynamic";
+
 function normalizeHeader(header: string) {
     return header
         .trim()

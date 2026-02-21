@@ -24,6 +24,12 @@ Secretos recomendados para pipeline de deploy (`.github/workflows/deploy.yml`):
 - `PRODUCTION_BASE_URL`
 - `ROLLBACK_WEBHOOK_PRODUCTION`
 
+Secretos para pipeline de Vercel (`.github/workflows/deploy-vercel.yml`):
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
 ## 2) Pipeline de despliegue
 
 Workflow: `.github/workflows/deploy.yml`
@@ -32,10 +38,18 @@ Workflow: `.github/workflows/deploy.yml`
 - `workflow_dispatch`: permite deploy a `staging`, `production` o `both`.
 - Si falla smoke en producción, dispara rollback automático vía webhook.
 
+Workflow Vercel: `.github/workflows/deploy-vercel.yml`
+
+- Pull request a `main`: deploy preview en Vercel + smoke check.
+- Push a `main`: deploy production en Vercel + smoke check.
+- `workflow_dispatch`: permite deploy manual a `preview` o `production`.
+- Guia detallada de migracion: `docs/runbooks/vercel-migration.md`.
+
 ## 3) Pre-deploy checklist
 
 ```bash
 npm ci
+npm run vercel:preflight
 npm run ci:quality
 npm run test:integration
 npm run test:e2e:smoke
@@ -87,6 +101,7 @@ Rutas por defecto:
 - `/`
 - `/login`
 - `/register`
+- `/api/health`
 
 ## 6) Observabilidad y alertas
 
@@ -101,7 +116,7 @@ Rutas por defecto:
 
 - Security headers activos en `next.config.mjs` (CSP/HSTS/XFO/etc).
 - Rate limiting en acciones sensibles (`lib/server/rate-limit.ts`).
-- CI con `dependency-review` + `gitleaks`.
+- CI con `quality-gate` + `secret-scan (gitleaks)`.
 
 ## 8) Backup y restore
 

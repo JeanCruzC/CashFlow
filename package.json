@@ -6,6 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "vercel:preflight": "node scripts/vercel-preflight.mjs",
+    "vercel:env:pull:preview": "npx vercel env pull .env.vercel.preview.local --environment=preview",
+    "vercel:env:pull:production": "npx vercel env pull .env.vercel.production.local --environment=production",
+    "vercel:deploy:preview": "npx vercel pull --yes --environment=preview && npx vercel build && npx vercel deploy --prebuilt",
+    "vercel:deploy:prod": "npx vercel pull --yes --environment=production && npx vercel build --prod && npx vercel deploy --prebuilt --prod",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "check:migrations": "node scripts/check-migrations.mjs",
@@ -47,6 +52,9 @@
     "tailwind-merge": "^3.5.0",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
+  },
+  "engines": {
+    "node": ">=20.0.0 <23"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",

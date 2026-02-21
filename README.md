@@ -22,7 +22,7 @@ Módulos disponibles:
 
 ## Requisitos
 
-- Node.js 18+
+- Node.js 20+
 - npm
 - Variables de entorno de Supabase:
   - `NEXT_PUBLIC_SUPABASE_URL`
@@ -34,6 +34,12 @@ Módulos disponibles:
 ```bash
 npm install
 npm run dev
+```
+
+Preflight de migracion Vercel:
+
+```bash
+npm run vercel:preflight
 ```
 
 ## Calidad
@@ -124,15 +130,37 @@ npm run ops:backup
 npm run ops:restore -- backups/archivo.sql
 ```
 
+## Migracion a Vercel
+
+Archivos y comandos preparados:
+
+- `vercel.json`
+- `.github/workflows/deploy-vercel.yml`
+- `scripts/vercel-preflight.mjs`
+- `npm run vercel:env:pull:preview`
+- `npm run vercel:env:pull:production`
+- `npm run vercel:deploy:preview`
+- `npm run vercel:deploy:prod`
+
+Secretos requeridos en GitHub para deploy automatizado:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Guia detallada:
+
+- `docs/runbooks/vercel-migration.md`
+
 ## CI/CD y seguridad
 
 - CI principal: `.github/workflows/ci.yml`
   - `quality-gate`
   - `test-integration`
   - `test-e2e`
-  - `dependency-review`
   - `secret-scan`
 - Deploy: `.github/workflows/deploy.yml` (staging + production + rollback por smoke).
+- Deploy Vercel: `.github/workflows/deploy-vercel.yml` (preview PR + production main).
 - Auditoría UX: `.github/workflows/ux-audit.yml` (Lighthouse + Playwright a11y).
 
 ## Documentación técnica

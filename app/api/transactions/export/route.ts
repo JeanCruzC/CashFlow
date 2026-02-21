@@ -3,6 +3,8 @@ import { requireOrgActorContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 function escapeCsv(value: unknown) {
     const raw = value == null ? "" : String(value);
     if (raw.includes(",") || raw.includes('"') || raw.includes("\n")) {

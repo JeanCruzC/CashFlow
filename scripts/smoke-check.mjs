@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const baseUrl = process.env.SMOKE_BASE_URL;
-const routesInput = process.env.SMOKE_ROUTES || "/,/login,/register";
+const routesInput = process.env.SMOKE_ROUTES || "/,/login,/register,/api/health";
 const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS || 15000);
 
 if (!baseUrl) {

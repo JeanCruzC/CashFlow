@@ -14,6 +14,7 @@ Este directorio centraliza la documentacion de arquitectura, decisiones tecnicas
 - `docs/project-structure.md`: estructura de carpetas y convenciones de orden.
 - `docs/runbooks/local.md`: runbook de entorno local y operaciones de desarrollo.
 - `docs/runbooks/production.md`: runbook de despliegue y operacion en produccion.
+- `docs/runbooks/vercel-migration.md`: plan paso a paso para migracion y despliegue en Vercel.
 - `docs/branch-protection.md`: reglas recomendadas de proteccion de rama en GitHub.
 - `docs/adr/README.md`: indice de ADRs y formato.
 - `docs/contributing.md`: guia para contribuir.
@@ -28,4 +29,5 @@ Workflows operativos relevantes:
 
 - `.github/workflows/ci.yml`
 - `.github/workflows/deploy.yml`
+- `.github/workflows/deploy-vercel.yml`
 - `.github/workflows/ux-audit.yml`

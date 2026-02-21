@@ -10,6 +10,7 @@ supabase/migrations/    # esquema SQL versionado
 tests/                  # unit, integration, e2e
 menu.sh                 # menu operativo para servicios en local
 docs/                   # documentacion tecnica y operativa
+vercel.json             # configuracion de plataforma Vercel
 ```
 
 ## Convenciones de ubicacion
@@ -24,6 +25,8 @@ docs/                   # documentacion tecnica y operativa
 - `tests/e2e/*`: pruebas de flujos de usuario.
 - `docs/adr/*`: decisiones arquitectonicas.
 - `docs/runbooks/*`: procedimientos de operacion.
+- `.github/workflows/deploy-vercel.yml`: deploy preview/production en Vercel.
+- `scripts/vercel-preflight.mjs`: validaciones previas de migracion.
 
 ## Reglas de orden
 

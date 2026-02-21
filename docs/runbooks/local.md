@@ -2,7 +2,7 @@
 
 ## 1) Requisitos
 
-- Node.js 18+
+- Node.js 20+
 - npm
 - (Opcional) Supabase CLI para backend local
 
@@ -77,6 +77,7 @@ Nota: usa `supabase db reset` solo en entornos desechables, porque es destructiv
 ## 5) Checks de calidad antes de abrir PR
 
 ```bash
+npm run vercel:preflight
 npm run lint
 npm run test
 npm run build
@@ -191,3 +192,13 @@ npm run ops:restore -- backups/cashflow-YYYYMMDD-HHMMSS.sql
 
 - Algunos sandboxes bloquean `listen` local.
 - Ejecuta e2e en maquina local normal o CI con puertos habilitados.
+
+## Preflight Vercel falla por variables faltantes
+
+- Revisa `.env.local` y define:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Si preparas deploy CI en GitHub, agrega:
+  - `VERCEL_TOKEN`
+  - `VERCEL_ORG_ID`
+  - `VERCEL_PROJECT_ID`
