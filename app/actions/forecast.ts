@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { forecastSchema, ForecastInput } from "@/lib/validations/schemas";
-import { getOrgContextOrNull, requireOrgContext } from "@/lib/server/context";
+import { getOrgContextOrNull, requireOrgActorContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 
@@ -67,7 +67,7 @@ export async function upsertForecastAssumption(input: ForecastInput) {
     const validation = forecastSchema.safeParse(input);
     if (!validation.success) return { error: validation.error.message };
 
-    const { supabase, orgId, user } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgActorContext();
 
     try {
         assertRateLimit({

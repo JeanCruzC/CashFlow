@@ -126,8 +126,8 @@ export function TransactionForm({
 
     if (accounts.length === 0) {
         return (
-            <div className="max-w-2xl mx-auto animate-fade-in">
-                <div className="card p-6 text-center">
+            <div className="mx-auto max-w-2xl animate-fade-in">
+                <div className="rounded-3xl border border-surface-200 bg-white p-6 text-center shadow-card">
                     <h1 className="text-xl font-bold">No hay cuentas disponibles</h1>
                     <p className="text-muted mt-2">
                         Para registrar transacciones primero debes crear al menos una cuenta.
@@ -141,7 +141,7 @@ export function TransactionForm({
     }
 
     return (
-        <div className="max-w-2xl mx-auto animate-fade-in">
+        <div className="mx-auto max-w-3xl animate-fade-in">
             <Link
                 href="/dashboard/transactions"
                 className="inline-flex items-center gap-1 text-sm text-muted hover:text-surface-900 dark:hover:text-surface-100 mb-6 transition-colors"
@@ -149,9 +149,9 @@ export function TransactionForm({
                 Volver a transacciones
             </Link>
 
-            <div className="card">
-                <div className="p-6 border-b border-surface-100 dark:border-surface-800">
-                    <h1 className="text-xl font-bold">{pageTitle}</h1>
+            <div className="overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card">
+                <div className="border-b border-surface-200 p-6">
+                    <h1 className="text-2xl font-semibold text-[#0f2233]">{pageTitle}</h1>
                     <p className="text-sm text-muted mt-1">
                         {mode === "edit" ? "Actualiza la información del movimiento." : "Registra una transacción manual."}
                     </p>

@@ -40,7 +40,16 @@ export function logError(
     const errorMessage =
         error instanceof Error
             ? { name: error.name, message: error.message, stack: error.stack }
-            : { message: String(error) };
+            : (() => {
+                if (typeof error === "object" && error !== null) {
+                    try {
+                        return JSON.parse(JSON.stringify(error)) as Record<string, unknown>;
+                    } catch {
+                        return { message: String(error) };
+                    }
+                }
+                return { message: String(error) };
+            })();
 
     console.error(
         serialize("error", message, {

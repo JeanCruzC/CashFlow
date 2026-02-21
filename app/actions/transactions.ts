@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { transactionSchema, TransactionInput } from "@/lib/validations/schemas";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 
@@ -44,7 +44,7 @@ export async function getTransactions({
 
     let query = supabase
         .from("transactions")
-        .select("*, accounts(name), categories_gl(name)", { count: "exact" })
+        .select("*, accounts(name), categories_gl(name)", { count: "estimated" })
         .eq("org_id", orgId);
 
     if (safeSearch) {
@@ -116,7 +116,7 @@ export async function createTransaction(input: TransactionInput) {
         return { error: validation.error.message };
     }
 
-    const { supabase, user, orgId } = await requireOrgContext();
+    const { supabase, user, orgId } = await requireOrgActorContext();
 
     try {
         assertRateLimit({
@@ -150,7 +150,7 @@ export async function updateTransaction(id: string, input: TransactionInput) {
         return { error: validation.error.message };
     }
 
-    const { supabase, user, orgId } = await requireOrgContext();
+    const { supabase, user, orgId } = await requireOrgActorContext();
 
     try {
         assertRateLimit({
@@ -186,7 +186,7 @@ export async function updateTransaction(id: string, input: TransactionInput) {
 }
 
 export async function deleteTransaction(id: string) {
-    const { supabase, orgId, user } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgActorContext();
 
     try {
         assertRateLimit({

@@ -2,7 +2,7 @@
 
 import { categorySchema, CategoryInput } from "@/lib/validations/schemas";
 import { revalidatePath } from "next/cache";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 
@@ -16,7 +16,10 @@ export async function getCategories() {
         .eq("is_active", true)
         .order("name");
 
-    if (error) throw error;
+    if (error) {
+        logError("Error fetching categories", error, { orgId });
+        throw new Error("No se pudieron cargar las categorías");
+    }
     return data;
 }
 
@@ -24,7 +27,7 @@ export async function createCategory(input: CategoryInput) {
     const validation = categorySchema.safeParse(input);
     if (!validation.success) return { error: validation.error.message };
 
-    const { supabase, orgId, user } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgActorContext();
 
     try {
         assertRateLimit({

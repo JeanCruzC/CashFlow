@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getOrgContextOrNull, requireOrgContext } from "@/lib/server/context";
+import { getOrgContextOrNull, requireOrgActorContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 
@@ -61,7 +61,7 @@ export async function updateOrgSettings(input: OrgSettingsInput) {
     const validation = orgSettingsSchema.safeParse(input);
     if (!validation.success) return { error: validation.error.message };
 
-    const { supabase, orgId, user } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgActorContext();
 
     try {
         assertRateLimit({

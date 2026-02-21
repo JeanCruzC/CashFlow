@@ -44,7 +44,7 @@ describe("app/actions/onboarding", () => {
         const result = await createProfileOrganization("personal");
 
         expect(result).toEqual({ success: true, orgId: "org-123" });
-        expect(createOrganizationMock).toHaveBeenCalledWith("personal");
+        expect(createOrganizationMock).toHaveBeenCalledWith("personal", undefined);
         expect(assertRateLimitMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 key: "onboarding-create-org:user-1",
@@ -67,6 +67,24 @@ describe("app/actions/onboarding", () => {
         createOrganizationMock.mockRejectedValue("boom");
 
         const result = await createProfileOrganization("personal");
+
+        expect(result).toEqual({ error: "No se pudo crear el perfil" });
+    });
+
+    it("serializa errores tipo objeto cuando no son Error", async () => {
+        createOrganizationMock.mockRejectedValue({ code: "E_ONBOARDING", reason: "invalid state" });
+
+        const result = await createProfileOrganization("personal");
+
+        expect(result).toEqual({ error: JSON.stringify({ code: "E_ONBOARDING", reason: "invalid state" }) });
+    });
+
+    it("cae al mensaje genérico cuando el objeto error no se puede serializar", async () => {
+        const circular: { self?: unknown } = {};
+        circular.self = circular;
+        createOrganizationMock.mockRejectedValue(circular);
+
+        const result = await createProfileOrganization("business");
 
         expect(result).toEqual({ error: "No se pudo crear el perfil" });
     });

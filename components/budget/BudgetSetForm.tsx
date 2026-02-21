@@ -51,7 +51,7 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
 
     if (categoryOptions.length === 0) {
         return (
-            <div className="card p-4">
+            <div className="rounded-2xl border border-surface-200 bg-surface-50/60 p-4">
                 <p className="text-sm text-muted">
                     No hay categorías disponibles para presupuestar. Crea categorías primero.
                 </p>
@@ -60,7 +60,7 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="card p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-surface-200 bg-surface-50/60 p-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label className="label">Mes</label>

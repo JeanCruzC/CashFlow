@@ -7,12 +7,12 @@ export default async function SettingsPage() {
 
     if (!settings) {
         return (
-            <div className="animate-fade-in card p-8 text-center">
-                <h1 className="text-xl font-semibold">Configuración</h1>
-                <p className="text-muted mt-2">
-                    No se encontró una organización activa para tu usuario.
+            <div className="rounded-3xl border border-surface-200 bg-white p-8 text-center shadow-card animate-fade-in">
+                <h2 className="text-2xl font-semibold text-[#0f2233]">Configuración no disponible</h2>
+                <p className="mt-2 text-sm text-surface-500">
+                    No existe una organización activa para este usuario. Completa onboarding para continuar.
                 </p>
-                <Link href="/onboarding/select-profile" className="btn-primary inline-flex mt-5 text-sm">
+                <Link href="/onboarding/select-profile" className="btn-primary mt-5 inline-flex text-sm">
                     Configurar organización
                 </Link>
             </div>
@@ -20,15 +20,19 @@ export default async function SettingsPage() {
     }
 
     return (
-        <div className="animate-fade-in space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Configuración</h1>
-                <p className="text-muted mt-1">
-                    Ajusta datos base de la organización, idioma y preferencia contable.
+        <div className="space-y-6 animate-fade-in">
+            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Ajustes</p>
+                <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Parámetros de organización</h2>
+                <p className="mt-2 max-w-3xl text-sm text-surface-500">
+                    Define país, moneda, idioma, base contable y parámetros tributarios para
+                    mantener consistencia en reportes y automatizaciones.
                 </p>
-            </div>
+            </section>
 
-            <OrgSettingsForm settings={settings} />
+            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                <OrgSettingsForm settings={settings} />
+            </section>
         </div>
     );
 }

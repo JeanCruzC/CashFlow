@@ -1,21 +1,35 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+    getSupabasePublicKey,
+    getSupabaseUrl,
+    isSupabaseConfigured,
+} from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
+    const isAuthRoute =
+        request.nextUrl.pathname.startsWith("/login") ||
+        request.nextUrl.pathname.startsWith("/register");
+    const isProtectedRoute =
+        request.nextUrl.pathname.startsWith("/dashboard") ||
+        request.nextUrl.pathname.startsWith("/onboarding");
+
+    if (!isAuthRoute && !isProtectedRoute) {
+        return NextResponse.next({ request });
+    }
+
     // Skip auth if Supabase is not configured (development without env vars)
-    if (
-        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-        !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-        process.env.NEXT_PUBLIC_SUPABASE_URL === "your-project-url"
-    ) {
+    if (!isSupabaseConfigured()) {
         return NextResponse.next({ request });
     }
 
     let supabaseResponse = NextResponse.next({ request });
+    const url = getSupabaseUrl();
+    const key = getSupabasePublicKey();
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        url,
+        key,
         {
             cookies: {
                 getAll() {
@@ -37,14 +51,6 @@ export async function updateSession(request: NextRequest) {
     const {
         data: { user },
     } = await supabase.auth.getUser();
-
-    // Redirect unauthenticated users away from protected routes
-    const isAuthRoute =
-        request.nextUrl.pathname.startsWith("/login") ||
-        request.nextUrl.pathname.startsWith("/register");
-    const isProtectedRoute =
-        request.nextUrl.pathname.startsWith("/dashboard") ||
-        request.nextUrl.pathname.startsWith("/onboarding");
 
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone();

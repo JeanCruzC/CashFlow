@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoTooltip } from "./InfoTooltip";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { MinusIcon, TrendDownIcon, TrendUpIcon } from "@/components/ui/icons";
 
 interface KPICardProps {
     label: string;
@@ -30,7 +30,7 @@ export function KPICard({
         neutral: "text-surface-400",
     };
 
-    const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+    const TrendIcon = trend === "up" ? TrendUpIcon : trend === "down" ? TrendDownIcon : MinusIcon;
 
     const valueColors = {
         default: "text-surface-900 dark:text-surface-100",

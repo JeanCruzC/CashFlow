@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { loginSchema } from "@/lib/validations/schemas";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { EyeIcon, EyeOffIcon, SpinnerIcon } from "@/components/ui/icons";
+
+const SECURITY_POINTS = [
+    "Autenticación con Supabase y control por organización.",
+    "Políticas RLS activas para proteger cada workspace.",
+    "Historial financiero centralizado en una sola vista.",
+];
 
 export default function LoginPage() {
     const router = useRouter();
@@ -15,8 +21,8 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
+    async function handleSubmit(event: React.FormEvent) {
+        event.preventDefault();
         setError("");
 
         const validation = loginSchema.safeParse({ email, password });
@@ -48,96 +54,116 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex">
-            {/* Left panel - branding */}
-            <div className="hidden lg:flex lg:w-1/2 bg-brand-600 dark:bg-brand-800 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/90 to-brand-800/90" />
-                <div className="relative z-10 flex flex-col justify-center px-16">
-                    <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-8">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" y1="1" x2="12" y2="23" />
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
+        <div className="min-h-screen bg-[linear-gradient(160deg,#f7fbff_0%,#edf5fb_50%,#f9fbfd_100%)] px-5 py-8 sm:px-8 sm:py-10">
+            <div className="mx-auto grid min-h-[calc(100vh-5rem)] w-full max-w-6xl overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card lg:grid-cols-[1.05fr_0.95fr]">
+                <section className="relative hidden overflow-hidden border-r border-surface-200 bg-[linear-gradient(145deg,#0e3758_0%,#0d4c7a_52%,#14847b_100%)] px-10 py-12 text-white lg:block">
+                    <div className="absolute -left-16 -top-24 h-56 w-56 rounded-full bg-white/10 blur-xl" />
+                    <div className="absolute -bottom-16 -right-10 h-56 w-56 rounded-full bg-white/10 blur-xl" />
+                    <div className="relative z-10 space-y-8">
+                        <div className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold">
+                            <span className="h-2 w-2 rounded-full bg-[#9ee8dc]" />
+                            Plataforma financiera
+                        </div>
+                        <div className="space-y-4">
+                            <h1 className="max-w-md text-4xl font-semibold leading-tight">
+                                Control financiero operativo para equipos y personas.
+                            </h1>
+                            <p className="max-w-md text-sm leading-relaxed text-white/80">
+                                CashFlow unifica transacciones, presupuesto, pronóstico y configuración
+                                organizacional en una experiencia clara y segura.
+                            </p>
+                        </div>
+                        <ul className="space-y-3 text-sm text-white/90">
+                            {SECURITY_POINTS.map((point) => (
+                                <li key={point} className="flex items-start gap-3">
+                                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/70" />
+                                    <span>{point}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-4">CashFlow</h1>
-                    <p className="text-lg text-white/70 leading-relaxed max-w-md">
-                        Gestión financiera clara para personas y negocios.
-                        Registra, analiza y proyecta con control.
-                    </p>
-                </div>
-                <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
-            </div>
+                </section>
 
-            {/* Right panel - form */}
-            <div className="flex-1 flex items-center justify-center px-6 py-12">
-                <div className="w-full max-w-md animate-fade-in">
-                    <h2 className="text-2xl font-bold mb-1">Bienvenido de nuevo</h2>
-                    <p className="text-muted mb-8">Ingresa a tu cuenta</p>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="email" className="label">Correo electrónico</label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="input-field"
-                                placeholder="tu@correo.com"
-                                autoComplete="email"
-                                required
-                            />
+                <section className="flex items-center justify-center bg-white px-6 py-10 sm:px-10">
+                    <div className="w-full max-w-md space-y-7 animate-fade-in">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0d4c7a]">
+                                CashFlow
+                            </p>
+                            <h2 className="text-3xl font-semibold text-[#0f2233]">Iniciar sesión</h2>
+                            <p className="text-sm text-surface-500">Accede a tu workspace financiero.</p>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="label">Contraseña</label>
-                            <div className="relative">
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <label htmlFor="email" className="label">Correo electrónico</label>
                                 <input
-                                    id="password"
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="input-field pr-10"
-                                    placeholder="Ingresa tu contraseña"
-                                    autoComplete="current-password"
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(event) => setEmail(event.target.value)}
+                                    className="input-field"
+                                    placeholder="tu@empresa.com"
+                                    autoComplete="email"
                                     required
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400
-                             hover:text-surface-600 dark:hover:text-surface-300 cursor-pointer"
-                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                >
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
                             </div>
+
+                            <div>
+                                <label htmlFor="password" className="label">Contraseña</label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                        className="input-field pr-11"
+                                        placeholder="Ingresa tu contraseña"
+                                        autoComplete="current-password"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((prev) => !prev)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-surface-500 transition-colors hover:text-surface-700"
+                                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    >
+                                        {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="rounded-xl border border-negative-200 bg-negative-50 px-3 py-2 text-sm text-negative-700">
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary w-full"
+                            >
+                                <span className="inline-flex items-center justify-center gap-2">
+                                    {loading ? <SpinnerIcon size={14} /> : null}
+                                    Ingresar
+                                </span>
+                            </button>
+                        </form>
+
+                        <div className="space-y-2 text-sm">
+                            <p className="text-surface-500">
+                                ¿No tienes cuenta?{" "}
+                                <Link href="/register" className="font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                                    Regístrate
+                                </Link>
+                            </p>
+                            <Link href="/" className="inline-flex text-xs font-semibold uppercase tracking-wide text-surface-500 hover:text-surface-700">
+                                Volver al inicio
+                            </Link>
                         </div>
-
-                        {error && (
-                            <div className="text-sm text-negative-500 bg-negative-500/10 px-3 py-2 rounded-lg">
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary w-full flex items-center justify-center gap-2"
-                        >
-                            {loading && <Loader2 size={16} className="animate-spin" />}
-                            Ingresar
-                        </button>
-                    </form>
-
-                    <p className="text-sm text-center mt-6 text-muted">
-                        ¿No tienes cuenta?{" "}
-                        <Link href="/register" className="text-brand-500 hover:text-brand-600 font-medium">
-                            Regístrate
-                        </Link>
-                    </p>
-                </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

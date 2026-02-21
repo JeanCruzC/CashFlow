@@ -23,7 +23,7 @@ cp .env.local.example .env.local
 3. Completar en `.env.local`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (recomendado) o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (si aplica para scripts admin)
 
 ## 3) Levantar servicios
@@ -102,6 +102,7 @@ E2E:
 npm run test:e2e:install
 npm run test:e2e:smoke
 npm run test:e2e:a11y
+npm run test:e2e:auth
 ```
 
 Variables para integracion:
@@ -127,11 +128,38 @@ npm run seed:test
 Variables requeridas:
 
 - `TEST_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_URL`
-- `TEST_SUPABASE_ANON_KEY` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `TEST_SUPABASE_ANON_KEY` o `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `TEST_USER_EMAIL`
 - `TEST_USER_PASSWORD`
 
-## 8) Backups y restore local
+## 8) Validaciones de Supabase remoto
+
+Verificacion de tablas/RPC/auth en tu proyecto cloud:
+
+```bash
+npm run supabase:check:remote
+```
+
+Aplicar migraciones cloud y validar en un solo paso:
+
+```bash
+SUPABASE_PROJECT_REF=tu-project-ref \
+SUPABASE_DB_PASSWORD=... \
+SUPABASE_ACCESS_TOKEN=... \
+npm run supabase:migrate:remote
+```
+
+Sincronizacion de Auth URLs (Site URL y redirects) con Management API:
+
+```bash
+SUPABASE_ACCESS_TOKEN=... \
+SUPABASE_PROJECT_REF=tu-project-ref \
+APP_SITE_URL=http://127.0.0.1:3001 \
+APP_REDIRECT_URLS="http://127.0.0.1:3001/**,http://localhost:3001/**" \
+npm run supabase:auth:sync
+```
+
+## 9) Backups y restore local
 
 Backup:
 
@@ -145,7 +173,7 @@ Restore (requiere `SUPABASE_DB_URL`):
 npm run ops:restore -- backups/cashflow-YYYYMMDD-HHMMSS.sql
 ```
 
-## 9) Troubleshooting rapido
+## 10) Troubleshooting rapido
 
 ## `No encuentro el binario para backend`
 

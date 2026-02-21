@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { transactionSchema } from "@/lib/validations/schemas";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 import { revalidatePath } from "next/cache";
@@ -55,7 +55,7 @@ function parseNumber(raw: string) {
 
 export async function POST(request: Request) {
     try {
-        const { supabase, orgId, user } = await requireOrgContext();
+        const { supabase, orgId, user } = await requireOrgActorContext();
         assertRateLimit({
             key: `import-transactions:${user.id}`,
             limit: 5,
