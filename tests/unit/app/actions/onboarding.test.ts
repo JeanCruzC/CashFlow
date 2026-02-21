@@ -70,4 +70,22 @@ describe("app/actions/onboarding", () => {
 
         expect(result).toEqual({ error: "No se pudo crear el perfil" });
     });
+
+    it("serializa errores tipo objeto cuando no son Error", async () => {
+        createOrganizationMock.mockRejectedValue({ code: "E_ONBOARDING", reason: "invalid state" });
+
+        const result = await createProfileOrganization("personal");
+
+        expect(result).toEqual({ error: JSON.stringify({ code: "E_ONBOARDING", reason: "invalid state" }) });
+    });
+
+    it("cae al mensaje genérico cuando el objeto error no se puede serializar", async () => {
+        const circular: { self?: unknown } = {};
+        circular.self = circular;
+        createOrganizationMock.mockRejectedValue(circular);
+
+        const result = await createProfileOrganization("business");
+
+        expect(result).toEqual({ error: "No se pudo crear el perfil" });
+    });
 });
