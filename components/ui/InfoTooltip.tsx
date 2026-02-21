@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Info } from "lucide-react";
+import { InfoIcon } from "@/components/ui/icons";
 
 interface InfoTooltipProps {
     label: string;
@@ -36,7 +36,7 @@ export function InfoTooltip({ label, tooltip, formula }: InfoTooltipProps) {
                    dark:hover:text-brand-400 transition-colors duration-200 cursor-pointer"
                 aria-label={`Info: ${label}`}
             >
-                <Info size={10} strokeWidth={2.5} />
+                <InfoIcon size={10} strokeWidth={2.4} />
             </button>
 
             {open && (

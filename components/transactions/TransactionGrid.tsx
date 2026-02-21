@@ -195,40 +195,45 @@ export function TransactionGrid({
     }
 
     return (
-        <div className="animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Transacciones</h1>
-                    <p className="text-muted mt-1">Controla ingresos y egresos en un solo libro</p>
-                </div>
+        <div className="space-y-6 animate-fade-in">
+            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Libro financiero</p>
+                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Transacciones</h1>
+                        <p className="mt-2 text-sm text-surface-500">
+                            Registro operativo de movimientos con filtros por cuenta, categoría y periodo.
+                        </p>
+                    </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv,text/csv"
-                        className="hidden"
-                        onChange={handleImportChange}
-                    />
-                    <button
-                        onClick={handleImportClick}
-                        className="btn-ghost text-sm"
-                        disabled={importing}
-                        type="button"
-                    >
-                        {importing ? "Importando..." : "Importar CSV"}
-                    </button>
-                    <a href={exportHref} className="btn-ghost text-sm">
-                        Exportar CSV
-                    </a>
-                    <Link
-                        href="/dashboard/transactions/new"
-                        className="btn-primary text-sm no-underline hover:text-white"
-                    >
-                        Nueva transacción
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            className="hidden"
+                            onChange={handleImportChange}
+                        />
+                        <button
+                            onClick={handleImportClick}
+                            className="btn-ghost text-sm"
+                            disabled={importing}
+                            type="button"
+                        >
+                            {importing ? "Importando..." : "Importar CSV"}
+                        </button>
+                        <a href={exportHref} className="btn-ghost text-sm">
+                            Exportar CSV
+                        </a>
+                        <Link
+                            href="/dashboard/transactions/new"
+                            className="btn-primary text-sm no-underline hover:text-white"
+                        >
+                            Nueva transacción
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </section>
 
             {error && (
                 <div className="mb-4 rounded-lg border border-negative-200 bg-negative-50 px-4 py-3 text-sm text-negative-700">
@@ -241,7 +246,7 @@ export function TransactionGrid({
                 </div>
             )}
 
-            <div className="card p-4 mb-4 space-y-3">
+            <section className="space-y-3 rounded-3xl border border-surface-200 bg-white p-4 shadow-card">
                 <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleSearchSubmit}>
                     <input
                         type="text"
@@ -309,9 +314,9 @@ export function TransactionGrid({
                         onChange={(event) => handleFilterChange("dateTo", event.target.value)}
                     />
                 </div>
-            </div>
+            </section>
 
-            <div className="card overflow-hidden">
+            <section className="overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card">
                 <div className="overflow-x-auto scrollbar-thin">
                     <table className="w-full text-sm">
                         <thead>
@@ -418,7 +423,7 @@ export function TransactionGrid({
                         </button>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }

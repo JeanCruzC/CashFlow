@@ -2,6 +2,12 @@
 
 Aplicación financiera para gestión personal y empresarial con Next.js + Supabase.
 
+## Estado del plan técnico
+
+- Fase 1-5 de estabilización, escalabilidad, testing, documentación y CI: **FINALIZADA**.
+- Cierre operativo de Supabase remoto registrado el **21 de febrero de 2026**.
+- Evidencia y detalle técnico: `SUPABASE_COMPLETADO.md`.
+
 ## Estado actual del producto
 
 Módulos disponibles:
@@ -20,7 +26,8 @@ Módulos disponibles:
 - npm
 - Variables de entorno de Supabase:
   - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (recomendado) o `NEXT_PUBLIC_SUPABASE_ANON_KEY` (legacy)
+  - `SUPABASE_SERVICE_ROLE_KEY` (opcional, recomendado para validaciones remotas completas)
 
 ## Desarrollo
 
@@ -63,6 +70,7 @@ E2E:
 ```bash
 npm run test:e2e:smoke
 npm run test:e2e:a11y
+npm run test:e2e:auth
 ```
 
 Variables opcionales para suite e2e completa:
@@ -76,6 +84,31 @@ Smoke checks:
 
 ```bash
 SMOKE_BASE_URL=https://tu-dominio.com npm run smoke:check
+```
+
+Validación de Supabase remoto (tablas/RPC/auth):
+
+```bash
+npm run supabase:check:remote
+```
+
+Aplicar migraciones remotas + validar esquema:
+
+```bash
+SUPABASE_PROJECT_REF=udzhirqwiyihnxpxtscr \
+SUPABASE_DB_PASSWORD=... \
+SUPABASE_ACCESS_TOKEN=... \
+npm run supabase:migrate:remote
+```
+
+Sincronizar Auth config (Site URL + redirect URLs) vía Management API:
+
+```bash
+SUPABASE_ACCESS_TOKEN=... \
+SUPABASE_PROJECT_REF=udzhirqwiyihnxpxtscr \
+APP_SITE_URL=http://127.0.0.1:3001 \
+APP_REDIRECT_URLS="http://127.0.0.1:3001/**,http://localhost:3001/**" \
+npm run supabase:auth:sync
 ```
 
 Seed de fixtures de prueba:

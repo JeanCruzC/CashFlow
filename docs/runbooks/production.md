@@ -13,7 +13,7 @@ Estandarizar despliegues y operacion de CashFlow con foco en continuidad, seguri
 Variables minimas de app:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (recomendado) o `NEXT_PUBLIC_SUPABASE_ANON_KEY` (legacy)
 - `SENTRY_DSN` (opcional, recomendado)
 
 Secretos recomendados para pipeline de deploy (`.github/workflows/deploy.yml`):
@@ -48,6 +48,31 @@ supabase db push
 ```
 
 Regla: nunca editar migraciones aplicadas. Siempre crear una migracion incremental.
+
+Validacion remota post-migracion:
+
+```bash
+npm run supabase:check:remote
+```
+
+Push remoto recomendado (link + db push + validacion):
+
+```bash
+SUPABASE_PROJECT_REF=tu-project-ref \
+SUPABASE_DB_PASSWORD=... \
+SUPABASE_ACCESS_TOKEN=... \
+npm run supabase:migrate:remote
+```
+
+Opcional para mantener Auth URLs consistentes:
+
+```bash
+SUPABASE_ACCESS_TOKEN=... \
+SUPABASE_PROJECT_REF=tu-project-ref \
+APP_SITE_URL=https://tu-dominio.com \
+APP_REDIRECT_URLS="https://tu-dominio.com/**,https://staging.tu-dominio.com/**" \
+npm run supabase:auth:sync
+```
 
 ## 5) Smoke checks post-deploy
 

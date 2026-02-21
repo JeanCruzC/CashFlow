@@ -37,76 +37,87 @@ function formatPercent(value: number | null) {
 
 export default async function ForecastPage({ searchParams }: ForecastPageProps) {
     const monthOptions = getRecentMonths(12);
-    const requestedMonth = searchParams.month;
     const month =
-        requestedMonth && /^\d{4}-\d{2}$/.test(requestedMonth)
-            ? requestedMonth
+        searchParams.month && /^\d{4}-\d{2}$/.test(searchParams.month)
+            ? searchParams.month
             : monthOptions[0];
 
     const forecast = await getForecastOverview(month);
 
     return (
-        <div className="animate-fade-in space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Pronóstico</h1>
-                    <p className="text-muted mt-1">
-                        Registra supuestos financieros para proyectar el siguiente cierre.
-                    </p>
+        <div className="space-y-6 animate-fade-in">
+            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Forecast</p>
+                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Supuestos financieros</h2>
+                        <p className="mt-2 max-w-3xl text-sm text-surface-500">
+                            Define crecimiento, estructura de costos y partidas no recurrentes para proyectar
+                            resultados operativos del siguiente cierre.
+                        </p>
+                    </div>
+                    <form method="get" className="flex items-center gap-2">
+                        <select className="input-field w-52 text-sm" name="month" defaultValue={month}>
+                            {monthOptions.map((option) => (
+                                <option key={option} value={option}>
+                                    {monthLabel(option)}
+                                </option>
+                            ))}
+                        </select>
+                        <button type="submit" className="btn-secondary text-sm">
+                            Aplicar
+                        </button>
+                    </form>
                 </div>
-                <form method="get" className="flex items-center gap-2">
-                    <select className="input-field text-sm w-52" name="month" defaultValue={month}>
-                        {monthOptions.map((option) => (
-                            <option key={option} value={option}>
-                                {monthLabel(option)}
-                            </option>
-                        ))}
-                    </select>
-                    <button type="submit" className="btn-secondary text-sm">
-                        Ver
-                    </button>
-                </form>
-            </div>
+            </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <article className="card p-4">
-                    <p className="text-sm text-muted">Meta de ingresos</p>
-                    <p className="text-xl font-semibold mt-1">{formatAmount(forecast.revenue_amount)}</p>
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">Revenue Amount</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.revenue_amount)}</p>
                 </article>
-                <article className="card p-4">
-                    <p className="text-sm text-muted">Crecimiento esperado</p>
-                    <p className="text-xl font-semibold mt-1">{formatPercent(forecast.revenue_growth_rate)}</p>
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">Revenue Growth</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatPercent(forecast.revenue_growth_rate)}</p>
                 </article>
-                <article className="card p-4">
-                    <p className="text-sm text-muted">COGS proyectado</p>
-                    <p className="text-xl font-semibold mt-1">{formatPercent(forecast.cogs_percent)}</p>
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">COGS %</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatPercent(forecast.cogs_percent)}</p>
                 </article>
-                <article className="card p-4">
-                    <p className="text-sm text-muted">Gasto fijo</p>
-                    <p className="text-xl font-semibold mt-1">{formatAmount(forecast.fixed_opex)}</p>
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">Fixed OPEX</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.fixed_opex)}</p>
                 </article>
-                <article className="card p-4">
-                    <p className="text-sm text-muted">Gasto variable</p>
-                    <p className="text-xl font-semibold mt-1">{formatPercent(forecast.variable_opex_percent)}</p>
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">Variable OPEX %</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatPercent(forecast.variable_opex_percent)}</p>
                 </article>
-                <article className="card p-4">
-                    <p className="text-sm text-muted">Partida extraordinaria</p>
-                    <p className="text-xl font-semibold mt-1">{formatAmount(forecast.one_off_amount)}</p>
+                <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
+                    <p className="text-sm text-surface-500">One-off Items</p>
+                    <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.one_off_amount)}</p>
                 </article>
-            </div>
+            </section>
 
-            <ForecastAssumptionsForm
-                month={month}
-                initialValues={{
-                    revenue_growth_rate: forecast.revenue_growth_rate,
-                    revenue_amount: forecast.revenue_amount,
-                    cogs_percent: forecast.cogs_percent,
-                    fixed_opex: forecast.fixed_opex,
-                    variable_opex_percent: forecast.variable_opex_percent,
-                    one_off_amount: forecast.one_off_amount,
-                    note: forecast.note,
-                }}
-            />
+            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                <h3 className="text-lg font-semibold text-[#10283b]">Editar supuestos del periodo</h3>
+                <p className="mt-1 text-sm text-surface-500">
+                    Información auditable para explicar cambios en margen operativo y proyecciones.
+                </p>
+                <div className="mt-4">
+                    <ForecastAssumptionsForm
+                        month={month}
+                        initialValues={{
+                            revenue_growth_rate: forecast.revenue_growth_rate,
+                            revenue_amount: forecast.revenue_amount,
+                            cogs_percent: forecast.cogs_percent,
+                            fixed_opex: forecast.fixed_opex,
+                            variable_opex_percent: forecast.variable_opex_percent,
+                            one_off_amount: forecast.one_off_amount,
+                            note: forecast.note,
+                        }}
+                    />
+                </div>
+            </section>
         </div>
     );
 }

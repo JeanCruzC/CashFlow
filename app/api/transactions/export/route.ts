@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 
@@ -22,7 +22,7 @@ interface ExportTransactionRow {
 
 export async function GET(request: NextRequest) {
     try {
-        const { supabase, orgId, user } = await requireOrgContext();
+        const { supabase, orgId, user } = await requireOrgActorContext();
         assertRateLimit({
             key: `export-transactions:${user.id}`,
             limit: 10,

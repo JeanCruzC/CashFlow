@@ -2,7 +2,7 @@
 
 import { budgetSchema, BudgetInput } from "@/lib/validations/schemas";
 import { getOrgContextOrNull } from "@/lib/server/context";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext } from "@/lib/server/context";
 import { revalidatePath } from "next/cache";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
@@ -79,8 +79,14 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
             .lt("date", end),
     ]);
 
-    if (budgetsResult.error) throw budgetsResult.error;
-    if (transactionsResult.error) throw transactionsResult.error;
+    if (budgetsResult.error) {
+        logError("Error fetching budgets in overview", budgetsResult.error, { orgId, month: targetMonth });
+        throw new Error("No se pudo cargar el presupuesto");
+    }
+    if (transactionsResult.error) {
+        logError("Error fetching transactions in budget overview", transactionsResult.error, { orgId, month: targetMonth });
+        throw new Error("No se pudo cargar el presupuesto");
+    }
 
     const budgets = (budgetsResult.data || []) as BudgetQueryRow[];
     const transactions = (transactionsResult.data || []) as TransactionQueryRow[];
@@ -128,7 +134,7 @@ export async function upsertBudget(input: BudgetInput) {
     const validation = budgetSchema.safeParse(input);
     if (!validation.success) return { error: validation.error.message };
 
-    const { supabase, orgId, user } = await requireOrgContext();
+    const { supabase, orgId, user } = await requireOrgActorContext();
     const payload = validation.data;
 
     try {

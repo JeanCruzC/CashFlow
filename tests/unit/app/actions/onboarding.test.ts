@@ -44,7 +44,7 @@ describe("app/actions/onboarding", () => {
         const result = await createProfileOrganization("personal");
 
         expect(result).toEqual({ success: true, orgId: "org-123" });
-        expect(createOrganizationMock).toHaveBeenCalledWith("personal");
+        expect(createOrganizationMock).toHaveBeenCalledWith("personal", undefined);
         expect(assertRateLimitMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 key: "onboarding-create-org:user-1",

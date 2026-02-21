@@ -22,8 +22,8 @@ test.describe("Auth + onboarding + transactions (optional)", () => {
         await page.waitForURL(/\/(dashboard|onboarding\/select-profile)/, { timeout: 45_000 });
 
         if (page.url().includes("/onboarding/select-profile")) {
-            await page.getByRole("button", { name: /Personal/i }).click();
-            await page.getByRole("button", { name: /Continuar con perfil personal/i }).click();
+            await page.getByRole("button", { name: /Perfil personal/i }).click();
+            await page.getByRole("button", { name: /Crear organización y continuar/i }).click();
             await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
         }
 

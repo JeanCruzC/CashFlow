@@ -2,6 +2,11 @@
 
 Este directorio centraliza la documentacion de arquitectura, decisiones tecnicas, operacion y colaboracion del proyecto.
 
+## Estado de fases
+
+- Fase 1-5 de estabilización y CI: **cerrada y finalizada** (21 de febrero de 2026).
+- Integración cloud de Supabase completada: `SUPABASE_COMPLETADO.md`.
+
 ## Mapa de documentos
 
 - `docs/architecture.md`: arquitectura de alto nivel, limites de capas y flujos clave.

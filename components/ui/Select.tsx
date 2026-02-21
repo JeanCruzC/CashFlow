@@ -1,6 +1,6 @@
 import { ComponentProps, forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDownIcon } from "@/components/ui/icons";
 
 interface SelectProps extends ComponentProps<"select"> {
     label?: string;
@@ -30,7 +30,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                         {children}
                     </select>
                     <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-surface-400">
-                        <ChevronDown size={14} />
+                        <ChevronDownIcon size={14} />
                     </div>
                 </div>
                 {error && (

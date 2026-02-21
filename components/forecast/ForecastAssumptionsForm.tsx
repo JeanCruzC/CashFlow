@@ -84,7 +84,7 @@ export function ForecastAssumptionsForm({ month, initialValues }: ForecastAssump
     }
 
     return (
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-surface-200 bg-surface-50/60 p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label className="label">Crecimiento de ingresos (%)</label>

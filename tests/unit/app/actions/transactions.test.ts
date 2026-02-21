@@ -6,6 +6,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/server/context", () => ({
     requireOrgContext: vi.fn(),
+    requireOrgActorContext: vi.fn(),
 }));
 
 vi.mock("@/lib/server/rate-limit", () => ({
@@ -17,7 +18,7 @@ vi.mock("@/lib/server/logger", () => ({
 }));
 
 import { revalidatePath } from "next/cache";
-import { requireOrgContext } from "@/lib/server/context";
+import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import {
     createTransaction,
@@ -86,11 +87,14 @@ function buildDeleteQuery(result: { error: { message: string } | null; count: nu
 describe("app/actions/transactions", () => {
     const revalidatePathMock = vi.mocked(revalidatePath);
     const requireOrgContextMock = vi.mocked(requireOrgContext);
+    const requireOrgActorContextMock = vi.mocked(requireOrgActorContext);
     const assertRateLimitMock = vi.mocked(assertRateLimit);
 
     beforeEach(() => {
         revalidatePathMock.mockReset();
         requireOrgContextMock.mockReset();
+        requireOrgActorContextMock.mockReset();
+        requireOrgActorContextMock.mockImplementation(() => requireOrgContextMock() as never);
         assertRateLimitMock.mockReset();
     });
 

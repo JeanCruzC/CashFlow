@@ -63,7 +63,7 @@ export function AccountCreateForm() {
     const showCreditFields = accountType === "credit_card" || accountType === "loan";
 
     return (
-        <form onSubmit={handleSubmit} className="card p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-surface-200 bg-surface-50/60 p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="label">Nombre de la cuenta</label>

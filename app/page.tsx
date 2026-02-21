@@ -1,4 +1,5 @@
 import Link from "next/link";
+import RegisterLink from "@/components/ui/RegisterLink";
 
 const FEATURES = [
   {
@@ -155,12 +156,9 @@ export default function HomePage() {
             <Link href="/login" className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-[#37566f] transition-colors hover:text-[#0d4c7a] sm:inline-flex">
               Ingresar
             </Link>
-            <Link
-              href="/register"
-              className="rounded-xl bg-[#0d4c7a] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#0b3f66]"
-            >
+            <RegisterLink className="rounded-xl bg-[#0d4c7a] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#0b3f66]">
               Crear cuenta
-            </Link>
+            </RegisterLink>
           </div>
         </div>
       </header>
@@ -182,12 +180,9 @@ export default function HomePage() {
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center rounded-2xl bg-[#0d4c7a] px-6 py-3.5 text-sm font-bold text-white transition-all hover:bg-[#0b3f66]"
-                >
+                <RegisterLink className="inline-flex items-center justify-center rounded-2xl bg-[#0d4c7a] px-6 py-3.5 text-sm font-bold text-white transition-all hover:bg-[#0b3f66]">
                   Empezar ahora
-                </Link>
+                </RegisterLink>
                 <a
                   href="#funciones"
                   className="inline-flex items-center justify-center rounded-2xl border border-[#cfe0ec] bg-white px-6 py-3.5 text-sm font-bold text-[#1e3e56] transition-all hover:border-[#9fc1d8]"
@@ -350,12 +345,9 @@ export default function HomePage() {
               Si ya tienes cuenta, entra y continúa. Si aún no, crea tu espacio y empieza a operar con una vista financiera coherente desde el primer día.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-bold text-[#0d4c7a] transition-colors hover:bg-[#ebf4fb]"
-              >
+              <RegisterLink className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-bold text-[#0d4c7a] transition-colors hover:bg-[#ebf4fb]">
                 Crear cuenta en CashFlow
-              </Link>
+              </RegisterLink>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/40 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
