@@ -1,0 +1,13 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D4C7A"/>
+      <stop offset="1" stop-color="#14847B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="96" y="84" width="1008" height="462" rx="34" fill="white" fill-opacity="0.12" stroke="white" stroke-opacity="0.32"/>
+  <text x="156" y="266" fill="white" font-family="Manrope, sans-serif" font-size="78" font-weight="800">CashFlow</text>
+  <text x="156" y="333" fill="#E5F3FB" font-family="Manrope, sans-serif" font-size="36">Plataforma financiera para control real</text>
+  <path d="M156 418C235 392 308 336 385 348C458 359 511 454 585 443C667 430 705 312 794 311C882 310 934 406 1012 383" stroke="white" stroke-width="10" stroke-linecap="round"/>
+</svg>

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import JsonLd from "@/components/seo/JsonLd";
 import RegisterLink from "@/components/ui/RegisterLink";
+import { buildFaqSchema, buildSoftwareApplicationSchema } from "@/lib/seo/schema";
 
 const FEATURES = [
   {
@@ -70,6 +72,29 @@ const IN_PROGRESS = [
   "Más automatizaciones para carga masiva y conciliación.",
 ];
 
+const FAQS = [
+  {
+    question: "¿CashFlow sirve para perfil personal y perfil empresa?",
+    answer:
+      "Sí. El onboarding crea un workspace por tipo: personal o empresa. Cada organización opera con sus propios módulos y datos aislados por RLS.",
+  },
+  {
+    question: "¿Qué KPIs calcula CashFlow en la práctica?",
+    answer:
+      "Personal: flujo de caja neto, tasa de ahorro, patrimonio neto y fondo de emergencia. Empresa: revenue, COGS, OPEX, EBIT, Operating Margin, Budget vs Actual y Forecast.",
+  },
+  {
+    question: "¿Puedo importar datos desde Excel o CSV?",
+    answer:
+      "Sí. La plataforma soporta importación con mapeo de columnas, normalización y deduplicación por huella de movimiento para evitar registros duplicados.",
+  },
+  {
+    question: "¿Cómo se protege la información financiera?",
+    answer:
+      "CashFlow usa autenticación con Supabase Auth y políticas Row Level Security para que cada usuario acceda solo a las organizaciones donde tiene membresía.",
+  },
+];
+
 function CashFlowLogo() {
   return (
     <div className="flex items-center gap-3">
@@ -132,8 +157,13 @@ function HeroPanel() {
 }
 
 export default function HomePage() {
+  const softwareApplicationSchema = buildSoftwareApplicationSchema();
+  const faqSchema = buildFaqSchema(FAQS);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f3f8fc] text-[#0f172a]">
+      <JsonLd id="software-application-schema" data={softwareApplicationSchema} />
+      <JsonLd id="faq-schema" data={faqSchema} />
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_10%,#d6ecfa_0%,transparent_35%),radial-gradient(circle_at_88%_22%,#d8f1ee_0%,transparent_34%),radial-gradient(circle_at_52%_100%,#e8f3fa_0%,transparent_45%)]" />
 
       <header className="sticky top-0 z-50 border-b border-[#dce8f1]/80 bg-[#f3f8fc]/85 backdrop-blur-xl">
@@ -150,6 +180,12 @@ export default function HomePage() {
             <a href="#seguridad" className="transition-colors hover:text-[#0d4c7a]">
               Seguridad
             </a>
+            <a href="#faq" className="transition-colors hover:text-[#0d4c7a]">
+              FAQs
+            </a>
+            <Link href="/blog" className="transition-colors hover:text-[#0d4c7a]">
+              Blog
+            </Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -338,6 +374,30 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="faq" className="px-5 py-16 md:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="mb-10 max-w-3xl animate-fade-in-up">
+              <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#3e6785]">Preguntas frecuentes</p>
+              <h2 className="mt-3 text-3xl font-black text-[#0f172a] md:text-4xl">
+                Conceptos clave antes de empezar a operar
+              </h2>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {FAQS.map((faq, index) => (
+                <article
+                  key={faq.question}
+                  className="animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_12px_28px_rgba(9,62,93,0.08)]"
+                  style={{ animationDelay: `${index * 90}ms` }}
+                >
+                  <h3 className="text-lg font-extrabold text-[#14324a]">{faq.question}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4b677f]">{faq.answer}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="px-5 pb-20 pt-10 md:px-8">
           <div className="mx-auto w-full max-w-7xl rounded-[34px] border border-[#cfe0ec] bg-[linear-gradient(120deg,#0d4c7a_0%,#0f5f8f_58%,#14847b_100%)] px-8 py-10 text-white shadow-[0_28px_54px_rgba(8,50,79,0.34)] md:px-12 md:py-14">
             <h2 className="max-w-3xl text-3xl font-black leading-tight md:text-5xl">CashFlow: diseño claro, lenguaje claro, decisiones claras.</h2>
@@ -348,6 +408,12 @@ export default function HomePage() {
               <RegisterLink className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-bold text-[#0d4c7a] transition-colors hover:bg-[#ebf4fb]">
                 Crear cuenta en CashFlow
               </RegisterLink>
+              <Link
+                href="/blog"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/40 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
+              >
+                Leer blog financiero
+              </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/40 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"

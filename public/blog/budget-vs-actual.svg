@@ -1,0 +1,20 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4FAFD"/>
+      <stop offset="1" stop-color="#E7F4F3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="84" y="70" width="1032" height="490" rx="32" fill="white" stroke="#D6E4EE"/>
+  <text x="140" y="170" fill="#133149" font-family="Manrope, sans-serif" font-size="54" font-weight="800">Budget vs Actual</text>
+  <text x="140" y="220" fill="#4E677C" font-family="Manrope, sans-serif" font-size="28">Control de desvíos financieros por mes y GL</text>
+  <rect x="140" y="280" width="920" height="220" rx="22" fill="#F6FBFE" stroke="#D6E4EE"/>
+  <rect x="184" y="330" width="220" height="120" rx="14" fill="#E5F1FA"/>
+  <rect x="447" y="302" width="220" height="148" rx="14" fill="#DDF0EC"/>
+  <rect x="710" y="348" width="220" height="102" rx="14" fill="#FDE8E8"/>
+  <text x="212" y="470" fill="#35566F" font-family="Manrope, sans-serif" font-size="22">Plan</text>
+  <text x="494" y="470" fill="#35566F" font-family="Manrope, sans-serif" font-size="22">Actual</text>
+  <text x="742" y="470" fill="#35566F" font-family="Manrope, sans-serif" font-size="22">Desvío</text>
+  <text x="140" y="525" fill="#35566F" font-family="Manrope, sans-serif" font-size="24">cashflow.app/blog</text>
+</svg>

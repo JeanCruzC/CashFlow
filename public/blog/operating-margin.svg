@@ -1,0 +1,21 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F8FC"/>
+      <stop offset="1" stop-color="#EAF3FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="84" y="70" width="1032" height="490" rx="32" fill="white" stroke="#D6E4EE"/>
+  <text x="140" y="170" fill="#133149" font-family="Manrope, sans-serif" font-size="54" font-weight="800">Operating Margin &amp; EBIT</text>
+  <text x="140" y="220" fill="#4E677C" font-family="Manrope, sans-serif" font-size="28">Métricas operativas para decisiones de dirección</text>
+  <rect x="140" y="292" width="920" height="200" rx="22" fill="#F6FBFE" stroke="#D6E4EE"/>
+  <path d="M206 433V360" stroke="#0D4C7A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M325 433V330" stroke="#0D4C7A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M444 433V307" stroke="#0D4C7A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M563 433V348" stroke="#0D4C7A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M682 433V297" stroke="#14847B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M801 433V276" stroke="#14847B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M920 433V262" stroke="#14847B" stroke-width="16" stroke-linecap="round"/>
+  <text x="140" y="525" fill="#35566F" font-family="Manrope, sans-serif" font-size="24">cashflow.app/blog</text>
+</svg>

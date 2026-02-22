@@ -1,0 +1,22 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F8FC"/>
+      <stop offset="1" stop-color="#E6F3FA"/>
+    </linearGradient>
+    <linearGradient id="chart" x1="130" y1="442" x2="1045" y2="193" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D4C7A"/>
+      <stop offset="1" stop-color="#14847B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="84" y="70" width="1032" height="490" rx="32" fill="white" stroke="#D6E4EE"/>
+  <text x="140" y="170" fill="#133149" font-family="Manrope, sans-serif" font-size="54" font-weight="800">Flujo de caja mensual</text>
+  <text x="140" y="220" fill="#4E677C" font-family="Manrope, sans-serif" font-size="28">Ingresos, gastos y tendencia real de liquidez</text>
+  <path d="M140 446C209 426 264 345 332 333C400 321 447 395 518 381C588 367 652 284 719 274C787 265 843 312 912 296C980 280 1021 227 1060 206" stroke="url(#chart)" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="332" cy="333" r="15" fill="#0D4C7A"/>
+  <circle cx="518" cy="381" r="15" fill="#0D4C7A"/>
+  <circle cx="719" cy="274" r="15" fill="#0D4C7A"/>
+  <circle cx="912" cy="296" r="15" fill="#14847B"/>
+  <text x="140" y="525" fill="#35566F" font-family="Manrope, sans-serif" font-size="24">cashflow.app/blog</text>
+</svg>
