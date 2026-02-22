@@ -1,0 +1,294 @@
+[
+    {
+        "slug": "restaurantes",
+        "nombre": "Restaurantes",
+        "emoji": "🍽️",
+        "descripcion": "Control financiero especializado para restaurantes, cafeterías y servicios de alimentación.",
+        "keywords": [
+            "restaurante",
+            "cafetería",
+            "food cost",
+            "inventario alimentos"
+        ],
+        "problemas": [
+            "Food cost fuera de control sin registro diario de compras e insumos.",
+            "Impredecibilidad de ventas por temporadas altas y bajas.",
+            "Dificultad para separar gastos operativos de gastos personales.",
+            "Falta de visibilidad sobre márgenes reales por plato o servicio."
+        ],
+        "soluciones": [
+            "Registra cada transacción con categorías personalizadas: insumos, nómina, alquiler, servicios.",
+            "Dashboard de KPIs financieros que muestra ingresos vs gastos en tiempo real.",
+            "Presupuesto mensual con alertas cuando te acercas al límite.",
+            "Separación clara por organización: tu negocio y tus finanzas personales."
+        ]
+    },
+    {
+        "slug": "freelancers",
+        "nombre": "Freelancers",
+        "emoji": "💻",
+        "descripcion": "Gestión de flujo de caja para freelancers, consultores independientes y trabajadores remotos.",
+        "keywords": [
+            "freelancer",
+            "trabajador independiente",
+            "consultor",
+            "nómada digital"
+        ],
+        "problemas": [
+            "Ingresos irregulares que dificultan planificar gastos fijos.",
+            "Mezcla de gastos personales y profesionales en una sola cuenta.",
+            "No saber cuánto pagar de impuestos a fin de año.",
+            "Pérdida de control al manejar múltiples clientes y monedas."
+        ],
+        "soluciones": [
+            "Categorización automática de gastos profesionales vs personales.",
+            "Múltiples cuentas dentro de la misma organización para separar clientes.",
+            "Forecast de flujo de caja basado en historial de ingresos.",
+            "Panel visual con ingresos acumulados y gastos promedio por mes."
+        ]
+    },
+    {
+        "slug": "tiendas-retail",
+        "nombre": "Tiendas y Retail",
+        "emoji": "🛍️",
+        "descripcion": "Herramientas financieras para tiendas minoristas, bodegas y comercios.",
+        "keywords": [
+            "tienda",
+            "retail",
+            "bodega",
+            "comercio minorista"
+        ],
+        "problemas": [
+            "Desconocimiento del margen real de ganancia por producto.",
+            "Gastos en mercadería sin trazabilidad ni presupuesto.",
+            "Múltiples puntos de venta sin consolidación financiera.",
+            "Difícil determinar cuánto se puede reinvertir en inventario."
+        ],
+        "soluciones": [
+            "Registra ingresos y egresos diarios para ver tu margen en tiempo real.",
+            "Presupuesto por categoría: mercadería, alquiler, personal, servicios.",
+            "Organización multi-cuenta para cada sucursal o punto de venta.",
+            "KPIs calculados automáticamente: margen operativo, ratio gastos/ingresos."
+        ]
+    },
+    {
+        "slug": "agencias-marketing",
+        "nombre": "Agencias de Marketing",
+        "emoji": "📢",
+        "descripcion": "Control financiero para agencias de marketing digital, diseño y publicidad.",
+        "keywords": [
+            "agencia marketing",
+            "agencia digital",
+            "publicidad",
+            "diseño"
+        ],
+        "problemas": [
+            "Proyectos con presupuestos diferentes y difíciles de rastrear.",
+            "Gastos en herramientas SaaS que se acumulan sin control.",
+            "Dificultad para calcular la rentabilidad real de cada cliente.",
+            "Flujo de caja impredecible por pagos a 30 o 60 días."
+        ],
+        "soluciones": [
+            "Cuentas separadas por cliente o proyecto dentro de la misma organización.",
+            "Categorías personalizadas para herramientas, nómina, publicidad pagada.",
+            "Dashboard financiero con comparación presupuesto vs real.",
+            "Historial de transacciones con búsqueda y filtros avanzados."
+        ]
+    },
+    {
+        "slug": "consultorios-medicos",
+        "nombre": "Consultorios Médicos",
+        "emoji": "🏥",
+        "descripcion": "Gestión financiera para consultorios, clínicas y profesionales de salud.",
+        "keywords": [
+            "consultorio",
+            "clínica",
+            "médico",
+            "dentista",
+            "salud"
+        ],
+        "problemas": [
+            "Ingresos por consulta difíciles de comparar con gastos operativos.",
+            "Gastos en equipamiento médico sin plan de amortización.",
+            "Gestión de pagos de pacientes, seguros y copagos.",
+            "No tener visibilidad sobre la rentabilidad mensual del consultorio."
+        ],
+        "soluciones": [
+            "Registro detallado de ingresos por tipo de servicio.",
+            "Presupuesto mensual separando gastos fijos y variables.",
+            "Panel con KPIs: ingreso promedio por consulta, costo operativo diario.",
+            "Exportación de datos para conciliación con la contabilidad formal."
+        ]
+    },
+    {
+        "slug": "startups",
+        "nombre": "Startups",
+        "emoji": "🚀",
+        "descripcion": "Control financiero ágil para startups, emprendimientos tecnológicos y empresas en crecimiento.",
+        "keywords": [
+            "startup",
+            "emprendimiento",
+            "tech",
+            "seed",
+            "venture"
+        ],
+        "problemas": [
+            "Burn rate descontrolado sin herramientas de proyección.",
+            "Falta de visibilidad sobre el runway (meses de vida financiera).",
+            "Gastos operativos que escalan más rápido que los ingresos.",
+            "Inversión inicial difícil de rastrear frente a gastos corrientes."
+        ],
+        "soluciones": [
+            "Dashboard en tiempo real con ingresos, gastos y saldo neto.",
+            "Presupuesto mensual con alertas tempranas de desviación.",
+            "Categorías para inversión vs operación vs nómina.",
+            "Historial completo con búsqueda para auditoría y reportes a inversores."
+        ]
+    },
+    {
+        "slug": "contadores",
+        "nombre": "Contadores",
+        "emoji": "📊",
+        "descripcion": "Herramientas complementarias para contadores que gestionan múltiples clientes.",
+        "keywords": [
+            "contador",
+            "contabilidad",
+            "auditoría",
+            "firma contable"
+        ],
+        "problemas": [
+            "Gestión simultánea de las finanzas de múltiples clientes.",
+            "Clientes que no envían su información financiera a tiempo.",
+            "Falta de herramientas rápidas para validar datos antes de la declaración.",
+            "Necesidad de separar finanzas personales del estudio contable."
+        ],
+        "soluciones": [
+            "Organizaciones separadas para cada cliente dentro de CashFlow.",
+            "Vista rápida de KPIs financieros sin necesidad de abrir un ERP.",
+            "Transacciones con búsqueda avanzada, paginación y filtros.",
+            "Ideal como herramienta complementaria para controlar el flujo diario."
+        ]
+    },
+    {
+        "slug": "abogados",
+        "nombre": "Estudios de Abogados",
+        "emoji": "⚖️",
+        "descripcion": "Control financiero para bufetes de abogados y profesionales legales independientes.",
+        "keywords": [
+            "abogado",
+            "bufete",
+            "estudio jurídico",
+            "legal"
+        ],
+        "problemas": [
+            "Honorarios cobrados en diferentes fechas dificultan la proyección.",
+            "Gastos en licencias, capacitaciones y congresos sin presupuesto.",
+            "Dificultad para separar los ingresos por tipo de caso.",
+            "Flujo de caja irregular por casos largos con pagos diferidos."
+        ],
+        "soluciones": [
+            "Categorías por tipo de servicio: litigio, asesoría, contratos.",
+            "Registro cronológico de todos los movimientos del estudio.",
+            "Presupuesto mensual para gastos operativos y administrativos.",
+            "KPIs de ingresos promedio por mes para projecciones de crecimiento."
+        ]
+    },
+    {
+        "slug": "construccion",
+        "nombre": "Construcción",
+        "emoji": "🏗️",
+        "descripcion": "Gestión financiera para constructoras, contratistas y proyectos de obra.",
+        "keywords": [
+            "construcción",
+            "contratista",
+            "obra civil",
+            "arquitectura"
+        ],
+        "problemas": [
+            "Proyectos con presupuestos largos y gastos impredecibles.",
+            "Materiales, mano de obra y subcontratistas sin consolidación.",
+            "Adelantos de clientes que generan pasivos no controlados.",
+            "Dificultad para saber el margen real de cada obra."
+        ],
+        "soluciones": [
+            "Múltiples cuentas por proyecto u obra para rastrear cada flujo.",
+            "Categorías específicas: materiales, mano de obra, permisos, transporte.",
+            "Presupuesto vs real por categoría con alertas de desviación.",
+            "Dashboard consolidado con todas las obras activas."
+        ]
+    },
+    {
+        "slug": "ecommerce",
+        "nombre": "E-commerce",
+        "emoji": "🛒",
+        "descripcion": "Control financiero para tiendas online, dropshipping y marketplaces.",
+        "keywords": [
+            "ecommerce",
+            "tienda online",
+            "dropshipping",
+            "marketplace"
+        ],
+        "problemas": [
+            "Comisiones de marketplaces que reducen márgenes sin visibilidad.",
+            "Gastos en publicidad (ROAS) difíciles de correlacionar con ventas.",
+            "Reembolsos y devoluciones que distorsionan los reportes mensuales.",
+            "Múltiples canales de venta sin consolidar ingresos."
+        ],
+        "soluciones": [
+            "Ingresa transacciones de cada marketplace como cuentas separadas.",
+            "Categoría específica para comisiones, envíos, publicidad y devoluciones.",
+            "Panel con margen neto real descontando todos los costos operativos.",
+            "Historial de transacciones con filtros para análisis rápido."
+        ]
+    },
+    {
+        "slug": "educacion",
+        "nombre": "Educación",
+        "emoji": "🎓",
+        "descripcion": "Gestión financiera para colegios, academias, tutores y centros de formación.",
+        "keywords": [
+            "educación",
+            "colegio",
+            "academia",
+            "tutor",
+            "centro de formación"
+        ],
+        "problemas": [
+            "Matrículas y pensiones con morosidad difícil de rastrear.",
+            "Gastos en infraestructura, materiales y personal docente.",
+            "Ingresos estacionales (semestres) vs gastos fijos anuales.",
+            "Falta de visibilidad del flujo de caja mensual real."
+        ],
+        "soluciones": [
+            "Registro de ingresos por concepto: matrícula, pensión, talleres.",
+            "Presupuesto mensual adaptado a ciclos académicos.",
+            "Múltiples cuentas para cada sede o programa educativo.",
+            "Dashboard con KPIs: tasa de cobro, gasto por alumno."
+        ]
+    },
+    {
+        "slug": "gimnasios",
+        "nombre": "Gimnasios y Fitness",
+        "emoji": "🏋️",
+        "descripcion": "Control financiero para gimnasios, estudios de yoga, CrossFit y centros deportivos.",
+        "keywords": [
+            "gimnasio",
+            "fitness",
+            "crossfit",
+            "yoga",
+            "centro deportivo"
+        ],
+        "problemas": [
+            "Membresías mensuales vs drop-ins sin consolidar ingresos.",
+            "Gastos en equipamiento, alquiler y mantenimiento elevados.",
+            "Alta estacionalidad (enero-marzo vs meses de verano).",
+            "Difícil calcular el ingreso neto por miembro."
+        ],
+        "soluciones": [
+            "Categorías de ingreso: membresías, pases, productos, eventos.",
+            "Presupuesto con alertas para gastos de mantenimiento y reposición.",
+            "Comparación mes a mes de ingresos vs el año anterior.",
+            "Panel simple para tomar decisiones de inversión rápidas."
+        ]
+    }
+]

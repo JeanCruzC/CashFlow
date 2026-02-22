@@ -4,6 +4,7 @@ import { getOrgContextOrNull } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { calculateBusinessKPIs, calculatePersonalKPIs } from "@/lib/utils/kpi";
 import { Account, Budget, CategoryGL, Transaction } from "@/lib/types/finance";
+import { computeBusinessForecast } from "@/lib/server/forecast-engine";
 
 export interface PersonalDashboardKPIs {
     netCashFlow: number;
@@ -214,15 +215,21 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             .filter((account) => account.is_restricted_cash)
             .reduce((sum, account) => sum + Number(account.opening_balance || 0), 0);
 
-        const revenueBase = forecastResult.data?.revenue_amount != null
-            ? toNumber(forecastResult.data.revenue_amount)
-            : business.revenue * (1 + toNumber(forecastResult.data?.revenue_growth_rate) / 100);
-        const cogsForecast = revenueBase * (toNumber(forecastResult.data?.cogs_percent) / 100);
-        const opexForecast =
-            toNumber(forecastResult.data?.fixed_opex) +
-            revenueBase * (toNumber(forecastResult.data?.variable_opex_percent) / 100) +
-            toNumber(forecastResult.data?.one_off_amount);
-        const forecastEbit = revenueBase - cogsForecast - opexForecast;
+        const businessForecast = computeBusinessForecast({
+            targetMonth: month,
+            horizonMonths: 3,
+            categories,
+            transactions,
+            assumptions: {
+                revenue_growth_rate: forecastResult.data?.revenue_growth_rate ?? null,
+                revenue_amount: forecastResult.data?.revenue_amount ?? null,
+                cogs_percent: forecastResult.data?.cogs_percent ?? null,
+                fixed_opex: forecastResult.data?.fixed_opex ?? null,
+                variable_opex_percent: forecastResult.data?.variable_opex_percent ?? null,
+                one_off_amount: forecastResult.data?.one_off_amount ?? null,
+            },
+        });
+        const firstProjection = businessForecast.projections[0];
 
         return {
             orgType,
@@ -235,8 +242,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
                 operatingIncome: business.operatingIncome,
                 operatingMarginPct: business.operatingMargin * 100,
                 budgetVariance,
-                forecastRevenue: revenueBase,
-                forecastEbit,
+                forecastRevenue: firstProjection?.revenue ?? 0,
+                forecastEbit: firstProjection?.ebit ?? 0,
                 restrictedCash,
             },
         };

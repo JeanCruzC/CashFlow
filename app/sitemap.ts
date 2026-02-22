@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog/posts";
 import { absoluteUrl } from "@/lib/seo/site";
+import industries from "@/data/seo/industries.json";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
@@ -16,6 +17,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl("/blog"),
       lastModified: new Date(),
       changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: absoluteUrl("/herramientas"),
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: absoluteUrl("/plantillas"),
+      lastModified: new Date(),
+      changeFrequency: "monthly",
       priority: 0.9,
     },
     {
@@ -39,5 +52,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticRoutes, ...blogRoutes];
+  const herramientasRoutes: MetadataRoute.Sitemap = [
+    "calculadora-liquidacion",
+    "calculadora-gratificacion",
+    "calculadora-salario-neto-peru",
+  ].map((slug) => ({
+    url: absoluteUrl(`/herramientas/${slug}`),
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
+  }));
+
+  const plantillasRoutes: MetadataRoute.Sitemap = industries.map((ind) => ({
+    url: absoluteUrl(`/plantillas/${ind.slug}`),
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticRoutes, ...blogRoutes, ...herramientasRoutes, ...plantillasRoutes];
 }
