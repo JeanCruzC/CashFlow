@@ -174,11 +174,11 @@ export default function HomePage() {
             <a href="#funciones" className="transition-colors hover:text-[#0d4c7a]">
               Funciones
             </a>
-            <a href="#flujo" className="transition-colors hover:text-[#0d4c7a]">
-              Flujo
+            <a href="#herramientas" className="transition-colors hover:text-[#0d4c7a]">
+              Herramientas
             </a>
-            <a href="#seguridad" className="transition-colors hover:text-[#0d4c7a]">
-              Seguridad
+            <a href="#industrias" className="transition-colors hover:text-[#0d4c7a]">
+              Industrias
             </a>
             <a href="#faq" className="transition-colors hover:text-[#0d4c7a]">
               FAQs
@@ -371,6 +371,91 @@ export default function HomePage() {
                 <li>Sesión de trabajo integrada en toda la aplicación.</li>
               </ul>
             </article>
+          </div>
+        </section>
+
+        <section id="herramientas" className="px-5 py-16 md:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="mb-10 max-w-3xl animate-fade-in-up">
+              <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#3e6785]">Herramientas gratuitas</p>
+              <h2 className="mt-3 text-3xl font-black text-[#0f172a] md:text-4xl">Calculadoras laborales para Latinoamérica</h2>
+              <p className="mt-4 text-sm leading-relaxed text-[#4b667c]">Herramientas públicas, sin registro, diseñadas para profesionales y emprendedores en Perú, Colombia y Chile.</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <Link href="/herramientas/calculadora-liquidacion" className="group animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_10px_30px_rgba(13,60,95,0.08)] transition-all hover:shadow-[0_16px_40px_rgba(13,60,95,0.14)] hover:-translate-y-0.5">
+                <svg viewBox="0 0 180 18" className="mb-4 h-4 w-32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M2 9H132" stroke="#0D4C7A" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="146" cy="9" r="6" stroke="#0D4C7A" strokeWidth="3" />
+                  <circle cx="168" cy="9" r="6" stroke="#14847B" strokeWidth="3" />
+                </svg>
+                <h3 className="text-lg font-extrabold text-[#14324a] group-hover:text-[#0d4c7a] transition-colors">Calculadora de Liquidación</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#4b677f]">Calcula tu liquidación al salir de una empresa. CTS, gratificación trunca, vacaciones, cesantías e indemnización.</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#4a6275]">Perú · Colombia · Chile</p>
+              </Link>
+
+              <Link href="/herramientas/calculadora-gratificacion" className="group animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_10px_30px_rgba(13,60,95,0.08)] transition-all hover:shadow-[0_16px_40px_rgba(13,60,95,0.14)] hover:-translate-y-0.5" style={{ animationDelay: '80ms' }}>
+                <svg viewBox="0 0 180 18" className="mb-4 h-4 w-32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M2 9H132" stroke="#14847B" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="146" cy="9" r="6" stroke="#14847B" strokeWidth="3" />
+                  <circle cx="168" cy="9" r="6" stroke="#0D4C7A" strokeWidth="3" />
+                </svg>
+                <h3 className="text-lg font-extrabold text-[#14324a] group-hover:text-[#0d4c7a] transition-colors">Gratificación y Prima</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#4b677f]">Calcula tu gratificación, prima de servicios o aguinaldo según la legislación vigente de tu país.</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#4a6275]">Perú · Colombia · Chile</p>
+              </Link>
+
+              <Link href="/herramientas/calculadora-salario-neto-peru" className="group animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_10px_30px_rgba(13,60,95,0.08)] transition-all hover:shadow-[0_16px_40px_rgba(13,60,95,0.14)] hover:-translate-y-0.5" style={{ animationDelay: '160ms' }}>
+                <svg viewBox="0 0 180 18" className="mb-4 h-4 w-32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M2 9H132" stroke="#0D4C7A" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="146" cy="9" r="6" stroke="#14847B" strokeWidth="3" />
+                  <circle cx="168" cy="9" r="6" stroke="#14847B" strokeWidth="3" />
+                </svg>
+                <h3 className="text-lg font-extrabold text-[#14324a] group-hover:text-[#0d4c7a] transition-colors">Salario Neto Perú 2025</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#4b677f]">Calcula tu sueldo neto con descuentos de ONP o AFP, EsSalud, Seguro Vida Ley e IR de 5ta categoría.</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#4a6275]">Solo Perú</p>
+              </Link>
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link href="/herramientas" className="inline-flex items-center justify-center rounded-2xl border border-[#cfe0ec] bg-white px-6 py-3 text-sm font-bold text-[#1e3e56] transition-all hover:border-[#9fc1d8]">
+                Ver todas las herramientas
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section id="industrias" className="px-5 py-16 md:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="mb-10 max-w-3xl animate-fade-in-up">
+              <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#3e6785]">SEO programático</p>
+              <h2 className="mt-3 text-3xl font-black text-[#0f172a] md:text-4xl">CashFlow para tu industria</h2>
+              <p className="mt-4 text-sm leading-relaxed text-[#4b667c]">Cada negocio tiene desafíos financieros distintos. Encuentra la solución diseñada para tu sector.</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                { slug: "restaurantes", name: "Restaurantes", desc: "Control de food cost, insumos y márgenes por servicio." },
+                { slug: "freelancers", name: "Freelancers", desc: "Gestión de ingresos irregulares y gastos profesionales." },
+                { slug: "startups", name: "Startups", desc: "Visibilidad de burn rate, runway y reinversión." },
+                { slug: "ecommerce", name: "E-commerce", desc: "Comisiones, publicidad y márgenes reales por canal." },
+              ].map((ind, i) => (
+                <Link key={ind.slug} href={`/plantillas/${ind.slug}`} className="group animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_10px_30px_rgba(13,60,95,0.08)] transition-all hover:shadow-[0_16px_40px_rgba(13,60,95,0.14)] hover:-translate-y-0.5" style={{ animationDelay: `${i * 80}ms` }}>
+                  <svg viewBox="0 0 180 18" className="mb-4 h-4 w-28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M2 9H100" stroke={i % 2 === 0 ? "#0D4C7A" : "#14847B"} strokeWidth="3" strokeLinecap="round" />
+                    <circle cx="116" cy="9" r="6" stroke={i % 2 === 0 ? "#14847B" : "#0D4C7A"} strokeWidth="3" />
+                  </svg>
+                  <h3 className="text-base font-extrabold text-[#14324a] group-hover:text-[#0d4c7a] transition-colors">{ind.name}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#4b677f]">{ind.desc}</p>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link href="/plantillas" className="inline-flex items-center justify-center rounded-2xl border border-[#cfe0ec] bg-white px-6 py-3 text-sm font-bold text-[#1e3e56] transition-all hover:border-[#9fc1d8]">
+                Ver las 12 industrias
+              </Link>
+            </div>
           </div>
         </section>
 

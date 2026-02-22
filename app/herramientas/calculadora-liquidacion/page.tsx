@@ -71,12 +71,15 @@ export default function CalculadoraLiquidacion() {
             />
 
             <div className="mx-auto max-w-2xl">
-                <h1 className="text-2xl font-black text-[var(--foreground)] md:text-3xl">
-                    📋 Calculadora de Liquidación Laboral
-                </h1>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                    Calcula tu liquidación al salir de una empresa en Perú, Colombia o Chile.
-                </p>
+                <div className="animate-fade-in-up">
+                    <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#3e6785]">Herramienta gratuita</p>
+                    <h1 className="mt-3 text-2xl font-black text-[#0f172a] md:text-3xl">
+                        Calculadora de Liquidación Laboral
+                    </h1>
+                    <p className="mt-3 text-sm leading-relaxed text-[#4b667c]">
+                        Calcula tu liquidación al salir de una empresa en Perú, Colombia o Chile.
+                    </p>
+                </div>
 
                 {/* ── Selector país ── */}
                 <div className="mt-6 flex gap-2">
@@ -84,20 +87,20 @@ export default function CalculadoraLiquidacion() {
                         <button
                             key={c}
                             onClick={() => { setCountry(c); setResult(null); }}
-                            className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-bold transition-all ${country === c
-                                ? "border-[var(--brand-primary)] bg-[var(--brand-primary)] text-white"
-                                : "border-[var(--border)] bg-white text-[var(--foreground)] hover:bg-[var(--surface-tint)]"
+                            className={`flex-1 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all ${country === c
+                                    ? "border-[#0d4c7a] bg-[#0d4c7a] text-white shadow-[0_6px_16px_rgba(13,76,122,0.2)]"
+                                    : "border-[#d7e5ef] bg-white text-[#14324a] hover:border-[#9fc1d8]"
                                 }`}
                         >
-                            {c === "peru" ? "🇵🇪 Perú" : c === "colombia" ? "🇨🇴 Colombia" : "🇨🇱 Chile"}
+                            {c === "peru" ? "Perú" : c === "colombia" ? "Colombia" : "Chile"}
                         </button>
                     ))}
                 </div>
 
                 {/* ── Formulario ── */}
-                <div className="mt-6 space-y-4 rounded-2xl border border-[var(--border)] bg-white p-6">
+                <div className="mt-6 space-y-4 rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_10px_30px_rgba(13,60,95,0.08)]">
                     <div>
-                        <label className="label">
+                        <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#355e7c]">
                             {country === "chile" ? "Remuneración imponible" : "Sueldo mensual"} ({currencySymbol})
                         </label>
                         <input
@@ -105,40 +108,39 @@ export default function CalculadoraLiquidacion() {
                             value={sueldo}
                             onChange={(e) => setSueldo(e.target.value)}
                             placeholder={country === "peru" ? "1800" : country === "colombia" ? "2000000" : "800000"}
-                            className="input-field"
+                            className="mt-1.5 w-full rounded-xl border border-[#d7e5ef] bg-[#f8fbfd] px-4 py-2.5 text-sm text-[#14324a] placeholder:text-[#8da4b8] focus:border-[#0d4c7a] focus:outline-none focus:ring-2 focus:ring-[#0d4c7a]/20"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="label">Fecha de inicio</label>
-                            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="input-field" />
+                            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#355e7c]">Fecha de inicio</label>
+                            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="mt-1.5 w-full rounded-xl border border-[#d7e5ef] bg-[#f8fbfd] px-4 py-2.5 text-sm text-[#14324a] focus:border-[#0d4c7a] focus:outline-none focus:ring-2 focus:ring-[#0d4c7a]/20" />
                         </div>
                         <div>
-                            <label className="label">Fecha de cese</label>
-                            <input type="date" value={fechaCese} onChange={(e) => setFechaCese(e.target.value)} className="input-field" />
+                            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#355e7c]">Fecha de cese</label>
+                            <input type="date" value={fechaCese} onChange={(e) => setFechaCese(e.target.value)} className="mt-1.5 w-full rounded-xl border border-[#d7e5ef] bg-[#f8fbfd] px-4 py-2.5 text-sm text-[#14324a] focus:border-[#0d4c7a] focus:outline-none focus:ring-2 focus:ring-[#0d4c7a]/20" />
                         </div>
                     </div>
 
-                    {/* Campos condicionales */}
                     {country === "peru" && (
-                        <label className="flex items-center gap-2 text-sm">
-                            <input type="checkbox" checked={asigFamiliar} onChange={(e) => setAsigFamiliar(e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2.5 text-sm font-medium text-[#1f3a52]">
+                            <input type="checkbox" checked={asigFamiliar} onChange={(e) => setAsigFamiliar(e.target.checked)} className="h-4 w-4 rounded border-[#d7e5ef] text-[#0d4c7a] focus:ring-[#0d4c7a]" />
                             Tengo asignación familiar (S/ 113)
                         </label>
                     )}
 
                     {country === "colombia" && (
-                        <label className="flex items-center gap-2 text-sm">
-                            <input type="checkbox" checked={auxTransporte} onChange={(e) => setAuxTransporte(e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2.5 text-sm font-medium text-[#1f3a52]">
+                            <input type="checkbox" checked={auxTransporte} onChange={(e) => setAuxTransporte(e.target.checked)} className="h-4 w-4 rounded border-[#d7e5ef] text-[#0d4c7a] focus:ring-[#0d4c7a]" />
                             Gano ≤ 2 SMLMV (tengo auxilio de transporte)
                         </label>
                     )}
 
                     {country === "chile" && (
                         <div>
-                            <label className="label">Causal de término</label>
-                            <select value={causalChile} onChange={(e) => setCausalChile(e.target.value as CausalChile)} className="input-field">
+                            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#355e7c]">Causal de término</label>
+                            <select value={causalChile} onChange={(e) => setCausalChile(e.target.value as CausalChile)} className="mt-1.5 w-full rounded-xl border border-[#d7e5ef] bg-[#f8fbfd] px-4 py-2.5 text-sm text-[#14324a] focus:border-[#0d4c7a] focus:outline-none focus:ring-2 focus:ring-[#0d4c7a]/20">
                                 <option value="necesidades_empresa">Necesidades de la empresa (despido)</option>
                                 <option value="renuncia_voluntaria">Renuncia voluntaria</option>
                                 <option value="mutuo_acuerdo">Mutuo acuerdo</option>
@@ -146,34 +148,34 @@ export default function CalculadoraLiquidacion() {
                         </div>
                     )}
 
-                    {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+                    {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
 
-                    <button onClick={handleCalcular} className="btn-primary w-full">
+                    <button onClick={handleCalcular} className="w-full rounded-2xl bg-[#0d4c7a] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#0b3f66] shadow-[0_6px_16px_rgba(13,76,122,0.2)]">
                         Calcular liquidación
                     </button>
                 </div>
 
                 {/* ── Resultado ── */}
                 {result && (
-                    <div className="mt-6 rounded-2xl border border-[var(--brand-accent)]/30 bg-[#f0faf9] p-6 animate-fade-in-up">
-                        <h2 className="text-lg font-bold text-[var(--foreground)]">Resultado de tu liquidación</h2>
-                        <div className="mt-4 space-y-2">
+                    <div className="mt-6 animate-fade-in-up rounded-3xl border border-[#d7e5ef] bg-white p-6 shadow-[0_18px_34px_rgba(10,63,93,0.08)]">
+                        <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#3e6785]">Resultado</p>
+                        <div className="mt-4 space-y-2.5">
                             {Object.entries(result.desglose as Record<string, number>).map(([key, val]) => (
                                 <div key={key} className="flex items-center justify-between text-sm">
-                                    <span className="text-[var(--muted)]">{key}</span>
-                                    <span className="font-semibold">
+                                    <span className="text-[#4b677f]">{key}</span>
+                                    <span className="font-semibold text-[#14324a]">
                                         {currencySymbol} {(val as number).toLocaleString("es", { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-4 flex items-center justify-between border-t pt-4">
-                            <span className="font-bold text-[var(--foreground)]">Total liquidación</span>
-                            <span className="text-xl font-black text-[var(--brand-primary)]">
+                        <div className="mt-4 flex items-center justify-between border-t border-[#e5edf4] pt-4">
+                            <span className="font-extrabold text-[#14324a]">Total liquidación</span>
+                            <span className="text-xl font-black text-[#0d4c7a]">
                                 {currencySymbol} {(result.total as number).toLocaleString("es", { minimumFractionDigits: 2 })}
                             </span>
                         </div>
-                        <p className="mt-3 text-xs text-[var(--muted)]">
+                        <p className="mt-3 text-xs text-[#6b8299]">
                             * Este cálculo es referencial. Consulta con un profesional o con el Ministerio de Trabajo de tu país.
                         </p>
                     </div>
