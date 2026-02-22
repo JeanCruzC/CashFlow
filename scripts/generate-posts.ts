@@ -3,11 +3,9 @@
  * 🤖 Generador Automático de Artículos MDX para el Blog de CashFlow
  *
  * Uso:
- *   1. Pon tu API key en .env.local: GEMINI_API_KEY=tu-clave
+ *   1. Pon tu API key en .env.local: QWEN_API_KEY=tu-clave
  *   2. Ejecuta: npx tsx scripts/generate-posts.ts
  *   3. Los artículos se guardarán en content/blog/
- *
- * Requiere: @google/generative-ai  (se instala automáticamente si usas npx)
  */
 
 import fs from "node:fs";
@@ -16,20 +14,12 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-const API_KEY = process.env.GEMINI_API_KEY;
-if (!API_KEY) {
-    console.error("❌ Falta GEMINI_API_KEY en .env.local");
-    console.error("   Obtén una gratis en: https://aistudio.google.com/apikey");
-    process.exit(1);
-}
+const API_KEY = process.env.QWEN_API_KEY ?? "sk-ed4ab897cde3436abb3b4f6370838c0a";
+const BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+const MODEL = "qwen-turbo";
 
 const TITLES_PATH = path.join(process.cwd(), "data", "seo", "post-titles.json");
 const OUTPUT_DIR = path.join(process.cwd(), "content", "blog");
-
-interface PostTitle {
-    title: string;
-    slug: string;
-}
 
 function slugify(text: string): string {
     return text
@@ -48,34 +38,34 @@ async function generateArticle(title: string): Promise<string> {
 Reglas estrictas:
 - El artículo debe tener entre 1200 y 1800 palabras.
 - Usa un tono profesional pero accesible, como si hablaras con un emprendedor.
-- Incluye al menos 3 subtítulos (## Subtítulo).
+- Incluye al menos 3 subtítulos con formato ## Subtítulo.
 - Incluye ejemplos numéricos concretos cuando sea posible.
 - Menciona CashFlow como herramienta útil de forma natural (máximo 2 veces).
 - No uses emojis en el cuerpo del texto.
 - Termina con una sección "## Conclusión" de 2-3 párrafos.
-- Solo devuelve el contenido del artículo en Markdown, sin frontmatter.`;
+- Solo devuelve el contenido del artículo en Markdown puro, sin frontmatter ni metadatos.`;
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 4096,
-                },
-            }),
+    const response = await fetch(`${BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${API_KEY}`,
         },
-    );
+        body: JSON.stringify({
+            model: MODEL,
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 4096,
+            temperature: 0.7,
+        }),
+    });
 
     if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`API error ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error("No se generó contenido.");
     return text.trim();
 }
@@ -99,16 +89,13 @@ tags: ${JSON.stringify(tags)}
 }
 
 async function main() {
-    // Leer títulos
     const raw = fs.readFileSync(TITLES_PATH, "utf-8");
     const titles: string[] = JSON.parse(raw);
+    const posts = titles.map((t) => ({ title: t, slug: slugify(t) }));
 
-    const posts: PostTitle[] = titles.map((t) => ({ title: t, slug: slugify(t) }));
-
-    // Crear directorio de salida
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-    console.log(`\n📝 Generando ${posts.length} artículos con Gemini...\n`);
+    console.log(`\n📝 Generando ${posts.length} artículos con Qwen (${MODEL})...\n`);
 
     let generated = 0;
     let skipped = 0;
@@ -116,7 +103,6 @@ async function main() {
     for (const post of posts) {
         const filePath = path.join(OUTPUT_DIR, `${post.slug}.mdx`);
 
-        // Saltar si ya existe
         if (fs.existsSync(filePath)) {
             console.log(`  ⏭️  ${post.slug}.mdx ya existe, saltando.`);
             skipped++;
@@ -133,7 +119,7 @@ async function main() {
             generated++;
             console.log(`  ✅  ${post.slug}.mdx creado.`);
 
-            // Rate limit: esperar 2 segundos entre requests
+            // Rate limit: 2s entre requests
             await new Promise((r) => setTimeout(r, 2000));
         } catch (err) {
             console.error(`  ❌  Error con "${post.title}":`, (err as Error).message);
