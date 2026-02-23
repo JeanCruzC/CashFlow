@@ -37,13 +37,15 @@ export default async function AccountsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Módulo base</p>
-                <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Cuentas financieras</h2>
-                <p className="mt-2 max-w-3xl text-sm text-surface-500">
-                    Registra cuentas bancarias, efectivo, préstamos y tarjetas para construir patrimonio,
-                    pasivos y saldos de control desde una sola estructura.
-                </p>
+            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-5 shadow-card">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 className="text-xl font-semibold text-[#0f2233]">Cuentas</h2>
+                        <p className="mt-1 text-sm text-surface-500">
+                            Bancos, efectivo, tarjetas y préstamos que alimentan tu balance.
+                        </p>
+                    </div>
+                </div>
             </section>
 
             <section className="grid gap-4 sm:grid-cols-3">

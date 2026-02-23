@@ -25,32 +25,6 @@ const NAV_GROUPS = [
     },
 ];
 
-const QUICK_FLOW = [
-    {
-        href: "/dashboard/accounts",
-        label: "1. Cuentas",
-        description: "Registra bancos, efectivo o tarjetas.",
-        color: "border-[#b8d8f0] bg-[#edf6fd] text-[#0d4c7a]",
-    },
-    {
-        href: "/dashboard/categories",
-        label: "2. Clasificación",
-        description: "Define categorías o rubros (GL).",
-        color: "border-[#bedfd8] bg-[#edf9f6] text-[#117068]",
-    },
-    {
-        href: "/dashboard/transactions",
-        label: "3. Movimientos",
-        description: "Carga ingresos y gastos reales.",
-        color: "border-[#f5d7be] bg-[#fff5eb] text-[#a85a13]",
-    },
-    {
-        href: "/dashboard",
-        label: "4. Resumen",
-        description: "Revisa tus indicadores principales.",
-        color: "border-[#d5d5f5] bg-[#f4f3ff] text-[#3e3f9d]",
-    },
-];
 
 function currentSection(pathname: string) {
     for (const group of NAV_GROUPS) {
@@ -210,49 +184,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 aria-busy={showLoadingHint && pendingHref !== null}
                 className={`transition-all duration-300 ${collapsed ? "ml-20" : "ml-80"}`}
             >
-                <div className="sticky top-0 z-20 border-b border-surface-200 bg-white/80 px-6 py-4 backdrop-blur">
-                    <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Workspace</p>
-                            <h1 className="text-lg font-semibold text-[#0f2233]">{activeSection}</h1>
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[#a6d3cb] bg-[#ecfaf6] px-3 py-1 text-xs font-semibold text-[#117068]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#117068]" />
-                            Operativo
-                        </div>
+                <div className="sticky top-0 z-20 border-b border-surface-200 bg-white/80 px-6 py-3.5 backdrop-blur">
+                    <div className="mx-auto w-full max-w-7xl">
+                        <h1 className="text-base font-semibold text-[#0f2233]">{activeSection}</h1>
                     </div>
                 </div>
 
                 <div className="mx-auto w-full max-w-7xl p-6">
-                    <section className="mb-6 rounded-2xl border border-surface-200 bg-white px-4 py-4 shadow-card">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">
-                            Flujo recomendado
-                        </p>
-                        <h2 className="mt-1 text-base font-semibold text-[#0f2233]">
-                            Si recién empiezas, sigue este orden para entender la app rápido
-                        </h2>
-                        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                            {QUICK_FLOW.map((step) => {
-                                const active = isActivePath(pathname, step.href);
-                                return (
-                                    <Link
-                                        key={step.href}
-                                        href={step.href}
-                                        prefetch={false}
-                                        onMouseEnter={() => prefetchOnIntent(step.href)}
-                                        className={`rounded-xl border px-3 py-3 transition-colors ${active
-                                            ? "border-[#0d4c7a] bg-[#eaf3fb] text-[#0d4c7a]"
-                                            : step.color
-                                            }`}
-                                    >
-                                        <p className="text-sm font-semibold">{step.label}</p>
-                                        <p className="mt-1 text-xs opacity-90">{step.description}</p>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </section>
-
                     {children}
                 </div>
             </main>

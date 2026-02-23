@@ -5,6 +5,17 @@ import { revalidatePath } from "next/cache";
 import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
+import type { OrgType } from "@/lib/types/finance";
+
+export async function getOrgType(): Promise<OrgType> {
+    const { supabase, orgId } = await requireOrgContext();
+    const { data } = await supabase
+        .from("organizations")
+        .select("type")
+        .eq("id", orgId)
+        .single();
+    return (data?.type as OrgType) || "personal";
+}
 
 export async function getCategories() {
     const { supabase, orgId } = await requireOrgContext();
