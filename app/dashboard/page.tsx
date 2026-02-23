@@ -122,25 +122,21 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">
-                    Panel financiero
-                </p>
-                <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">
-                    {kpiBundle.orgType === "business" ? "Visión ejecutiva del negocio" : "Visión integral personal"}
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm text-surface-500">
-                    {kpiBundle.orgType === "business"
-                        ? "Monitorea margen operativo, ejecución presupuestal y proyección de EBIT en una sola vista."
-                        : "Monitorea flujo de caja, ahorro y patrimonio para sostener decisiones financieras diarias."}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                    <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                        Registrar movimiento
-                    </Link>
-                    <Link href="/dashboard/budget" className="btn-secondary text-sm no-underline">
-                        Revisar presupuesto
-                    </Link>
+            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-5 shadow-card">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 className="text-xl font-semibold text-[#0f2233]">
+                            {kpiBundle.orgType === "business" ? "Resumen del negocio" : "Tu resumen financiero"}
+                        </h2>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                            Registrar movimiento
+                        </Link>
+                        <Link href="/dashboard/budget" className="btn-secondary text-sm no-underline">
+                            Presupuesto
+                        </Link>
+                    </div>
                 </div>
             </section>
 
@@ -156,29 +152,6 @@ export default async function DashboardPage() {
                     />
                 ))}
             </section>
-
-            {kpiBundle.orgType === "personal" && personal ? (
-                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Qué significa tu fondo de emergencia</h3>
-                    <p className="mt-2 text-sm text-surface-600">
-                        Es el tiempo que puedes cubrir tus gastos si hoy dejas de recibir ingresos.
-                    </p>
-                    <p className="mt-2 text-sm text-surface-600">
-                        Cálculo: <span className="font-semibold">efectivo líquido / gasto mensual promedio</span>.
-                    </p>
-                    {hasEmergencyFundBaseData ? (
-                        <p className="mt-3 text-sm text-surface-600">
-                            Hoy se calculó con <span className="font-semibold">{format.money.format(personal.liquidCash)}</span> de efectivo líquido
-                            y <span className="font-semibold">{format.money.format(personal.avgMonthlyExpenses)}</span> de gasto mensual promedio
-                            ({personal.expenseMonthsObserved} meses observados).
-                        </p>
-                    ) : (
-                        <p className="mt-3 text-sm text-warning-700">
-                            Aún hay pocos gastos registrados. Para una lectura confiable, registra al menos 2 meses de gastos reales.
-                        </p>
-                    )}
-                </section>
-            ) : null}
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
