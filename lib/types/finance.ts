@@ -149,6 +149,9 @@ export interface PersonalKPIs {
     savingsRate: number;
     netWorth: number;
     emergencyFundMonths: number;
+    avgMonthlyExpenses: number;
+    expenseMonthsObserved: number;
+    liquidCash: number;
     budgetUtilization: { category: string; budget: number; actual: number; variance: number }[];
 }
 

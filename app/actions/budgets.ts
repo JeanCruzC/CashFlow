@@ -17,6 +17,8 @@ interface BudgetRow {
 
 export interface BudgetOverview {
     month: string;
+    currency: string;
+    orgType: "personal" | "business";
     totalBudget: number;
     totalActual: number;
     totalRemaining: number;
@@ -57,6 +59,8 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
     if (!context) {
         return {
             month: targetMonth,
+            currency: "USD",
+            orgType: "personal",
             totalBudget: 0,
             totalActual: 0,
             totalRemaining: 0,
@@ -65,7 +69,12 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
     }
     const { supabase, orgId } = context;
 
-    const [budgetsResult, transactionsResult] = await Promise.all([
+    const [orgResult, budgetsResult, transactionsResult] = await Promise.all([
+        supabase
+            .from("orgs")
+            .select("type, currency")
+            .eq("id", orgId)
+            .maybeSingle(),
         supabase
             .from("budgets")
             .select("category_gl_id, amount, categories_gl(name)")
@@ -79,6 +88,10 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
             .lt("date", end),
     ]);
 
+    if (orgResult.error || !orgResult.data) {
+        logError("Error fetching org in budget overview", orgResult.error, { orgId, month: targetMonth });
+        throw new Error("No se pudo cargar el presupuesto");
+    }
     if (budgetsResult.error) {
         logError("Error fetching budgets in overview", budgetsResult.error, { orgId, month: targetMonth });
         throw new Error("No se pudo cargar el presupuesto");
@@ -123,6 +136,8 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
 
     return {
         month: targetMonth,
+        currency: orgResult.data.currency || "USD",
+        orgType: orgResult.data.type === "business" ? "business" : "personal",
         totalBudget,
         totalActual,
         totalRemaining,

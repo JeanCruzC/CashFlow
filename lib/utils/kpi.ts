@@ -75,6 +75,9 @@ export function calculatePersonalKPIs(
         savingsRate,
         netWorth,
         emergencyFundMonths,
+        avgMonthlyExpenses,
+        expenseMonthsObserved: months.size,
+        liquidCash,
         budgetUtilization,
     };
 }

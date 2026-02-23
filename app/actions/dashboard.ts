@@ -11,6 +11,9 @@ export interface PersonalDashboardKPIs {
     savingsRatePct: number;
     netWorth: number;
     emergencyFundMonths: number;
+    avgMonthlyExpenses: number;
+    expenseMonthsObserved: number;
+    liquidCash: number;
     budgetVariance: number;
 }
 
@@ -136,6 +139,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
                 savingsRatePct: 0,
                 netWorth: 0,
                 emergencyFundMonths: 0,
+                avgMonthlyExpenses: 0,
+                expenseMonthsObserved: 0,
+                liquidCash: 0,
                 budgetVariance: 0,
             },
         };
@@ -261,6 +267,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             savingsRatePct: personal.savingsRate * 100,
             netWorth: personal.netWorth,
             emergencyFundMonths: personal.emergencyFundMonths,
+            avgMonthlyExpenses: personal.avgMonthlyExpenses,
+            expenseMonthsObserved: personal.expenseMonthsObserved,
+            liquidCash: personal.liquidCash,
             budgetVariance,
         },
     };

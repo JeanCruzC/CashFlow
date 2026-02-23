@@ -12,16 +12,43 @@ const NAV_GROUPS = [
             { href: "/dashboard", label: "Resumen", description: "Salud financiera actual" },
             { href: "/dashboard/transactions", label: "Transacciones", description: "Libro de movimientos" },
             { href: "/dashboard/accounts", label: "Cuentas", description: "Activos y pasivos base" },
-            { href: "/dashboard/categories", label: "Categorías / GL", description: "Clasificación financiera" },
+            { href: "/dashboard/categories", label: "Clasificación", description: "Categorías personales y rubros (GL)" },
         ],
     },
     {
         title: "Planificación",
         items: [
-            { href: "/dashboard/budget", label: "Presupuesto", description: "Budget vs Actual" },
+            { href: "/dashboard/budget", label: "Presupuesto", description: "Plan vs ejecución real" },
             { href: "/dashboard/forecast", label: "Pronóstico", description: "Supuestos y proyección" },
             { href: "/dashboard/settings", label: "Configuración", description: "Parámetros de la organización" },
         ],
+    },
+];
+
+const QUICK_FLOW = [
+    {
+        href: "/dashboard/accounts",
+        label: "1. Cuentas",
+        description: "Registra bancos, efectivo o tarjetas.",
+        color: "border-[#b8d8f0] bg-[#edf6fd] text-[#0d4c7a]",
+    },
+    {
+        href: "/dashboard/categories",
+        label: "2. Clasificación",
+        description: "Define categorías o rubros (GL).",
+        color: "border-[#bedfd8] bg-[#edf9f6] text-[#117068]",
+    },
+    {
+        href: "/dashboard/transactions",
+        label: "3. Movimientos",
+        description: "Carga ingresos y gastos reales.",
+        color: "border-[#f5d7be] bg-[#fff5eb] text-[#a85a13]",
+    },
+    {
+        href: "/dashboard",
+        label: "4. Resumen",
+        description: "Revisa tus indicadores principales.",
+        color: "border-[#d5d5f5] bg-[#f4f3ff] text-[#3e3f9d]",
     },
 ];
 
@@ -33,6 +60,11 @@ function currentSection(pathname: string) {
         }
     }
     return "CashFlow";
+}
+
+function isActivePath(pathname: string, href: string) {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -116,10 +148,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                             ) : null}
                             <div className="space-y-1">
                                 {group.items.map((item) => {
-                                    const active =
-                                        item.href === "/dashboard"
-                                            ? pathname === item.href
-                                            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                                    const active = isActivePath(pathname, item.href);
                                     const highlighted = active || pendingHref === item.href;
 
                                     return (
@@ -194,7 +223,38 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                     </div>
                 </div>
 
-                <div className="mx-auto w-full max-w-7xl p-6">{children}</div>
+                <div className="mx-auto w-full max-w-7xl p-6">
+                    <section className="mb-6 rounded-2xl border border-surface-200 bg-white px-4 py-4 shadow-card">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-500">
+                            Flujo recomendado
+                        </p>
+                        <h2 className="mt-1 text-base font-semibold text-[#0f2233]">
+                            Si recién empiezas, sigue este orden para entender la app rápido
+                        </h2>
+                        <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                            {QUICK_FLOW.map((step) => {
+                                const active = isActivePath(pathname, step.href);
+                                return (
+                                    <Link
+                                        key={step.href}
+                                        href={step.href}
+                                        prefetch={false}
+                                        onMouseEnter={() => prefetchOnIntent(step.href)}
+                                        className={`rounded-xl border px-3 py-3 transition-colors ${active
+                                            ? "border-[#0d4c7a] bg-[#eaf3fb] text-[#0d4c7a]"
+                                            : step.color
+                                            }`}
+                                    >
+                                        <p className="text-sm font-semibold">{step.label}</p>
+                                        <p className="mt-1 text-xs opacity-90">{step.description}</p>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </section>
+
+                    {children}
+                </div>
             </main>
         </div>
     );

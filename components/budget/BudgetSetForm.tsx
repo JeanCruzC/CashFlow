@@ -61,13 +61,16 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-surface-200 bg-surface-50/60 p-4">
+            <div className="rounded-xl border border-[#d9e7f2] bg-[#f5faff] px-3 py-2 text-xs text-surface-600">
+                Regla rápida: define un tope realista por categoría. Luego registra tus movimientos y revisa si te mantienes dentro del plan.
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label className="label">Mes</label>
                     <input className="input-field" value={month} disabled />
                 </div>
                 <div>
-                    <label className="label">Categoría</label>
+                    <label className="label">Categoría o rubro</label>
                     <select
                         className="input-field"
                         value={categoryId}
@@ -82,7 +85,7 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
                     </select>
                 </div>
                 <div>
-                    <label className="label">Monto presupuestado</label>
+                    <label className="label">Tope mensual</label>
                     <input
                         type="number"
                         min="0"
@@ -90,7 +93,7 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
                         className="input-field"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
-                        placeholder="0.00"
+                        placeholder="Ej. 800"
                         required
                     />
                 </div>
@@ -101,7 +104,7 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
 
             <div className="flex justify-end">
                 <button type="submit" className="btn-primary text-sm" disabled={pending}>
-                    {pending ? "Guardando..." : "Guardar presupuesto"}
+                    {pending ? "Guardando..." : "Guardar tope mensual"}
                 </button>
             </div>
         </form>

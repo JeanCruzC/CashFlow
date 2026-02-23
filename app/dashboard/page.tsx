@@ -20,6 +20,18 @@ export default async function DashboardPage() {
     ]);
 
     const format = formatter(kpiBundle.locale, kpiBundle.currency);
+    const personal = kpiBundle.personal;
+    const hasEmergencyFundBaseData =
+        (personal?.expenseMonthsObserved || 0) >= 2 && (personal?.avgMonthlyExpenses || 0) > 0;
+    const emergencyFundMonths = personal?.emergencyFundMonths || 0;
+    const emergencyFundDisplay = !hasEmergencyFundBaseData
+        ? "Datos insuficientes"
+        : emergencyFundMonths >= 60
+            ? "60+ meses"
+            : `${format.number.format(emergencyFundMonths)} meses`;
+    const emergencyFundTooltip = !hasEmergencyFundBaseData
+        ? "Necesitamos al menos dos meses de gastos reales para estimar tu cobertura con precisión."
+        : "Indica cuántos meses puedes pagar tus gastos mensuales con tu efectivo actual si te quedas sin ingresos.";
 
     const cards =
         kpiBundle.orgType === "business" && kpiBundle.business
@@ -89,11 +101,15 @@ export default async function DashboardPage() {
                     variant: "default" as const,
                 },
                 {
-                    label: "Fondo de emergencia",
-                    value: `${format.number.format(kpiBundle.personal?.emergencyFundMonths || 0)} meses`,
-                    tooltip: "Meses de cobertura con liquidez disponible.",
-                    formula: "Coverage = Liquid Cash / Avg Monthly Expenses",
-                    variant: (kpiBundle.personal?.emergencyFundMonths || 0) >= 6 ? "positive" as const : "warning" as const,
+                    label: "Meses de cobertura (fondo de emergencia)",
+                    value: emergencyFundDisplay,
+                    tooltip: emergencyFundTooltip,
+                    formula: "Meses de cobertura = efectivo líquido / gasto mensual promedio",
+                    variant: !hasEmergencyFundBaseData
+                        ? "warning" as const
+                        : (kpiBundle.personal?.emergencyFundMonths || 0) >= 6
+                            ? "positive" as const
+                            : "warning" as const,
                 },
                 {
                     label: "Desviación presupuesto",
@@ -140,6 +156,29 @@ export default async function DashboardPage() {
                     />
                 ))}
             </section>
+
+            {kpiBundle.orgType === "personal" && personal ? (
+                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Qué significa tu fondo de emergencia</h3>
+                    <p className="mt-2 text-sm text-surface-600">
+                        Es el tiempo que puedes cubrir tus gastos si hoy dejas de recibir ingresos.
+                    </p>
+                    <p className="mt-2 text-sm text-surface-600">
+                        Cálculo: <span className="font-semibold">efectivo líquido / gasto mensual promedio</span>.
+                    </p>
+                    {hasEmergencyFundBaseData ? (
+                        <p className="mt-3 text-sm text-surface-600">
+                            Hoy se calculó con <span className="font-semibold">{format.money.format(personal.liquidCash)}</span> de efectivo líquido
+                            y <span className="font-semibold">{format.money.format(personal.avgMonthlyExpenses)}</span> de gasto mensual promedio
+                            ({personal.expenseMonthsObserved} meses observados).
+                        </p>
+                    ) : (
+                        <p className="mt-3 text-sm text-warning-700">
+                            Aún hay pocos gastos registrados. Para una lectura confiable, registra al menos 2 meses de gastos reales.
+                        </p>
+                    )}
+                </section>
+            ) : null}
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
