@@ -1,6 +1,6 @@
 "use server";
 
-import { getOrgContextOrNull } from "@/lib/server/context";
+import { getOrgContextOrNull, requireOrgContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { calculateBusinessKPIs, calculatePersonalKPIs } from "@/lib/utils/kpi";
 import { Account, Budget, CategoryGL, Transaction } from "@/lib/types/finance";
@@ -292,4 +292,19 @@ export async function getRecentTransactions() {
     }
 
     return data || [];
+}
+export async function hasAnyTransaction() {
+    const { supabase, orgId } = await requireOrgContext();
+
+    const { count, error } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", orgId);
+
+    if (error) {
+        logError("Error checking transactions", error, { orgId });
+        return false;
+    }
+
+    return (count || 0) > 0;
 }

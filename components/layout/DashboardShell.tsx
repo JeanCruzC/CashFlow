@@ -41,7 +41,7 @@ function isActivePath(pathname: string, href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+export default function DashboardShell({ children, hasTransactions = true }: { children: React.ReactNode, hasTransactions?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
     const [collapsed, setCollapsed] = useState(false);
@@ -49,6 +49,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     const [showLoadingHint, setShowLoadingHint] = useState(false);
     const prefetchedRoutesRef = useRef<Set<string>>(new Set());
     const loadingHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [dismissCallout, setDismissCallout] = useState(false);
 
     const activeSection = useMemo(() => currentSection(pathname), [pathname]);
 
@@ -191,6 +193,31 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 </div>
 
                 <div className="mx-auto w-full max-w-7xl p-6">
+                    {!hasTransactions && !dismissCallout && (
+                        <section className="mb-6 rounded-2xl border border-[#b8d8f0] bg-[#edf6fd] px-5 py-4 shadow-sm animate-fade-in">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <h2 className="text-base font-semibold text-[#0f2233]">¡Todo listo!</h2>
+                                    <p className="mt-1 text-sm text-surface-600 max-w-2xl">
+                                        Tu entorno de trabajo ya está configurado con las cuentas y categorías iniciales.
+                                        Ahora la tarea principal es registrar tus movimientos diarios.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setDismissCallout(true)}
+                                        className="text-sm font-medium text-surface-500 hover:text-surface-700 transition"
+                                    >
+                                        Omitir
+                                    </button>
+                                    <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                                        Registrar primer movimiento
+                                    </Link>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
                     {children}
                 </div>
             </main>
