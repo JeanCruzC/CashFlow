@@ -38,6 +38,22 @@ const onboardingSetupSchema = z.object({
             note: z.string().trim().max(600).optional(),
         })
         .optional(),
+    customCategories: z
+        .array(
+            z.object({
+                name: z.string().trim().min(1).max(120),
+                kind: z.enum(["income", "expense", "cost_of_goods_sold", "transfer", "equity", "asset", "liability"]),
+            })
+        )
+        .optional(),
+    initialBudgets: z
+        .array(
+            z.object({
+                categoryName: z.string().trim().min(1),
+                amount: z.number().finite(),
+            })
+        )
+        .optional(),
 });
 
 type SeedCategory = {
@@ -437,6 +453,58 @@ export async function createOrganizationWithOnboarding(
         if (forecastError) {
             logError("Error creating onboarding forecast assumptions", forecastError, { orgId });
             throw new Error("No se pudo guardar el pronóstico inicial");
+        }
+    }
+
+    // Process Custom Categories
+    if (safeSetup.customCategories && safeSetup.customCategories.length > 0) {
+        const customCategoriesRows = safeSetup.customCategories.map((c, idx) => ({
+            org_id: orgId,
+            name: c.name,
+            kind: c.kind,
+            sort_order: 1000 + idx, // Ensure they appear after default ones
+            fixed_cost: false,
+            variable_cost: false,
+        }));
+
+        const { error: customCatError } = await supabase.from("categories_gl").insert(customCategoriesRows);
+        if (customCatError) {
+            logError("Error creating custom categories", customCatError, { orgId });
+        }
+    }
+
+    // Process Initial Budgets
+    if (safeSetup.initialBudgets && safeSetup.initialBudgets.length > 0) {
+        // We need to fetch the category IDs first because we only have the names from the frontend
+        const { data: allCategories, error: fetchCatError } = await supabase
+            .from("categories_gl")
+            .select("id, name")
+            .eq("org_id", orgId);
+
+        if (!fetchCatError && allCategories) {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const budgetRows = [];
+
+            for (const budget of safeSetup.initialBudgets) {
+                // Find matching category ID by name (case insensitive for safety)
+                const category = allCategories.find(c => c.name.toLowerCase() === budget.categoryName.toLowerCase());
+                if (category && budget.amount > 0) {
+                    budgetRows.push({
+                        org_id: orgId,
+                        month: currentMonth,
+                        category_gl_id: category.id,
+                        cost_center_id: null,
+                        amount: budget.amount
+                    });
+                }
+            }
+
+            if (budgetRows.length > 0) {
+                const { error: budgetError } = await supabase.from("budgets").insert(budgetRows);
+                if (budgetError) {
+                    logError("Error creating initial budgets", budgetError, { orgId });
+                }
+            }
         }
     }
 

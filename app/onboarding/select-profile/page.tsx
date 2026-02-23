@@ -10,10 +10,9 @@ import {
     UserCircleIcon,
 } from "@/components/ui/icons";
 
-const ArrowLeftIcon = ({ size = 24 }: { size?: number }) => (
+const PlusIcon = ({ size = 20 }: { size?: number }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -21,6 +20,22 @@ const CheckCircleIcon = ({ size = 24 }: { size?: number }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M22 11.08V12C21.9988 14.1564 21.3001 16.2547 20.0093 17.9818C18.7185 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.88033 13.488 2.02808 11.3363C2.17583 9.18455 2.99721 7.13631 4.36421 5.49706C5.73121 3.85781 7.56837 2.71537 9.6006 2.23547C11.6328 1.75557 13.7505 1.96472 15.63 2.82" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const ArrowLeftIcon = ({ size = 24 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const TrashIcon = ({ size = 20 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -37,7 +52,7 @@ const COUNTRIES = [
 
 export default function SelectProfilePage() {
     const router = useRouter();
-    const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+    const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
     const [selected, setSelected] = useState<"personal" | "business" | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -52,6 +67,15 @@ export default function SelectProfilePage() {
     const [openingBalance, setOpeningBalance] = useState("0");
     const [legalName, setLegalName] = useState("");
 
+    // Step 4: Custom Categories
+    const [customCategories, setCustomCategories] = useState<{ name: string, kind: "income" | "expense" | "cost_of_goods_sold" }[]>([]);
+    const [newCatName, setNewCatName] = useState("");
+    const [newCatKind, setNewCatKind] = useState<"income" | "expense" | "cost_of_goods_sold">("expense");
+    const [showAddCategory, setShowAddCategory] = useState(false);
+
+    // Step 5: Initial Budgets
+    const [budgets, setBudgets] = useState<Record<string, string>>({});
+
     const handleNext = () => {
         if (step === 1 && !selected) return;
         if (step === 2 && !orgName.trim()) {
@@ -59,12 +83,23 @@ export default function SelectProfilePage() {
             return;
         }
         setError("");
-        setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
+        setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5);
     };
 
     const handleBack = () => {
         setError("");
-        setStep((s) => (s - 1) as 1 | 2 | 3 | 4);
+        setStep((s) => (s - 1) as 1 | 2 | 3 | 4 | 5);
+    };
+
+    const handleAddCategory = () => {
+        if (!newCatName.trim()) return;
+        setCustomCategories([...customCategories, { name: newCatName.trim(), kind: newCatKind }]);
+        setNewCatName("");
+        setShowAddCategory(false);
+    };
+
+    const handleRemoveCategory = (index: number) => {
+        setCustomCategories(customCategories.filter((_, i) => i !== index));
     };
 
     async function handleFinish() {
@@ -81,6 +116,13 @@ export default function SelectProfilePage() {
                 preferredLocale: "es" as const, // simplified
             };
 
+            const initialBudgetsPayload = Object.entries(budgets)
+                .filter((entry) => Number(entry[1]) > 0)
+                .map(([categoryName, amount]) => ({
+                    categoryName,
+                    amount: Number(amount)
+                }));
+
             const payload =
                 selected === "personal"
                     ? {
@@ -92,6 +134,8 @@ export default function SelectProfilePage() {
                             openingBalance: Number(openingBalance || "0"),
                             currency,
                         },
+                        customCategories,
+                        initialBudgets: initialBudgetsPayload
                     }
                     : {
                         ...shared,
@@ -107,6 +151,8 @@ export default function SelectProfilePage() {
                             oneOffAmount: 0,
                             note: "Inicializado desde onboarding",
                         },
+                        customCategories,
+                        initialBudgets: initialBudgetsPayload
                     };
 
             const result = await createProfileOrganization(selected, payload);
@@ -124,13 +170,23 @@ export default function SelectProfilePage() {
         }
     }
 
+    // Default categories that will be generated in backend, used here for Budget UI step
+    const defaultCategoriesForBudgets = selected === "personal"
+        ? ["Vivienda", "Alimentación", "Transporte", "Salud"]
+        : ["Operaciones", "Sueldos", "Marketing", "Software"];
+
+    const activeBudgetCategories = [
+        ...defaultCategoriesForBudgets,
+        ...customCategories.filter(c => c.kind === "expense" || c.kind === "cost_of_goods_sold").map(c => c.name)
+    ];
+
     return (
         <div className="min-h-screen bg-[linear-gradient(165deg,#f7fbff_0%,#edf5fb_48%,#f9fcfd_100%)] px-4 py-8 sm:px-8 sm:py-12 flex items-center justify-center">
             <div className="w-full max-w-2xl animate-fade-in relative">
 
                 {/* Progress Bar */}
                 <div className="mb-8 flex items-center justify-center gap-2">
-                    {[1, 2, 3, 4].map((i) => (
+                    {[1, 2, 3, 4, 5].map((i) => (
                         <div
                             key={i}
                             className={`h-2.5 rounded-full transition-all duration-300 ${step === i ? "w-12 bg-[#0d4c7a]" : step > i ? "w-6 bg-[#0d4c7a]/40" : "w-6 bg-surface-200"
@@ -326,34 +382,141 @@ export default function SelectProfilePage() {
                         {step === 4 && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-positive-200 bg-positive-50 px-3 py-1 text-sm font-semibold text-positive-700 mb-4">
-                                        <CheckCircleIcon size={16} /> Último paso
-                                    </div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Clasificando tu dinero</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Cada vez que registres un movimiento (ej. compramos comida), debes decirle al sistema en qué <strong>Categoría</strong> fue para que los resúmenes funcionen. ¡No te preocupes! <strong className="text-[#117068]">Ya creamos las más importantes para ti.</strong>
+                                        Cada vez que registres un movimiento, debes asignarle una <strong>Categoría</strong>. ¡Ya creamos las más importantes para ti! Si necesitas alguna específica que no esté aquí, puedes crearla ahora.
                                     </p>
                                 </div>
 
-                                <div className="mt-6 rounded-2xl border border-[#bedfd8] bg-[#edf9f6] p-5">
-                                    <h3 className="text-sm font-semibold text-[#117068] mb-3">Categorías creadas automáticamente:</h3>
+                                <div className="mt-6 rounded-2xl border border-surface-200 bg-surface-50/50 p-5">
+                                    <h3 className="text-sm font-semibold text-surface-700 mb-3">Principales categorías pre-configuradas:</h3>
 
                                     {selected === "personal" ? (
-                                        <ul className="space-y-2 text-sm text-[#117068]">
+                                        <ul className="space-y-2 text-sm text-surface-600">
                                             <li className="flex items-center gap-2">🟢 <strong>Ingresos:</strong> Sueldo, Freelance, Inversiones</li>
                                             <li className="flex items-center gap-2">🔴 <strong>Gastos:</strong> Vivienda, Alimentación, Transporte, Salud</li>
-                                            <li className="flex items-center gap-2">🔵 <strong>Transferencias:</strong> Movimientos entre tus mismas cuentas</li>
                                         </ul>
                                     ) : (
-                                        <ul className="space-y-2 text-sm text-[#117068]">
-                                            <li className="flex items-center gap-2">🟢 <strong>Ingresos (Ventas):</strong> Venta de productos, Servicios</li>
-                                            <li className="flex items-center gap-2">🟠 <strong>Costos (COGS):</strong> Materiales directos, Licencias (lo indispensable para vender)</li>
-                                            <li className="flex items-center gap-2">🔴 <strong>Gastos (OPEX):</strong> Sueldos, Alquiler de oficina, Marketing, Software</li>
+                                        <ul className="space-y-2 text-sm text-surface-600">
+                                            <li className="flex items-center gap-2">🟢 <strong>Ingresos:</strong> Venta de productos, Servicios</li>
+                                            <li className="flex items-center gap-2">🔴 <strong>Egresos:</strong> Materiales, Licencias, Sueldos, Marketing</li>
                                         </ul>
                                     )}
 
-                                    <p className="mt-4 text-xs font-semibold text-[#117068]/80 uppercase tracking-widest border-t border-[#bedfd8] pt-3">
-                                        Si alguna no encaja con tu vida o negocio, podrás editarla o crear nuevas desde el menú más adelante.
+                                    {/* Custom Categories List */}
+                                    {customCategories.length > 0 && (
+                                        <div className="mt-6 pt-4 border-t border-surface-200">
+                                            <h3 className="text-sm font-semibold text-surface-700 mb-3">Tus categorías personalizadas:</h3>
+                                            <ul className="space-y-2">
+                                                {customCategories.map((c, idx) => (
+                                                    <li key={idx} className="flex items-center justify-between text-sm bg-white border border-surface-200 rounded-lg px-3 py-2">
+                                                        <span>{c.kind === "income" ? "🟢" : "🔴"} <strong>{c.name}</strong></span>
+                                                        <button
+                                                            onClick={() => handleRemoveCategory(idx)}
+                                                            className="text-surface-400 hover:text-negative-600 p-1"
+                                                        >
+                                                            <TrashIcon size={16} />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Add Custom Category Form */}
+                                    <div className="mt-6 pt-5 border-t border-surface-200">
+                                        {showAddCategory ? (
+                                            <div className="bg-white p-4 rounded-xl border border-surface-300 shadow-sm animate-fade-in">
+                                                <h4 className="text-sm font-medium mb-3">Nueva Categoría</h4>
+                                                <div className="grid gap-3 sm:grid-cols-2 mb-3">
+                                                    <div>
+                                                        <input
+                                                            className="input-field text-sm"
+                                                            placeholder="Nombre (Ej. Suscripciones)"
+                                                            value={newCatName}
+                                                            onChange={e => setNewCatName(e.target.value)}
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <select
+                                                            className="input-field text-sm"
+                                                            value={newCatKind}
+                                                            onChange={e => setNewCatKind(e.target.value as "income" | "expense" | "cost_of_goods_sold")}
+                                                        >
+                                                            <option value="income">🟢 Es un Ingreso</option>
+                                                            <option value="expense">🔴 Es un Gasto</option>
+                                                            {selected === "business" && (
+                                                                <option value="cost_of_goods_sold">🟠 Costo de Venta (COGS)</option>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => setShowAddCategory(false)}
+                                                        className="px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-700"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                    <button
+                                                        onClick={handleAddCategory}
+                                                        disabled={!newCatName.trim()}
+                                                        className="px-4 py-1.5 text-sm font-medium bg-[#0f2233] text-white rounded-lg disabled:opacity-50"
+                                                    >
+                                                        Guardar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setShowAddCategory(true)}
+                                                className="w-full py-3 border border-dashed border-surface-300 rounded-xl text-sm font-medium text-surface-600 hover:bg-white hover:border-surface-400 transition flex items-center justify-center gap-2"
+                                            >
+                                                <PlusIcon size={16} /> Añadir categoría personalizada
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= STEP 5: BUDGET ================= */}
+                        {step === 5 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-positive-200 bg-positive-50 px-3 py-1 text-sm font-semibold text-positive-700 mb-4">
+                                        <CheckCircleIcon size={16} /> Último paso
+                                    </div>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Tus Límites Mensuales</h1>
+                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
+                                        ¿Cuánto planeas gastar como máximo en estas categorías principales este mes?
+                                        <strong> Si no deseas presupuestar alguna, simplemente déjala en 0.</strong>
+                                    </p>
+                                </div>
+
+                                <div className="mt-6 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                    <div className="space-y-4">
+                                        {activeBudgetCategories.map((cat, idx) => (
+                                            <div key={idx} className="flex items-center justify-between gap-4">
+                                                <label className="text-sm font-medium text-surface-700 w-1/2">{cat}</label>
+                                                <div className="relative w-1/2">
+                                                    <span className="absolute left-3 top-2 text-surface-400 text-sm">{currency}</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="10"
+                                                        placeholder="0"
+                                                        className="input-field pl-10 h-10 py-1 text-sm"
+                                                        value={budgets[cat] || ""}
+                                                        onChange={(e) => setBudgets({ ...budgets, [cat]: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="mt-5 text-xs text-surface-500 text-center">
+                                        Tendrás control total de tu presupuesto y podrás agregar más limites directo en el Dashboard.
                                     </p>
                                 </div>
 
@@ -381,7 +544,7 @@ export default function SelectProfilePage() {
                                 <div /> /* Empty div to push right side to the end */
                             )}
 
-                            {step < 4 ? (
+                            {step < 5 ? (
                                 <button
                                     type="button"
                                     onClick={handleNext}
