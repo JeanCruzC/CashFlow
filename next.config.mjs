@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
     "img-src 'self' data: blob: https:",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io https://vitals.vercel-insights.com https://region1.google-analytics.com",
     "form-action 'self'",
     ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
@@ -20,6 +20,7 @@ const contentSecurityPolicy = [
 const nextConfig = {
     reactStrictMode: true,
     poweredByHeader: false,
+    transpilePackages: ["next-mdx-remote", "@mdx-js/react"],
     async headers() {
         const headers = [
             { key: "Content-Security-Policy", value: contentSecurityPolicy },
@@ -28,6 +29,10 @@ const nextConfig = {
             { key: "X-Frame-Options", value: "DENY" },
             { key: "X-DNS-Prefetch-Control", value: "off" },
             { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+            { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+            { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+            { key: "Origin-Agent-Cluster", value: "?1" },
+            { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
         ];
 
         if (isProduction) {

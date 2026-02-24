@@ -42,6 +42,34 @@ const PRIORITY_LABELS: Record<SavingsPriority, string> = {
     savings_goals: "Aportar a metas de ahorro",
 };
 
+const FIXED_EXPENSE_KEYWORDS = [
+    "alquiler",
+    "rent",
+    "hipoteca",
+    "mortgage",
+    "vivienda",
+    "housing",
+    "servicios",
+    "utilities",
+    "internet",
+    "telefono",
+    "phone",
+    "seguro",
+    "insurance",
+    "colegio",
+    "educacion",
+    "education",
+    "deuda",
+    "debt",
+    "debt payments",
+    "loan",
+    "prestamo",
+    "suscripcion",
+    "subscription",
+    "salud",
+    "health",
+];
+
 const PlusIcon = ({ size = 18 }: { size?: number }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -86,6 +114,18 @@ function parseAmount(value: string) {
 
 function round2(value: number) {
     return Math.round(value * 100) / 100;
+}
+
+function normalizeCategoryLabel(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+function isFixedExpenseCategory(value: string) {
+    const normalized = normalizeCategoryLabel(value);
+    return FIXED_EXPENSE_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 export default function SelectProfilePage() {
@@ -189,7 +229,83 @@ export default function SelectProfilePage() {
         return [...defaults, ...customExpenseNames];
     }, [selected, customCategories]);
 
-    const savingsPool = distributionAmounts.savings;
+    const totalCreditCardDebt = useMemo(
+        () =>
+            round2(
+                creditCards.reduce(
+                    (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
+                    0
+                )
+            ),
+        [creditCards]
+    );
+
+    const estimatedDebtPayment = useMemo(
+        () => round2(totalCreditCardDebt * 0.05),
+        [totalCreditCardDebt]
+    );
+
+    const fixedExpensesBudget = useMemo(
+        () =>
+            round2(
+                Object.entries(budgets).reduce((sum, [categoryName, amount]) => {
+                    const parsedAmount = parseAmount(amount);
+                    if (parsedAmount <= 0) return sum;
+                    return isFixedExpenseCategory(categoryName)
+                        ? sum + parsedAmount
+                        : sum;
+                }, 0)
+            ),
+        [budgets]
+    );
+
+    const priorityIndex = useMemo(
+        () => ({
+            fixed: savingsPriorities.indexOf("fixed_expenses"),
+            debt: savingsPriorities.indexOf("debt_payments"),
+            goals: savingsPriorities.indexOf("savings_goals"),
+        }),
+        [savingsPriorities]
+    );
+
+    const fixedNeedsShortfall = useMemo(
+        () =>
+            round2(Math.max(fixedExpensesBudget - distributionAmounts.needs, 0)),
+        [fixedExpensesBudget, distributionAmounts.needs]
+    );
+
+    const debtBucketShortfall = useMemo(
+        () =>
+            round2(Math.max(estimatedDebtPayment - distributionAmounts.debt, 0)),
+        [estimatedDebtPayment, distributionAmounts.debt]
+    );
+
+    const dynamicSavingsPool = useMemo(() => {
+        let available = distributionAmounts.savings;
+        if (
+            priorityIndex.fixed !== -1 &&
+            priorityIndex.goals !== -1 &&
+            priorityIndex.fixed < priorityIndex.goals
+        ) {
+            available -= fixedNeedsShortfall;
+        }
+        if (
+            priorityIndex.debt !== -1 &&
+            priorityIndex.goals !== -1 &&
+            priorityIndex.debt < priorityIndex.goals
+        ) {
+            available -= debtBucketShortfall;
+        }
+        return round2(Math.max(available, 0));
+    }, [
+        distributionAmounts.savings,
+        fixedNeedsShortfall,
+        debtBucketShortfall,
+        priorityIndex.fixed,
+        priorityIndex.goals,
+        priorityIndex.debt,
+    ]);
+
     const projectedGoalRows = useMemo(() => {
         const validGoals = savingsGoals
             .map((goal) => ({
@@ -203,8 +319,8 @@ export default function SelectProfilePage() {
 
         return validGoals.map((goal) => {
             const projectedContribution =
-                savingsPool > 0 && totalWeight > 0
-                    ? round2((savingsPool * goal.goalWeightNum) / totalWeight)
+                dynamicSavingsPool > 0 && totalWeight > 0
+                    ? round2((dynamicSavingsPool * goal.goalWeightNum) / totalWeight)
                     : 0;
             const monthsToGoal =
                 projectedContribution > 0
@@ -220,7 +336,7 @@ export default function SelectProfilePage() {
                         : 0,
             };
         });
-    }, [savingsGoals, savingsPool, consolidatedIncome]);
+    }, [savingsGoals, dynamicSavingsPool, consolidatedIncome]);
 
     function handleCountryChange(value: string) {
         setCountry(value);
@@ -241,6 +357,36 @@ export default function SelectProfilePage() {
             }
             return next;
         });
+    }
+
+    function applySmartDebtDistribution() {
+        const safeIncome = Math.max(consolidatedIncome, 1);
+        const debtRatio = totalCreditCardDebt / safeIncome;
+
+        setDistributionRule("custom");
+        if (debtRatio >= 1.5) {
+            setCustomNeedsPct("55");
+            setCustomWantsPct("10");
+            setCustomSavingsPct("15");
+            setCustomDebtPct("20");
+            return;
+        }
+        if (debtRatio >= 0.75) {
+            setCustomNeedsPct("58");
+            setCustomWantsPct("12");
+            setCustomSavingsPct("15");
+            setCustomDebtPct("15");
+            return;
+        }
+        if (debtRatio > 0) {
+            setCustomNeedsPct("60");
+            setCustomWantsPct("15");
+            setCustomSavingsPct("15");
+            setCustomDebtPct("10");
+            return;
+        }
+
+        setDistributionRule("50_30_20");
     }
 
     function handleAddCategory() {
@@ -1147,6 +1293,16 @@ export default function SelectProfilePage() {
                                     </p>
                                 </div>
 
+                                {totalCreditCardDebt > 0 && (
+                                    <div className="rounded-2xl border border-[#f0d9a8] bg-[#fff9ee] px-4 py-3 text-sm text-[#7a4c00]">
+                                        <p className="font-semibold">Tarjeta de crédito: se trata como deuda, no como ingreso.</p>
+                                        <p className="mt-1">
+                                            Deuda detectada: {currency} {totalCreditCardDebt.toFixed(2)}. Esto impacta el bucket de
+                                            <span className="font-semibold"> Deuda / inversión</span> y la proyección de metas.
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className="space-y-3">
                                     {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
                                         <label key={rule} className="flex items-center gap-3 rounded-xl border border-surface-200 bg-white px-4 py-3 cursor-pointer">
@@ -1160,6 +1316,21 @@ export default function SelectProfilePage() {
                                         </label>
                                     ))}
                                 </div>
+
+                                {selected === "personal" && (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={applySmartDebtDistribution}
+                                            className="rounded-lg border border-[#0d4c7a] bg-[#f2f8fc] px-3 py-2 text-sm font-medium text-[#0d4c7a] hover:bg-[#e7f2fb]"
+                                        >
+                                            Aplicar distribución inteligente
+                                        </button>
+                                        <p className="text-xs text-surface-500">
+                                            Ajusta porcentajes según tu ratio de deuda de tarjeta e ingreso consolidado.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {distributionRule === "custom" && (
                                     <div className="grid gap-4 sm:grid-cols-2 rounded-2xl border border-surface-200 bg-surface-50 p-4">
@@ -1185,10 +1356,18 @@ export default function SelectProfilePage() {
                                     </div>
                                 )}
 
-                                <div className="rounded-2xl border border-surface-200 bg-surface-50 p-5">
-                                    <p className="text-xs uppercase tracking-[0.14em] text-surface-500">Bolsa consolidada</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
-                                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                <div className="rounded-2xl border border-surface-200 bg-surface-50 p-5 space-y-5">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.14em] text-surface-500">Bolsa consolidada</p>
+                                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
+                                        <p className="mt-1 text-xs text-surface-500">
+                                            Ingreso neto {currency} {parseAmount(monthlyIncomeNet).toFixed(2)} ·
+                                            Ingreso adicional {currency} {(hasAdditionalIncome ? parseAmount(additionalIncome) : 0).toFixed(2)} ·
+                                            Aporte compartido {currency} {(sharesFinances ? parseAmount(partnerContribution) : 0).toFixed(2)}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
                                             <p className="text-surface-500">Necesidades</p>
                                             <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
@@ -1206,11 +1385,45 @@ export default function SelectProfilePage() {
                                             <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
                                         </div>
                                     </div>
+
+                                    <div className="rounded-xl border border-surface-200 bg-white p-4 text-sm space-y-2">
+                                        <p className="font-semibold text-[#0f2233]">Desglose operativo de la bolsa</p>
+                                        <div className="flex items-center justify-between text-surface-600">
+                                            <span>Gastos fijos presupuestados</span>
+                                            <span className="font-semibold text-surface-800">{currency} {fixedExpensesBudget.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-surface-600">
+                                            <span>Faltante de gastos fijos (sobre necesidades)</span>
+                                            <span className={`font-semibold ${fixedNeedsShortfall > 0 ? "text-negative-700" : "text-positive-700"}`}>
+                                                {currency} {fixedNeedsShortfall.toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-surface-600">
+                                            <span>Pago mínimo estimado de tarjetas (5%)</span>
+                                            <span className="font-semibold text-surface-800">{currency} {estimatedDebtPayment.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-surface-600">
+                                            <span>Faltante de deuda (sobre bucket deuda/inversión)</span>
+                                            <span className={`font-semibold ${debtBucketShortfall > 0 ? "text-negative-700" : "text-positive-700"}`}>
+                                                {currency} {debtBucketShortfall.toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between border-t border-surface-200 pt-2 text-surface-700">
+                                            <span>Ahorro neto disponible para metas</span>
+                                            <span className="font-semibold text-[#0f2233]">{currency} {dynamicSavingsPool.toFixed(2)}</span>
+                                        </div>
+                                        <p className="text-xs text-surface-500">
+                                            Orden activo: {savingsPriorities.map((priority) => PRIORITY_LABELS[priority]).join(" → ")}.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {hasSavingsGoals && projectedGoalRows.length > 0 && (
                                     <div className="rounded-2xl border border-surface-200 bg-white p-5">
                                         <h3 className="text-sm font-semibold text-[#0f2233] mb-3">Proyección inicial</h3>
+                                        <p className="mb-3 text-xs text-surface-500">
+                                            Proyección dinámica según distribución, prioridad de bolsa y cobertura de deuda/fijos.
+                                        </p>
                                         <div className="space-y-3">
                                             {projectedGoalRows.map((goal) => (
                                                 <div key={goal.id} className="rounded-lg border border-surface-200 bg-surface-50 p-3 text-sm">

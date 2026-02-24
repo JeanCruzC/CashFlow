@@ -71,12 +71,12 @@ describe("app/actions/onboarding", () => {
         expect(result).toEqual({ error: "No se pudo crear el perfil" });
     });
 
-    it("serializa errores tipo objeto cuando no son Error", async () => {
+    it("no expone errores tipo objeto cuando no son Error", async () => {
         createOrganizationMock.mockRejectedValue({ code: "E_ONBOARDING", reason: "invalid state" });
 
         const result = await createProfileOrganization("personal");
 
-        expect(result).toEqual({ error: JSON.stringify({ code: "E_ONBOARDING", reason: "invalid state" }) });
+        expect(result).toEqual({ error: "No se pudo crear el perfil" });
     });
 
     it("cae al mensaje genérico cuando el objeto error no se puede serializar", async () => {
@@ -85,6 +85,32 @@ describe("app/actions/onboarding", () => {
         createOrganizationMock.mockRejectedValue(circular);
 
         const result = await createProfileOrganization("business");
+
+        expect(result).toEqual({ error: "No se pudo crear el perfil" });
+    });
+
+    it("preserva mensajes de dominio que empiezan por 'No se pudo'", async () => {
+        createOrganizationMock.mockRejectedValue(new Error("No se pudo guardar la configuración"));
+
+        const result = await createProfileOrganization("business");
+
+        expect(result).toEqual({ error: "No se pudo guardar la configuración" });
+    });
+
+    it("preserva mensajes de límite de solicitudes", async () => {
+        assertRateLimitMock.mockImplementation(() => {
+            throw new Error("Límite de solicitudes excedido");
+        });
+
+        const result = await createProfileOrganization("personal");
+
+        expect(result).toEqual({ error: "Límite de solicitudes excedido" });
+    });
+
+    it("normaliza errores Error desconocidos a mensaje genérico", async () => {
+        createOrganizationMock.mockRejectedValue(new Error("internal stacktrace boom"));
+
+        const result = await createProfileOrganization("personal");
 
         expect(result).toEqual({ error: "No se pudo crear el perfil" });
     });

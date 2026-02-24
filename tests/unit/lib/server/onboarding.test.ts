@@ -7,24 +7,55 @@ vi.mock("@/lib/server/context", () => ({
 import { requireUserContext } from "@/lib/server/context";
 import { createOrganizationWithOnboarding } from "@/lib/server/onboarding";
 
+type InsertQueueItem = {
+    data?: unknown;
+    error?: unknown;
+    singleData?: unknown;
+    singleError?: unknown;
+};
+
+function createInsertBuilder(result: InsertQueueItem) {
+    const promise = Promise.resolve({
+        data: result.data ?? null,
+        error: result.error ?? null,
+    }) as Promise<{ data: unknown; error: unknown }> & {
+        select: ReturnType<typeof vi.fn>;
+    };
+
+    promise.select = vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+            data: result.singleData ?? null,
+            error: result.singleError ?? result.error ?? null,
+        }),
+    });
+
+    return promise;
+}
+
 function buildSupabaseMock(overrides?: {
     rpcResult?: { data: string | null; error: unknown };
     accountsCount?: number;
     fallbackOrgId?: string;
     categoriesCount?: number;
     costCentersCount?: number;
+    categoriesList?: Array<{ id: string; name: string }>;
     orgInsertError?: unknown;
     orgUpdateError?: unknown;
     orgDeleteError?: unknown;
     accountCountError?: unknown;
     accountsInsertError?: unknown;
     categoriesCountError?: unknown;
+    categoriesFetchError?: unknown;
     categoriesInsertError?: unknown;
+    categoriesInsertQueue?: InsertQueueItem[];
     costCentersCountError?: unknown;
     costCentersInsertError?: unknown;
     orgMembersInsertError?: unknown;
     onboardingUpsertErrors?: unknown[];
     forecastUpsertError?: unknown;
+    orgFinancialProfileUpsertError?: unknown;
+    savingsGoalsInsertError?: unknown;
+    budgetsInsertError?: unknown;
 }) {
     const rpc = vi.fn().mockResolvedValue(overrides?.rpcResult ?? { data: "org-1", error: null });
 
@@ -64,10 +95,30 @@ function buildSupabaseMock(overrides?: {
             count: overrides?.categoriesCount ?? 0,
             error: overrides?.categoriesCountError ?? null,
         });
-    const categoriesSelect = vi.fn().mockReturnValue({ eq: categoriesSelectEq });
-    const categoriesInsert = vi
+    const categoriesSelectForBudgetEq = vi
         .fn()
-        .mockResolvedValue({ error: overrides?.categoriesInsertError ?? null });
+        .mockResolvedValue({
+            data:
+                overrides?.categoriesList ?? [
+                    { id: "cat-housing", name: "Housing" },
+                    { id: "cat-debt", name: "Debt Payments" },
+                    { id: "cat-groceries", name: "Groceries" },
+                ],
+            error: overrides?.categoriesFetchError ?? null,
+        });
+    const categoriesSelect = vi.fn((_: string, options?: { head?: boolean }) => {
+        if (options?.head) return { eq: categoriesSelectEq };
+        return { eq: categoriesSelectForBudgetEq };
+    });
+    const categoriesInsertQueue = [
+        ...(overrides?.categoriesInsertQueue ?? [
+            { error: overrides?.categoriesInsertError ?? null },
+        ]),
+    ];
+    const categoriesInsert = vi.fn(() => {
+        const next = categoriesInsertQueue.shift() ?? { error: null };
+        return createInsertBuilder(next);
+    });
 
     const costCentersSelectEq = vi
         .fn()
@@ -88,6 +139,15 @@ function buildSupabaseMock(overrides?: {
     const forecastUpsert = vi
         .fn()
         .mockResolvedValue({ error: overrides?.forecastUpsertError ?? null });
+    const orgFinancialProfileUpsert = vi
+        .fn()
+        .mockResolvedValue({ error: overrides?.orgFinancialProfileUpsertError ?? null });
+    const savingsGoalsInsert = vi
+        .fn()
+        .mockResolvedValue({ error: overrides?.savingsGoalsInsertError ?? null });
+    const budgetsInsert = vi
+        .fn()
+        .mockResolvedValue({ error: overrides?.budgetsInsertError ?? null });
 
     const from = vi.fn((table: string) => {
         if (table === "orgs") {
@@ -111,6 +171,15 @@ function buildSupabaseMock(overrides?: {
         if (table === "forecast_assumptions") {
             return { upsert: forecastUpsert };
         }
+        if (table === "org_financial_profile") {
+            return { upsert: orgFinancialProfileUpsert };
+        }
+        if (table === "savings_goals") {
+            return { insert: savingsGoalsInsert };
+        }
+        if (table === "budgets") {
+            return { insert: budgetsInsert };
+        }
         throw new Error(`Unexpected table ${table}`);
     });
 
@@ -132,12 +201,16 @@ function buildSupabaseMock(overrides?: {
             accountsInsert,
             categoriesSelect,
             categoriesSelectEq,
+            categoriesSelectForBudgetEq,
             categoriesInsert,
             costCentersSelect,
             costCentersSelectEq,
             costCentersInsert,
             onboardingUpsert,
             forecastUpsert,
+            orgFinancialProfileUpsert,
+            savingsGoalsInsert,
+            budgetsInsert,
         },
     };
 }
@@ -514,6 +587,253 @@ describe("lib/server/onboarding", () => {
 
         await expect(createOrganizationWithOnboarding("personal")).rejects.toThrow(
             "categories seed failed"
+        );
+    });
+
+    it("guarda perfil financiero, metas, tarjetas, categorías personalizadas y presupuestos iniciales", async () => {
+        const { supabase, spies } = buildSupabaseMock({
+            categoriesInsertQueue: [
+                { singleData: { id: "cat-savings-goals" } },
+                { error: null },
+            ],
+            categoriesList: [
+                { id: "cat-housing", name: "Housing" },
+                { id: "cat-debt", name: "Debt Payments" },
+                { id: "cat-groceries", name: "Groceries" },
+                { id: "cat-savings-goals", name: "Ahorro / Metas" },
+            ],
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        const orgId = await createOrganizationWithOnboarding("personal", {
+            currency: "PEN",
+            startDate: "2026-02-01",
+            firstAccount: {
+                name: "Cuenta principal",
+                accountType: "bank",
+                openingBalance: 1500,
+            },
+            creditCards: [
+                {
+                    name: "Visa Signature",
+                    creditLimit: 12000,
+                    currentBalance: 2000,
+                },
+            ],
+            financialProfile: {
+                monthlyIncomeNet: 3500,
+                additionalIncome: 200,
+                partnerContribution: 400,
+                distributionRule: "custom",
+                customDistribution: {
+                    needsPct: 60,
+                    wantsPct: 10,
+                    savingsPct: 20,
+                    debtPct: 10,
+                },
+                savingsPriorities: ["fixed_expenses", "debt_payments", "savings_goals"],
+            },
+            savingsGoals: [
+                {
+                    name: "Inicial Depa",
+                    targetAmount: 100000,
+                    goalWeight: 2,
+                    deadlineDate: null,
+                },
+                {
+                    name: "Fondo de emergencia",
+                    targetAmount: 12000,
+                    goalWeight: 1,
+                    deadlineDate: null,
+                },
+            ],
+            customCategories: [
+                { name: "Inventario", kind: "cost_of_goods_sold" },
+                { name: "Activo test", kind: "asset" },
+            ],
+            initialBudgets: [
+                { categoryName: "Vivienda", amount: 1500 },
+                { categoryName: "Debt Payments", amount: 500 },
+            ],
+        });
+
+        expect(orgId).toBe("org-1");
+        expect(spies.orgFinancialProfileUpsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                org_id: "org-1",
+                distribution_rule: "custom",
+                needs_pct: 60,
+                wants_pct: 10,
+                savings_pct: 20,
+                debt_pct: 10,
+            }),
+            { onConflict: "org_id" }
+        );
+        expect(spies.accountsInsert).toHaveBeenCalledTimes(2);
+        expect(spies.accountsInsert).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    org_id: "org-1",
+                    account_type: "credit_card",
+                    name: "Visa Signature",
+                    opening_balance: -2000,
+                }),
+            ])
+        );
+        expect(spies.savingsGoalsInsert).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    org_id: "org-1",
+                    name: "Inicial Depa",
+                }),
+            ])
+        );
+        expect(spies.categoriesInsert).toHaveBeenCalledTimes(2);
+        expect(spies.categoriesInsert).toHaveBeenLastCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: "Inventario",
+                    kind: "cogs",
+                }),
+                expect.objectContaining({
+                    name: "Activo test",
+                    kind: "expense",
+                }),
+            ])
+        );
+        expect(spies.budgetsInsert).toHaveBeenCalled();
+    });
+
+    it("falla cuando la distribución personalizada no suma 100", async () => {
+        const { supabase } = buildSupabaseMock();
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                financialProfile: {
+                    monthlyIncomeNet: 3500,
+                    distributionRule: "custom",
+                    customDistribution: {
+                        needsPct: 40,
+                        wantsPct: 20,
+                        savingsPct: 20,
+                        debtPct: 10,
+                    },
+                },
+            })
+        ).rejects.toThrow("La distribución personalizada debe sumar 100%");
+    });
+
+    it("muestra error guiado cuando falta tabla org_financial_profile", async () => {
+        const { supabase } = buildSupabaseMock({
+            orgFinancialProfileUpsertError: {
+                code: "42P01",
+                message: 'relation "org_financial_profile" does not exist',
+            },
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                financialProfile: {
+                    monthlyIncomeNet: 3200,
+                    distributionRule: "50_30_20",
+                },
+            })
+        ).rejects.toThrow("falta migrar ese módulo en Supabase");
+    });
+
+    it("muestra error guiado cuando falta tabla savings_goals", async () => {
+        const { supabase } = buildSupabaseMock({
+            savingsGoalsInsertError: {
+                code: "42P01",
+                message: 'relation "savings_goals" does not exist',
+            },
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                savingsGoals: [{ name: "Meta", targetAmount: 1000 }],
+            })
+        ).rejects.toThrow("falta migrar ese módulo en Supabase");
+    });
+
+    it("muestra error guiado cuando faltan columnas de proyección en savings_goals", async () => {
+        const { supabase } = buildSupabaseMock({
+            savingsGoalsInsertError: {
+                code: "42703",
+                message: 'column "monthly_contribution" of relation "savings_goals" does not exist',
+            },
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                savingsGoals: [{ name: "Meta", targetAmount: 1000 }],
+            })
+        ).rejects.toThrow("faltan columnas de proyección");
+    });
+
+    it("continúa onboarding si falla inserción de categorías personalizadas", async () => {
+        const { supabase } = buildSupabaseMock({
+            categoriesInsertQueue: [{ error: null }, { error: { message: "custom categories failed" } }],
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                customCategories: [{ name: "Custom", kind: "expense" }],
+            })
+        ).resolves.toBe("org-1");
+    });
+
+    it("continúa onboarding si falla inserción de presupuestos iniciales", async () => {
+        const { supabase } = buildSupabaseMock({
+            categoriesList: [{ id: "cat-housing", name: "Housing" }],
+            budgetsInsertError: { message: "budget insert failed" },
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(
+            createOrganizationWithOnboarding("personal", {
+                initialBudgets: [{ categoryName: "Vivienda", amount: 900 }],
+            })
+        ).resolves.toBe("org-1");
+    });
+
+    it("normaliza errores no estructurados del RPC", async () => {
+        const { supabase } = buildSupabaseMock({
+            rpcResult: { data: null, error: "rpc string failure" },
+        });
+        requireUserContextMock.mockResolvedValue({
+            supabase,
+            user: { id: "user-1" },
+        } as never);
+
+        await expect(createOrganizationWithOnboarding("personal")).rejects.toThrow(
+            "rpc string failure"
         );
     });
 });

@@ -5,6 +5,12 @@ import { transactionSchema, TransactionInput } from "@/lib/validations/schemas";
 import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
+import {
+    clampPositiveInt,
+    sanitizeIsoDate,
+    sanitizeSearchTerm,
+    sanitizeUuid,
+} from "@/lib/server/input-sanitizers";
 
 const SORTABLE_COLUMNS = new Set(["date", "description", "amount", "created_at"]);
 
@@ -37,9 +43,13 @@ export async function getTransactions({
     const { supabase, orgId } = await requireOrgContext();
     const safeSort = SORTABLE_COLUMNS.has(sort) ? sort : "date";
     const safeSortDir: "asc" | "desc" = sortDir === "asc" ? "asc" : "desc";
-    const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-    const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
-    const safeSearch = search.trim();
+    const safePage = clampPositiveInt(page, 1, 1, 10_000);
+    const safePageSize = clampPositiveInt(pageSize, 20, 1, 100);
+    const safeSearch = sanitizeSearchTerm(search, 120);
+    const safeAccountId = sanitizeUuid(accountId);
+    const safeCategoryId = sanitizeUuid(categoryId);
+    const safeDateFrom = sanitizeIsoDate(dateFrom);
+    const safeDateTo = sanitizeIsoDate(dateTo);
     const safeDirection = direction === "income" || direction === "expense" ? direction : "all";
 
     let query = supabase
@@ -51,12 +61,12 @@ export async function getTransactions({
         query = query.ilike("description", `%${safeSearch}%`);
     }
 
-    if (accountId) {
-        query = query.eq("account_id", accountId);
+    if (safeAccountId) {
+        query = query.eq("account_id", safeAccountId);
     }
 
-    if (categoryId) {
-        query = query.eq("category_gl_id", categoryId);
+    if (safeCategoryId) {
+        query = query.eq("category_gl_id", safeCategoryId);
     }
 
     if (safeDirection === "income") {
@@ -65,11 +75,11 @@ export async function getTransactions({
         query = query.lt("amount", 0);
     }
 
-    if (dateFrom) {
-        query = query.gte("date", dateFrom);
+    if (safeDateFrom) {
+        query = query.gte("date", safeDateFrom);
     }
-    if (dateTo) {
-        query = query.lte("date", dateTo);
+    if (safeDateTo) {
+        query = query.lte("date", safeDateTo);
     }
 
     query = query.order(safeSort, { ascending: safeSortDir === "asc" });
@@ -93,12 +103,15 @@ export async function getTransactions({
 }
 
 export async function getTransactionById(id: string) {
+    const safeId = sanitizeUuid(id);
+    if (!safeId) return null;
+
     const { supabase, orgId } = await requireOrgContext();
 
     const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("id", id)
+        .eq("id", safeId)
         .eq("org_id", orgId)
         .maybeSingle();
 
@@ -145,6 +158,11 @@ export async function createTransaction(input: TransactionInput) {
 }
 
 export async function updateTransaction(id: string, input: TransactionInput) {
+    const safeId = sanitizeUuid(id);
+    if (!safeId) {
+        return { error: "Identificador de transacción inválido" };
+    }
+
     const validation = transactionSchema.safeParse(input);
     if (!validation.success) {
         return { error: validation.error.message };
@@ -167,7 +185,7 @@ export async function updateTransaction(id: string, input: TransactionInput) {
         .update({
             ...validation.data,
         })
-        .eq("id", id)
+        .eq("id", safeId)
         .eq("org_id", orgId)
         .select("id");
 
@@ -181,11 +199,16 @@ export async function updateTransaction(id: string, input: TransactionInput) {
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/transactions");
-    revalidatePath(`/dashboard/transactions/${id}/edit`);
+    revalidatePath(`/dashboard/transactions/${safeId}/edit`);
     return { success: true };
 }
 
 export async function deleteTransaction(id: string) {
+    const safeId = sanitizeUuid(id);
+    if (!safeId) {
+        return { error: "Identificador de transacción inválido" };
+    }
+
     const { supabase, orgId, user } = await requireOrgActorContext();
 
     try {
@@ -201,7 +224,7 @@ export async function deleteTransaction(id: string) {
     const { error, count } = await supabase
         .from("transactions")
         .delete({ count: "exact" })
-        .eq("id", id)
+        .eq("id", safeId)
         .eq("org_id", orgId);
 
     if (error) {

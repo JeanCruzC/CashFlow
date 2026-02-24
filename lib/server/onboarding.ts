@@ -172,6 +172,34 @@ const DISTRIBUTION_PRESETS: Record<
     custom: { needsPct: 50, wantsPct: 30, savingsPct: 20, debtPct: 0 },
 };
 
+const FIXED_EXPENSE_KEYWORDS = [
+    "alquiler",
+    "rent",
+    "hipoteca",
+    "mortgage",
+    "vivienda",
+    "housing",
+    "servicios",
+    "utilities",
+    "internet",
+    "telefono",
+    "phone",
+    "seguro",
+    "insurance",
+    "colegio",
+    "educacion",
+    "education",
+    "deuda",
+    "debt",
+    "debt payments",
+    "loan",
+    "prestamo",
+    "suscripcion",
+    "subscription",
+    "salud",
+    "health",
+];
+
 function round2(value: number) {
     return Math.round(value * 100) / 100;
 }
@@ -208,16 +236,69 @@ function resolveFinancialDistribution(
     };
 }
 
-function resolveMonthlySavingsPool(
-    financialProfile: OnboardingSetupInput["financialProfile"]
-) {
-    if (!financialProfile) return 0;
-    const distribution = resolveFinancialDistribution(financialProfile);
+function estimateTotalCreditCardDebt(setup: OnboardingSetupInput) {
+    const cards = setup.creditCards || [];
+    return round2(
+        cards.reduce((sum, card) => sum + Math.max(card.currentBalance, 0), 0)
+    );
+}
+
+function isFixedExpenseCategory(categoryName: string) {
+    const normalized = normalizeCategoryName(categoryName);
+    return FIXED_EXPENSE_KEYWORDS.some((keyword) =>
+        normalized.includes(keyword)
+    );
+}
+
+function estimateFixedExpenseBudget(setup: OnboardingSetupInput) {
+    const budgets = setup.initialBudgets || [];
+    return round2(
+        budgets.reduce((sum, budget) => {
+            if (budget.amount <= 0) return sum;
+            return isFixedExpenseCategory(budget.categoryName)
+                ? sum + budget.amount
+                : sum;
+        }, 0)
+    );
+}
+
+function resolveMonthlyGoalsPool(setup: OnboardingSetupInput) {
+    if (!setup.financialProfile) return 0;
+
+    const distribution = resolveFinancialDistribution(setup.financialProfile);
     const consolidatedIncome =
-        financialProfile.monthlyIncomeNet +
-        (financialProfile.additionalIncome ?? 0) +
-        (financialProfile.partnerContribution ?? 0);
-    return round2((consolidatedIncome * distribution.savingsPct) / 100);
+        setup.financialProfile.monthlyIncomeNet +
+        (setup.financialProfile.additionalIncome ?? 0) +
+        (setup.financialProfile.partnerContribution ?? 0);
+
+    const needsBucket = round2((consolidatedIncome * distribution.needsPct) / 100);
+    const savingsBucket = round2(
+        (consolidatedIncome * distribution.savingsPct) / 100
+    );
+    const debtBucket = round2((consolidatedIncome * distribution.debtPct) / 100);
+
+    const fixedExpenseBudget = estimateFixedExpenseBudget(setup);
+    const fixedNeedsShortfall = Math.max(fixedExpenseBudget - needsBucket, 0);
+
+    const estimatedDebtPayment = round2(estimateTotalCreditCardDebt(setup) * 0.05);
+    const debtBucketShortfall = Math.max(estimatedDebtPayment - debtBucket, 0);
+
+    const priorities = normalizePriorities(
+        setup.financialProfile.savingsPriorities
+    );
+    const fixedIndex = priorities.indexOf("fixed_expenses");
+    const debtIndex = priorities.indexOf("debt_payments");
+    const goalsIndex = priorities.indexOf("savings_goals");
+
+    let availableForGoals = savingsBucket;
+    if (goalsIndex !== -1 && fixedIndex !== -1 && fixedIndex < goalsIndex) {
+        availableForGoals -= fixedNeedsShortfall;
+    }
+    if (goalsIndex !== -1 && debtIndex !== -1 && debtIndex < goalsIndex) {
+        availableForGoals -= debtBucketShortfall;
+    }
+
+    return round2(Math.max(availableForGoals, 0));
 }
 
 function addMonthsIso(baseDate: Date, months: number) {
@@ -254,10 +335,10 @@ function computeGoalRowsFromOnboarding(
         0
     );
     const totalTargets = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
-    const profileSavingsPool = resolveMonthlySavingsPool(setup.financialProfile);
+    const profileSavingsPool = resolveMonthlyGoalsPool(setup);
     const fallbackSavingsPool = totalTargets > 0 ? round2(totalTargets / 12) : 0;
     const monthlySavingsPool =
-        profileSavingsPool > 0 ? profileSavingsPool : fallbackSavingsPool;
+        setup.financialProfile ? profileSavingsPool : fallbackSavingsPool;
 
     let allocatedSavings = 0;
     return goals.map((goal, index) => {
@@ -737,11 +818,9 @@ export async function createOrganizationWithOnboarding(
                 (sum, goal) => sum + goal.targetAmount,
                 0
             );
-            const profileSavingsPool = resolveMonthlySavingsPool(
-                safeSetup.financialProfile
-            );
+            const profileSavingsPool = resolveMonthlyGoalsPool(safeSetup);
             const monthlyContribution =
-                profileSavingsPool > 0
+                safeSetup.financialProfile
                     ? profileSavingsPool
                     : round2(totalTargets / 12);
 

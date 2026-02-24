@@ -31,6 +31,8 @@ import {
 const VALID_UUIDS = {
     account: "11111111-1111-4111-8111-111111111111",
     category: "22222222-2222-4222-8222-222222222222",
+    transaction: "33333333-3333-4333-8333-333333333333",
+    transactionAlt: "44444444-4444-4444-8444-444444444444",
 };
 
 function buildTransactionsQuery(result: {
@@ -116,8 +118,8 @@ describe("app/actions/transactions", () => {
             sort: "accounts.name",
             sortDir: "desc",
             search: "  renta  ",
-            accountId: "acc-1",
-            categoryId: "cat-1",
+            accountId: VALID_UUIDS.account,
+            categoryId: VALID_UUIDS.category,
             direction: "income",
             dateFrom: "2026-02-01",
             dateTo: "2026-02-28",
@@ -126,8 +128,8 @@ describe("app/actions/transactions", () => {
         expect(supabase.from).toHaveBeenCalledWith("transactions");
         expect(query.eq).toHaveBeenCalledWith("org_id", "org-1");
         expect(query.ilike).toHaveBeenCalledWith("description", "%renta%");
-        expect(query.eq).toHaveBeenCalledWith("account_id", "acc-1");
-        expect(query.eq).toHaveBeenCalledWith("category_gl_id", "cat-1");
+        expect(query.eq).toHaveBeenCalledWith("account_id", VALID_UUIDS.account);
+        expect(query.eq).toHaveBeenCalledWith("category_gl_id", VALID_UUIDS.category);
         expect(query.gt).toHaveBeenCalledWith("amount", 0);
         expect(query.gte).toHaveBeenCalledWith("date", "2026-02-01");
         expect(query.lte).toHaveBeenCalledWith("date", "2026-02-28");
@@ -191,7 +193,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await getTransactionById("tx-1");
+        const result = await getTransactionById(VALID_UUIDS.transaction);
         expect(result).toEqual({ id: "tx-1", description: "Pago" });
     });
 
@@ -212,7 +214,13 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        await expect(getTransactionById("tx-1")).rejects.toThrow("No se pudo cargar la transacción");
+        await expect(getTransactionById(VALID_UUIDS.transaction)).rejects.toThrow("No se pudo cargar la transacción");
+    });
+
+    it("getTransactionById devuelve null cuando el id es inválido", async () => {
+        const result = await getTransactionById("tx-1");
+        expect(result).toBeNull();
+        expect(requireOrgContextMock).not.toHaveBeenCalled();
     });
 
     it("rechaza payload inválido en createTransaction", async () => {
@@ -330,7 +338,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await updateTransaction("tx-1", {
+        const result = await updateTransaction(VALID_UUIDS.transaction, {
             date: "2026-02-20",
             description: "Pago actualizado",
             account_id: VALID_UUIDS.account,
@@ -342,7 +350,9 @@ describe("app/actions/transactions", () => {
         expect(result).toEqual({ success: true });
         expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
         expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/transactions");
-        expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/transactions/tx-1/edit");
+        expect(revalidatePathMock).toHaveBeenCalledWith(
+            `/dashboard/transactions/${VALID_UUIDS.transaction}/edit`
+        );
     });
 
     it("updateTransaction devuelve error cuando no afecta filas", async () => {
@@ -362,7 +372,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await updateTransaction("tx-unknown", {
+        const result = await updateTransaction(VALID_UUIDS.transactionAlt, {
             date: "2026-02-20",
             description: "Pago",
             account_id: VALID_UUIDS.account,
@@ -391,7 +401,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await updateTransaction("tx-1", {
+        const result = await updateTransaction(VALID_UUIDS.transaction, {
             date: "2026-02-20",
             description: "Pago",
             account_id: VALID_UUIDS.account,
@@ -414,7 +424,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await updateTransaction("tx-1", {
+        const result = await updateTransaction(VALID_UUIDS.transaction, {
             date: "2026-02-20",
             description: "Pago",
             account_id: VALID_UUIDS.account,
@@ -424,6 +434,20 @@ describe("app/actions/transactions", () => {
         });
 
         expect(result).toEqual({ error: "rate limited" });
+    });
+
+    it("updateTransaction rechaza ids inválidos", async () => {
+        const result = await updateTransaction("tx-1", {
+            date: "2026-02-20",
+            description: "Pago",
+            account_id: VALID_UUIDS.account,
+            amount: 100,
+            currency: "USD",
+            is_transfer: false,
+        });
+
+        expect(result).toEqual({ error: "Identificador de transacción inválido" });
+        expect(requireOrgContextMock).not.toHaveBeenCalled();
     });
 
     it("elimina transacción si pertenece a la organización y revalida", async () => {
@@ -440,10 +464,10 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await deleteTransaction("tx-1");
+        const result = await deleteTransaction(VALID_UUIDS.transaction);
 
         expect(result).toEqual({ success: true });
-        expect(deleteQuery.eq).toHaveBeenNthCalledWith(1, "id", "tx-1");
+        expect(deleteQuery.eq).toHaveBeenNthCalledWith(1, "id", VALID_UUIDS.transaction);
         expect(deleteQuery.eq).toHaveBeenNthCalledWith(2, "org_id", "org-1");
         expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
         expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/transactions");
@@ -460,7 +484,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await deleteTransaction("tx-1");
+        const result = await deleteTransaction(VALID_UUIDS.transaction);
 
         expect(result).toEqual({ error: "rate limited" });
     });
@@ -479,7 +503,7 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await deleteTransaction("tx-1");
+        const result = await deleteTransaction(VALID_UUIDS.transaction);
 
         expect(result).toEqual({ error: "No se pudo eliminar la transacción" });
     });
@@ -498,8 +522,15 @@ describe("app/actions/transactions", () => {
             user: { id: "user-1" },
         } as never);
 
-        const result = await deleteTransaction("tx-unknown");
+        const result = await deleteTransaction(VALID_UUIDS.transactionAlt);
 
         expect(result).toEqual({ error: "Transacción no encontrada o sin permisos" });
+    });
+
+    it("deleteTransaction rechaza ids inválidos", async () => {
+        const result = await deleteTransaction("tx-1");
+
+        expect(result).toEqual({ error: "Identificador de transacción inválido" });
+        expect(requireOrgContextMock).not.toHaveBeenCalled();
     });
 });

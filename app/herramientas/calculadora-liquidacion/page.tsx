@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Head from "next/head";
 import JsonLd from "@/components/seo/JsonLd";
 import {
     calcularLiquidacionPeru,
@@ -13,8 +14,10 @@ import {
 const META_TITLE = "Calculadora de Liquidación Laboral | Perú, Colombia y Chile";
 const META_DESC =
     "Calcula tu liquidación laboral al salir de una empresa. CTS, gratificación, vacaciones, cesantías, prima e indemnización. Gratis y al instante.";
-
-/* eslint-disable @next/next/no-head-element */
+type LiquidacionResult =
+    | ReturnType<typeof calcularLiquidacionPeru>
+    | ReturnType<typeof calcularLiquidacionColombia>
+    | ReturnType<typeof calcularLiquidacionChile>;
 
 export default function CalculadoraLiquidacion() {
     const [country, setCountry] = useState<Country>("peru");
@@ -25,8 +28,7 @@ export default function CalculadoraLiquidacion() {
     const [auxTransporte, setAuxTransporte] = useState(false);
     const [causalChile, setCausalChile] = useState<CausalChile>("necesidades_empresa");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<LiquidacionResult | null>(null);
     const [error, setError] = useState("");
 
     function handleCalcular() {
@@ -52,10 +54,10 @@ export default function CalculadoraLiquidacion() {
 
     return (
         <>
-            <head>
+            <Head>
                 <title>{META_TITLE}</title>
                 <meta name="description" content={META_DESC} />
-            </head>
+            </Head>
 
             <JsonLd
                 id="liquidacion-calc"

@@ -2,7 +2,7 @@ import { getForecastOverview } from "@/app/actions/forecast";
 import { ForecastAssumptionsForm } from "@/components/forecast/ForecastAssumptionsForm";
 
 interface ForecastPageProps {
-    searchParams: { month?: string; horizon?: string };
+    searchParams: Promise<{ month?: string; horizon?: string }>;
 }
 
 function getRecentMonths(count = 12) {
@@ -55,13 +55,14 @@ function formatModelName(model: string) {
 }
 
 export default async function ForecastPage({ searchParams }: ForecastPageProps) {
+    const resolvedSearchParams = await searchParams;
     const monthOptions = getRecentMonths(12);
     const month =
-        searchParams.month && /^\d{4}-\d{2}$/.test(searchParams.month)
-            ? searchParams.month
+        resolvedSearchParams.month && /^\d{4}-\d{2}$/.test(resolvedSearchParams.month)
+            ? resolvedSearchParams.month
             : monthOptions[0];
-    const horizon = searchParams.horizon && ["3", "6", "12"].includes(searchParams.horizon)
-        ? Number(searchParams.horizon)
+    const horizon = resolvedSearchParams.horizon && ["3", "6", "12"].includes(resolvedSearchParams.horizon)
+        ? Number(resolvedSearchParams.horizon)
         : 6;
 
     const forecast = await getForecastOverview(month, horizon);

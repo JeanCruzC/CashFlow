@@ -4,6 +4,8 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requireUserContext } from "@/lib/server/context";
 import { unstable_cache } from "next/cache";
+import { logError } from "@/lib/server/logger";
+import { rejectCrossOrigin } from "@/lib/server/http-security";
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
@@ -43,20 +45,27 @@ Devuelve un objeto JSON con dos propiedades:
     }
 );
 
+const estimateBudgetPayloadSchema = z.object({
+    category: z.string().trim().min(1).max(80),
+    country: z.string().trim().min(2).max(60),
+    currency: z.string().trim().length(3).transform((value) => value.toUpperCase()),
+    context: z.string().trim().min(3).max(600),
+});
+
 export async function POST(req: Request) {
     try {
+        const csrfResponse = rejectCrossOrigin(req, "Origen no permitido para estimar presupuesto");
+        if (csrfResponse) return csrfResponse;
+
         // Ensure user is authenticated, even if they don't have an org yet (during onboarding)
         await requireUserContext();
 
         const body = await req.json();
-        const { category, country, currency, context } = body;
-
-        if (!category || !country || !currency || !context) {
-            return NextResponse.json(
-                { error: "Faltan parámetros requeridos (category, country, currency, context)." },
-                { status: 400 }
-            );
+        const parsed = estimateBudgetPayloadSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json({ error: "Parámetros inválidos para la estimación." }, { status: 400 });
         }
+        const { category, country, currency, context } = parsed.data;
 
         // Normalize text to improve cache hit rates for simple variations (like extra spaces or casing)
         const normalizedContext = context.trim().toLowerCase();
@@ -65,7 +74,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(result);
     } catch (error) {
-        console.error("Error estimating budget with AI:", error);
+        logError("Error estimating budget with AI", error);
         return NextResponse.json(
             { error: "No se pudo generar la estimación. Por favor, ingresa el monto manualmente." },
             { status: 500 }

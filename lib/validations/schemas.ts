@@ -53,21 +53,25 @@ export const categorySchema = z.object({
 });
 
 export const transactionSchema = z.object({
-    date: z.string().min(1, "La fecha es obligatoria"),
-    description: z.string().min(1, "La descripción es obligatoria"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha debe tener formato YYYY-MM-DD"),
+    description: z
+        .string()
+        .trim()
+        .min(1, "La descripción es obligatoria")
+        .max(240, "La descripción no puede superar 240 caracteres"),
     account_id: z.string().uuid("La cuenta es obligatoria"),
     category_gl_id: z.string().uuid().optional(),
     counterparty_id: z.string().uuid().optional(),
     cost_center_id: z.string().uuid().optional(),
     amount: z.number().refine((v) => v !== 0, "El monto no puede ser cero"),
-    currency: z.string().length(3),
+    currency: z.string().trim().length(3).transform((value) => value.toUpperCase()),
     tax_amount: z.number().optional(),
     is_transfer: z.boolean().default(false),
     transfer_group_id: z.string().uuid().optional(),
     savings_goal_id: z.string().uuid().optional(),
     detraccion_rate: z.number().min(0).max(100).optional(),
     detraccion_amount: z.number().optional(),
-    notes: z.string().optional(),
+    notes: z.string().trim().max(500, "Las notas no pueden superar 500 caracteres").optional(),
 });
 
 export const budgetSchema = z.object({

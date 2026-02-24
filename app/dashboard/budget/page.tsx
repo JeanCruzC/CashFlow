@@ -60,14 +60,15 @@ function friendlyCategoryName(name: string) {
 }
 
 interface BudgetPageProps {
-    searchParams: { month?: string };
+    searchParams: Promise<{ month?: string }>;
 }
 
 export default async function BudgetPage({ searchParams }: BudgetPageProps) {
+    const resolvedSearchParams = await searchParams;
     const monthOptions = getRecentMonths(12);
     const month =
-        searchParams.month && /^\d{4}-\d{2}$/.test(searchParams.month)
-            ? searchParams.month
+        resolvedSearchParams.month && /^\d{4}-\d{2}$/.test(resolvedSearchParams.month)
+            ? resolvedSearchParams.month
             : monthOptions[0];
 
     const [overview, categories] = await Promise.all([

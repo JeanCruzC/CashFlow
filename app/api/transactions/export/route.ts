@@ -2,15 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOrgActorContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { assertRateLimit } from "@/lib/server/rate-limit";
+import {
+    sanitizeIsoDate,
+    sanitizeSearchTerm,
+    sanitizeUuid,
+} from "@/lib/server/input-sanitizers";
 
 export const dynamic = "force-dynamic";
 
 function escapeCsv(value: unknown) {
-    const raw = value == null ? "" : String(value);
-    if (raw.includes(",") || raw.includes('"') || raw.includes("\n")) {
-        return `"${raw.replaceAll('"', '""')}"`;
+    const raw = value == null ? "" : String(value).replace(/[\u0000-\u001F\u007F]/g, " ");
+    const maybeFormula = /^[=+\-@]/.test(raw) || raw.startsWith("\t");
+    const safeRaw = maybeFormula ? `'${raw}` : raw;
+    if (safeRaw.includes(",") || safeRaw.includes('"') || safeRaw.includes("\n")) {
+        return `"${safeRaw.replaceAll('"', '""')}"`;
     }
-    return raw;
+    return safeRaw;
 }
 
 interface ExportTransactionRow {
@@ -33,12 +40,12 @@ export async function GET(request: NextRequest) {
         });
 
         const searchParams = request.nextUrl.searchParams;
-        const search = searchParams.get("search")?.trim();
-        const accountId = searchParams.get("accountId");
-        const categoryId = searchParams.get("categoryId");
+        const search = sanitizeSearchTerm(searchParams.get("search") ?? undefined, 120);
+        const accountId = sanitizeUuid(searchParams.get("accountId") ?? undefined);
+        const categoryId = sanitizeUuid(searchParams.get("categoryId") ?? undefined);
         const direction = searchParams.get("direction");
-        const dateFrom = searchParams.get("dateFrom");
-        const dateTo = searchParams.get("dateTo");
+        const dateFrom = sanitizeIsoDate(searchParams.get("dateFrom") ?? undefined);
+        const dateTo = sanitizeIsoDate(searchParams.get("dateTo") ?? undefined);
 
         let query = supabase
             .from("transactions")

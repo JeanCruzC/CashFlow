@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Head from "next/head";
 import JsonLd from "@/components/seo/JsonLd";
 import {
     calcularSalarioNeto,
     type SistemaPensiones,
+    type SalarioNetoResult,
     AFP_DATA,
     UIT_2025,
     RMV_2025,
@@ -15,16 +17,13 @@ const META_TITLE = "Calculadora de Salario Neto Perú 2025 | ONP, AFP, EsSalud, 
 const META_DESC =
     "Calcula tu sueldo neto en Perú 2025. Descuentos de ONP/AFP, Impuesto a la Renta de 5ta categoría, EsSalud y Seguro Vida Ley. Gratis.";
 
-/* eslint-disable @next/next/no-head-element */
-
 export default function CalculadoraSalarioNetoPeru() {
     const [sueldo, setSueldo] = useState("");
     const [asigFamiliar, setAsigFamiliar] = useState(false);
     const [sistema, setSistema] = useState<SistemaPensiones>("onp");
     const [gratificaciones, setGratificaciones] = useState(true);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<SalarioNetoResult | null>(null);
     const [error, setError] = useState("");
 
     function handleCalcular() {
@@ -40,7 +39,7 @@ export default function CalculadoraSalarioNetoPeru() {
 
     return (
         <>
-            <head><title>{META_TITLE}</title><meta name="description" content={META_DESC} /></head>
+            <Head><title>{META_TITLE}</title><meta name="description" content={META_DESC} /></Head>
 
             <JsonLd id="salario-neto-calc" data={{ "@context": "https://schema.org", "@type": "WebApplication", name: META_TITLE, description: META_DESC, applicationCategory: "FinanceApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }} />
 

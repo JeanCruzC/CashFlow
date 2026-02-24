@@ -23,6 +23,14 @@ test.describe("Auth + onboarding + transactions (optional)", () => {
 
         if (page.url().includes("/onboarding/select-profile")) {
             await page.getByRole("button", { name: /Perfil personal/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByLabel(/Ingreso mensual neto/i).fill("4000");
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            await page.getByRole("button", { name: /^Continuar$/i }).click();
             await page.getByRole("button", { name: /Crear organización y continuar/i }).click();
             await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
         }

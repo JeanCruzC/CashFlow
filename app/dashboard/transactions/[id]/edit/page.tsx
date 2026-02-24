@@ -6,11 +6,11 @@ import { TransactionForm } from "@/components/transactions/TransactionForm";
 import Link from "next/link";
 
 interface EditTransactionPageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export default async function EditTransactionPage({ params }: EditTransactionPageProps) {
-    const { id } = params;
+    const { id } = await params;
 
     const [accounts, categories, savingsGoals, transaction] = await Promise.all([
         getAccounts(),

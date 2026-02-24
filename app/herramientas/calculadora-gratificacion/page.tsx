@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Head from "next/head";
 import JsonLd from "@/components/seo/JsonLd";
 import {
     calcularGratificacionPeru,
@@ -12,8 +13,12 @@ import {
 const META_TITLE = "Calculadora de Gratificación y Prima | Perú, Colombia, Chile";
 const META_DESC =
     "Calcula tu gratificación (Perú), prima de servicios (Colombia) o aguinaldo (Chile). Fórmula oficial, gratis y al instante.";
-
-/* eslint-disable @next/next/no-head-element */
+type GratificacionResult = {
+    items: Record<string, number>;
+    total: number;
+    label: string;
+    currency: string;
+};
 
 export default function CalculadoraGratificacion() {
     const [country, setCountry] = useState<Country>("peru");
@@ -31,8 +36,7 @@ export default function CalculadoraGratificacion() {
     const [montoCl, setMontoCl] = useState("");
     const [mesesCl, setMesesCl] = useState("12");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<GratificacionResult | null>(null);
     const [error, setError] = useState("");
 
     function handleCalcular() {
@@ -66,7 +70,7 @@ export default function CalculadoraGratificacion() {
 
     return (
         <>
-            <head><title>{META_TITLE}</title><meta name="description" content={META_DESC} /></head>
+            <Head><title>{META_TITLE}</title><meta name="description" content={META_DESC} /></Head>
 
             <JsonLd id="grat-calc" data={{ "@context": "https://schema.org", "@type": "WebApplication", name: META_TITLE, description: META_DESC, applicationCategory: "FinanceApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }} />
 

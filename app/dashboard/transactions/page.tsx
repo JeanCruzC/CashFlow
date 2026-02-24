@@ -6,7 +6,7 @@ import { TransactionGrid } from "@/components/transactions/TransactionGrid";
 export default async function TransactionsPage({
     searchParams,
 }: {
-    searchParams: {
+    searchParams: Promise<{
         page?: string;
         search?: string;
         sort?: string;
@@ -16,21 +16,22 @@ export default async function TransactionsPage({
         direction?: string;
         dateFrom?: string;
         dateTo?: string;
-    };
+    }>;
 }) {
-    const page = Number(searchParams.page) || 1;
+    const resolvedSearchParams = await searchParams;
+    const page = Number(resolvedSearchParams.page) || 1;
     const pageSize = 20;
-    const sort = searchParams.sort || "date";
-    const sortDir = searchParams.sortDir === "asc" ? "asc" : "desc";
-    const search = searchParams.search || "";
-    const accountId = searchParams.accountId || "";
-    const categoryId = searchParams.categoryId || "";
+    const sort = resolvedSearchParams.sort || "date";
+    const sortDir = resolvedSearchParams.sortDir === "asc" ? "asc" : "desc";
+    const search = resolvedSearchParams.search || "";
+    const accountId = resolvedSearchParams.accountId || "";
+    const categoryId = resolvedSearchParams.categoryId || "";
     const direction =
-        searchParams.direction === "income" || searchParams.direction === "expense"
-            ? searchParams.direction
+        resolvedSearchParams.direction === "income" || resolvedSearchParams.direction === "expense"
+            ? resolvedSearchParams.direction
             : "all";
-    const dateFrom = searchParams.dateFrom || "";
-    const dateTo = searchParams.dateTo || "";
+    const dateFrom = resolvedSearchParams.dateFrom || "";
+    const dateTo = resolvedSearchParams.dateTo || "";
 
     const [{ data, count }, accounts, categories] = await Promise.all([
         getTransactions({

@@ -13,6 +13,28 @@ BACKEND_LOG="$LOG_DIR/backend.log"
 
 mkdir -p "$LOG_DIR"
 
+node_major_version() {
+  if ! command -v node >/dev/null 2>&1; then
+    printf ""
+    return 1
+  fi
+  node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true
+}
+
+print_node_runtime_notice() {
+  local major
+  major="$(node_major_version || true)"
+  if [[ -z "$major" ]]; then
+    print_line "Aviso: no se detectó Node.js en PATH."
+    return 0
+  fi
+
+  if [[ "$major" -lt 20 ]]; then
+    print_line "Aviso: CashFlow requiere Node.js 20+ (actual: $(node -v))."
+    print_line "Sugerencia: usa nvm -> nvm install 20 && nvm use 20"
+  fi
+}
+
 # Defaults
 DEFAULT_FRONTEND_CMD="npm run dev -- --hostname 127.0.0.1 --port 3001"
 DEFAULT_BACKEND_ENABLED="0"
@@ -767,6 +789,7 @@ USAGE
 
 main() {
   load_config
+  print_node_runtime_notice
 
   local action="${1:-menu}"
 

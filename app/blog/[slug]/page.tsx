@@ -18,9 +18,9 @@ import { buildBlogPostingSchema } from "@/lib/seo/schema";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
 
 type BlogPostPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 function formatDate(dateIso: string) {
@@ -37,7 +37,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
 
   if (!post) {
     return {
@@ -113,7 +114,8 @@ const mdxComponents = {
 };
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = await getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
 
   const articleSchema = buildBlogPostingSchema({

@@ -4,8 +4,18 @@ import { requireOrgActorContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 import { revalidatePath } from "next/cache";
+import { rejectCrossOrigin } from "@/lib/server/http-security";
 
 export const dynamic = "force-dynamic";
+const MAX_IMPORT_ROWS = 5_000;
+const MAX_CELL_LENGTH = 500;
+const ACCEPTED_CSV_MIME_TYPES = new Set([
+    "text/csv",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "text/plain",
+    "",
+]);
 
 function normalizeHeader(header: string) {
     return header
@@ -57,6 +67,9 @@ function parseNumber(raw: string) {
 
 export async function POST(request: Request) {
     try {
+        const csrfResponse = rejectCrossOrigin(request, "Origen no permitido para importar archivos");
+        if (csrfResponse) return csrfResponse;
+
         const { supabase, orgId, user } = await requireOrgActorContext();
         assertRateLimit({
             key: `import-transactions:${user.id}`,
@@ -70,6 +83,15 @@ export async function POST(request: Request) {
 
         if (!file || !(file instanceof File)) {
             return NextResponse.json({ error: "Archivo no válido" }, { status: 400 });
+        }
+        if (!file.name.toLowerCase().endsWith(".csv")) {
+            return NextResponse.json({ error: "Solo se permiten archivos .csv" }, { status: 400 });
+        }
+        if (!ACCEPTED_CSV_MIME_TYPES.has(file.type)) {
+            return NextResponse.json(
+                { error: "Tipo de archivo no permitido. Usa un CSV válido." },
+                { status: 400 }
+            );
         }
         if (file.size > 5 * 1024 * 1024) {
             return NextResponse.json(
@@ -87,6 +109,12 @@ export async function POST(request: Request) {
         if (lines.length < 2) {
             return NextResponse.json(
                 { error: "El archivo CSV no contiene suficientes filas" },
+                { status: 400 }
+            );
+        }
+        if (lines.length - 1 > MAX_IMPORT_ROWS) {
+            return NextResponse.json(
+                { error: `El archivo excede el máximo de ${MAX_IMPORT_ROWS} filas` },
                 { status: 400 }
             );
         }
@@ -119,7 +147,7 @@ export async function POST(request: Request) {
         for (let rowIndex = 1; rowIndex < lines.length; rowIndex += 1) {
             const values = splitCsvLine(lines[rowIndex], delimiter);
             const row = headers.reduce<Record<string, string>>((acc, header, index) => {
-                acc[header] = values[index] ?? "";
+                acc[header] = (values[index] ?? "").slice(0, MAX_CELL_LENGTH);
                 return acc;
             }, {});
 
@@ -137,7 +165,7 @@ export async function POST(request: Request) {
 
             const parsed = transactionSchema.safeParse({
                 date: row.date || row.fecha,
-                description: row.description || row.descripcion,
+                description: (row.description || row.descripcion || "").trim(),
                 amount: parseNumber(row.amount || row.monto),
                 account_id: accountId,
                 category_gl_id: categoryId,
