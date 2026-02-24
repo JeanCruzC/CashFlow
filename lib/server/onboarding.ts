@@ -254,8 +254,21 @@ function resolveFinancialDistribution(
 
 function estimateTotalCreditCardDebt(setup: OnboardingSetupInput) {
     const cards = setup.creditCards || [];
+    const revolvingCards = cards.filter(card => card.paymentStrategy !== "full");
     return round2(
-        cards.reduce((sum, card) => sum + Math.max(card.currentBalance, 0), 0)
+        revolvingCards.reduce((sum, card) => sum + Math.max(card.currentBalance, 0), 0)
+    );
+}
+
+function estimateTotalCreditCardMinimums(setup: OnboardingSetupInput) {
+    const cards = setup.creditCards || [];
+    const revolvingCards = cards.filter(card => card.paymentStrategy !== "full");
+    return round2(
+        revolvingCards.reduce((sum, card) => {
+            const statedMin = card.minimumPaymentAmount || 0;
+            if (statedMin > 0) return sum + statedMin;
+            return sum + (Math.max(card.currentBalance, 0) * 0.05);
+        }, 0)
     );
 }
 
@@ -296,7 +309,7 @@ function resolveMonthlyGoalsPool(setup: OnboardingSetupInput) {
     const fixedExpenseBudget = estimateFixedExpenseBudget(setup);
     const fixedNeedsShortfall = Math.max(fixedExpenseBudget - needsBucket, 0);
 
-    const estimatedDebtPayment = round2(estimateTotalCreditCardDebt(setup) * 0.05);
+    const estimatedDebtPayment = estimateTotalCreditCardMinimums(setup);
     const debtBucketShortfall = Math.max(estimatedDebtPayment - debtBucket, 0);
 
     const priorities = normalizePriorities(
