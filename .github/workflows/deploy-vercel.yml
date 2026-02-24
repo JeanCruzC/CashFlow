@@ -27,26 +27,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  missing-vercel-secrets:
+  vercel-secrets-check:
     name: vercel-secrets-check
     runs-on: ubuntu-latest
-    if: ${{ secrets.VERCEL_TOKEN == '' || secrets.VERCEL_ORG_ID == '' || secrets.VERCEL_PROJECT_ID == '' }}
+    outputs:
+      has_secrets: ${{ steps.check.outputs.has_secrets }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - name: Notice missing secrets
+      - name: Validate Vercel secrets
+        id: check
         run: |
-          echo "::notice::No se ejecuta deploy Vercel: faltan VERCEL_TOKEN, VERCEL_ORG_ID o VERCEL_PROJECT_ID."
+          if [[ -n "${VERCEL_TOKEN}" && -n "${VERCEL_ORG_ID}" && -n "${VERCEL_PROJECT_ID}" ]]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+            echo "Vercel secrets disponibles."
+          else
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No se ejecuta deploy Vercel: faltan VERCEL_TOKEN, VERCEL_ORG_ID o VERCEL_PROJECT_ID."
+          fi
 
   preview:
     name: vercel-preview
     runs-on: ubuntu-latest
+    needs: vercel-secrets-check
     if: >
       (
         github.event_name == 'pull_request' ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'preview')
       ) &&
-      secrets.VERCEL_TOKEN != '' &&
-      secrets.VERCEL_ORG_ID != '' &&
-      secrets.VERCEL_PROJECT_ID != ''
+      needs.vercel-secrets-check.outputs.has_secrets == 'true'
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -106,14 +117,13 @@ jobs:
   production:
     name: vercel-production
     runs-on: ubuntu-latest
+    needs: vercel-secrets-check
     if: >
       (
         (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
         (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'production')
       ) &&
-      secrets.VERCEL_TOKEN != '' &&
-      secrets.VERCEL_ORG_ID != '' &&
-      secrets.VERCEL_PROJECT_ID != ''
+      needs.vercel-secrets-check.outputs.has_secrets == 'true'
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
