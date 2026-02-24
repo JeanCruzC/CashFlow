@@ -252,14 +252,6 @@ function resolveFinancialDistribution(
     };
 }
 
-function estimateTotalCreditCardDebt(setup: OnboardingSetupInput) {
-    const cards = setup.creditCards || [];
-    const revolvingCards = cards.filter(card => card.paymentStrategy !== "full");
-    return round2(
-        revolvingCards.reduce((sum, card) => sum + Math.max(card.currentBalance, 0), 0)
-    );
-}
-
 function estimateTotalCreditCardMinimums(setup: OnboardingSetupInput) {
     const cards = setup.creditCards || [];
     const revolvingCards = cards.filter(card => card.paymentStrategy !== "full");

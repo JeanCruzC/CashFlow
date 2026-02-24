@@ -441,7 +441,7 @@ export default function SelectProfilePage() {
                     setDistributionRule("50_30_20");
                 }
             }
-        } catch (error) {
+        } catch {
             setAiError("Ocurrió un error inesperado al llamar a la IA.");
         } finally {
             setIsAiLoading(false);
@@ -1163,7 +1163,7 @@ export default function SelectProfilePage() {
                                                                 </select>
                                                                 {card.paymentStrategy === "full" && (
                                                                     <p className="mt-1.5 text-[10px] text-surface-500 leading-tight">
-                                                                        Al elegir pago total, CashFlow asume que usas la tarjeta como medio transaccional. Este saldo no se considerará "deuda estructural" en la cascada mensual.
+                                                                        Al elegir pago total, CashFlow asume que usas la tarjeta como medio transaccional. Este saldo no se considerará &quot;deuda estructural&quot; en la cascada mensual.
                                                                     </p>
                                                                 )}
                                                             </div>
