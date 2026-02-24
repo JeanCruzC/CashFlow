@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createProfileOrganization } from "@/app/actions/onboarding";
+import { generateSmartDistribution } from "@/lib/server/ai-distribution";
 import {
     ArrowRightIcon,
     BuildingIcon,
@@ -180,6 +181,10 @@ export default function SelectProfilePage() {
     const [customWantsPct, setCustomWantsPct] = useState("30");
     const [customSavingsPct, setCustomSavingsPct] = useState("20");
     const [customDebtPct, setCustomDebtPct] = useState("0");
+
+    const [aiReasoning, setAiReasoning] = useState("");
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiError, setAiError] = useState("");
 
     const [savingsPriorities, setSavingsPriorities] = useState<SavingsPriority[]>([
         "fixed_expenses",
@@ -380,34 +385,57 @@ export default function SelectProfilePage() {
         });
     }
 
-    function applySmartDebtDistribution() {
-        const safeIncome = Math.max(consolidatedIncome, 1);
-        const debtRatio = totalCreditCardDebt / safeIncome;
+    async function applySmartDebtDistribution() {
+        setIsAiLoading(true);
+        setAiError("");
+        setAiReasoning("");
 
-        setDistributionRule("custom");
-        if (debtRatio >= 1.5) {
-            setCustomNeedsPct("55");
-            setCustomWantsPct("10");
-            setCustomSavingsPct("15");
-            setCustomDebtPct("20");
-            return;
-        }
-        if (debtRatio >= 0.75) {
-            setCustomNeedsPct("58");
-            setCustomWantsPct("12");
-            setCustomSavingsPct("15");
-            setCustomDebtPct("15");
-            return;
-        }
-        if (debtRatio > 0) {
-            setCustomNeedsPct("60");
-            setCustomWantsPct("15");
-            setCustomSavingsPct("15");
-            setCustomDebtPct("10");
-            return;
-        }
+        try {
+            const response = await generateSmartDistribution({
+                country,
+                currency,
+                consolidatedIncome,
+                fixedExpensesBudget,
+                creditCards: creditCards.map((c) => ({
+                    name: c.name || "Tarjeta",
+                    currentBalance: parseAmount(c.currentBalance),
+                    minimumPaymentAmount: parseAmount(c.minimumPaymentAmount),
+                    tea: c.paymentStrategy !== "full" ? parseAmount(c.tea) : undefined,
+                })),
+                savingsGoals: savingsGoals.map((g) => ({
+                    name: g.name || "Meta",
+                    targetAmount: parseAmount(g.targetAmount),
+                })),
+            });
 
-        setDistributionRule("50_30_20");
+            if (response.success && response.data) {
+                setDistributionRule("custom");
+                setCustomNeedsPct(response.data.needs.toString());
+                setCustomWantsPct(response.data.wants.toString());
+                setCustomSavingsPct(response.data.savings.toString());
+                setCustomDebtPct(response.data.debt.toString());
+                setAiReasoning(response.data.reasoning);
+            } else {
+                setAiError(response.error || "Error al calcular la distribución");
+                // Fallback matématico
+                const safeIncome = Math.max(consolidatedIncome, 1);
+                const debtRatio = totalCreditCardDebt / safeIncome;
+                setDistributionRule("custom");
+                if (debtRatio >= 1.5) {
+                    setCustomNeedsPct("55"); setCustomWantsPct("10"); setCustomSavingsPct("15"); setCustomDebtPct("20");
+                } else if (debtRatio >= 0.75) {
+                    setCustomNeedsPct("58"); setCustomWantsPct("12"); setCustomSavingsPct("15"); setCustomDebtPct("15");
+                } else if (debtRatio > 0) {
+                    setCustomNeedsPct("60"); setCustomWantsPct("15"); setCustomSavingsPct("15"); setCustomDebtPct("10");
+                } else {
+                    setDistributionRule("50_30_20");
+                }
+            }
+        } catch (error) {
+            setAiError("Ocurrió un error inesperado al llamar a la IA.");
+        } finally {
+            setIsAiLoading(false);
+        }
     }
 
     function handleAddCategory() {
@@ -1627,9 +1655,10 @@ export default function SelectProfilePage() {
                                         <button
                                             type="button"
                                             onClick={applySmartDebtDistribution}
-                                            className="text-xs font-semibold text-[#0d4c7a] hover:text-[#0a3a5e] underline underline-offset-2"
+                                            disabled={isAiLoading}
+                                            className="text-xs font-semibold text-[#0d4c7a] hover:text-[#0a3a5e] underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Auto-completar inteligente ✨
+                                            {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA ✨"}
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1643,7 +1672,10 @@ export default function SelectProfilePage() {
                                                     name="distribution-rule"
                                                     className="sr-only"
                                                     checked={distributionRule === rule}
-                                                    onChange={() => setDistributionRule(rule)}
+                                                    onChange={() => {
+                                                        setDistributionRule(rule);
+                                                        setAiReasoning(""); // Limpiar razonamiento al cambiar regla manual
+                                                    }}
                                                 />
                                                 <span className={`text-sm font-bold ${distributionRule === rule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
                                                     {DISTRIBUTION_LABELS[rule] === "Personalizada" ? "A medida" : DISTRIBUTION_LABELS[rule]}
@@ -1651,6 +1683,22 @@ export default function SelectProfilePage() {
                                             </label>
                                         ))}
                                     </div>
+
+                                    {aiError && (
+                                        <p className="mt-2 text-xs text-negative-600 bg-negative-50 p-2 rounded-lg">{aiError}</p>
+                                    )}
+
+                                    {aiReasoning && distributionRule === "custom" && !isAiLoading && (
+                                        <div className="mt-4 rounded-xl border border-[#0d4c7a] bg-[#f2f8fc] p-4 animate-fade-in shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-lg">✨</span>
+                                                <h4 className="text-sm font-semibold text-[#0d4c7a]">Recomendación de Gemini AI</h4>
+                                            </div>
+                                            <p className="text-sm text-[#0a3a5e] leading-relaxed">
+                                                {aiReasoning}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Inputs Custom */}
