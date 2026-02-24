@@ -165,9 +165,9 @@ export default function SelectProfilePage() {
 
     const distributionTotal = round2(
         distribution.needsPct +
-            distribution.wantsPct +
-            distribution.savingsPct +
-            distribution.debtPct
+        distribution.wantsPct +
+        distribution.savingsPct +
+        distribution.debtPct
     );
 
     const distributionAmounts = useMemo(() => {
@@ -279,7 +279,7 @@ export default function SelectProfilePage() {
             return;
         }
 
-        if (step === 6 && distributionRule === "custom" && Math.abs(distributionTotal - 100) > 0.01) {
+        if (step === 8 && selected === "personal" && distributionRule === "custom" && Math.abs(distributionTotal - 100) > 0.01) {
             setError("La distribución personalizada debe sumar 100%.");
             return;
         }
@@ -316,23 +316,23 @@ export default function SelectProfilePage() {
 
             const creditCardsPayload = hasCreditCards
                 ? creditCards
-                      .map((card) => ({
-                          name: card.name.trim() || "Tarjeta de crédito",
-                          creditLimit: parseAmount(card.creditLimit),
-                          currentBalance: parseAmount(card.currentBalance),
-                      }))
-                      .filter((card) => card.creditLimit > 0)
+                    .map((card) => ({
+                        name: card.name.trim() || "Tarjeta de crédito",
+                        creditLimit: parseAmount(card.creditLimit),
+                        currentBalance: parseAmount(card.currentBalance),
+                    }))
+                    .filter((card) => card.creditLimit > 0)
                 : undefined;
 
             const savingsGoalsPayload = hasSavingsGoals
                 ? savingsGoals
-                      .map((goal) => ({
-                          name: goal.name.trim() || "Meta de ahorro",
-                          targetAmount: parseAmount(goal.targetAmount),
-                          goalWeight: parseAmount(goal.goalWeight) || 1,
-                          deadlineDate: goal.deadlineDate || null,
-                      }))
-                      .filter((goal) => goal.targetAmount > 0)
+                    .map((goal) => ({
+                        name: goal.name.trim() || "Meta de ahorro",
+                        targetAmount: parseAmount(goal.targetAmount),
+                        goalWeight: parseAmount(goal.goalWeight) || 1,
+                        deadlineDate: goal.deadlineDate || null,
+                    }))
+                    .filter((goal) => goal.targetAmount > 0)
                 : undefined;
 
             const financialProfilePayload = {
@@ -343,11 +343,11 @@ export default function SelectProfilePage() {
                 customDistribution:
                     distributionRule === "custom"
                         ? {
-                              needsPct: parseAmount(customNeedsPct),
-                              wantsPct: parseAmount(customWantsPct),
-                              savingsPct: parseAmount(customSavingsPct),
-                              debtPct: parseAmount(customDebtPct),
-                          }
+                            needsPct: parseAmount(customNeedsPct),
+                            wantsPct: parseAmount(customWantsPct),
+                            savingsPct: parseAmount(customSavingsPct),
+                            debtPct: parseAmount(customDebtPct),
+                        }
                         : undefined,
                 savingsPriorities,
             };
@@ -355,39 +355,39 @@ export default function SelectProfilePage() {
             const payload =
                 selected === "personal"
                     ? {
-                          ...shared,
-                          startDate: new Date().toISOString().slice(0, 10),
-                          firstAccount: {
-                              name: accountName.trim() || "Cuenta principal",
-                              accountType,
-                              openingBalance: Number(openingBalance || "0"),
-                              currency,
-                          },
-                          creditCards: creditCardsPayload,
-                          savingsGoals: savingsGoalsPayload,
-                          customCategories,
-                          initialBudgets: initialBudgetsPayload,
-                          financialProfile: financialProfilePayload,
-                      }
+                        ...shared,
+                        startDate: new Date().toISOString().slice(0, 10),
+                        firstAccount: {
+                            name: accountName.trim() || "Cuenta principal",
+                            accountType,
+                            openingBalance: Number(openingBalance || "0"),
+                            currency,
+                        },
+                        creditCards: creditCardsPayload,
+                        savingsGoals: savingsGoalsPayload,
+                        customCategories,
+                        initialBudgets: initialBudgetsPayload,
+                        financialProfile: financialProfilePayload,
+                    }
                     : {
-                          ...shared,
-                          legalName: legalName.trim() || orgName.trim(),
-                          fiscalYearStartMonth: 1,
-                          accountingBasis: "accrual_basis" as const,
-                          detraccionesEnabled: false,
-                          forecast: {
-                              revenueGrowthRate: 5,
-                              cogsPercent: 40,
-                              fixedOpex: 0,
-                              variableOpexPercent: 15,
-                              oneOffAmount: 0,
-                              note: "Inicializado desde onboarding",
-                          },
-                          creditCards: creditCardsPayload,
-                          savingsGoals: savingsGoalsPayload,
-                          customCategories,
-                          initialBudgets: initialBudgetsPayload,
-                      };
+                        ...shared,
+                        legalName: legalName.trim() || orgName.trim(),
+                        fiscalYearStartMonth: 1,
+                        accountingBasis: "accrual_basis" as const,
+                        detraccionesEnabled: false,
+                        forecast: {
+                            revenueGrowthRate: 5,
+                            cogsPercent: 40,
+                            fixedOpex: 0,
+                            variableOpexPercent: 15,
+                            oneOffAmount: 0,
+                            note: "Inicializado desde onboarding",
+                        },
+                        creditCards: creditCardsPayload,
+                        savingsGoals: savingsGoalsPayload,
+                        customCategories,
+                        initialBudgets: initialBudgetsPayload,
+                    };
 
             const result = await createProfileOrganization(selected, payload);
             if (result.error) throw new Error(result.error);
@@ -413,13 +413,12 @@ export default function SelectProfilePage() {
                         return (
                             <div
                                 key={currentStep}
-                                className={`h-2.5 rounded-full transition-all ${
-                                    step === currentStep
+                                className={`h-2.5 rounded-full transition-all ${step === currentStep
                                         ? "bg-[#0d4c7a]"
                                         : step > currentStep
-                                          ? "bg-[#0d4c7a]/40"
-                                          : "bg-surface-200"
-                                }`}
+                                            ? "bg-[#0d4c7a]/40"
+                                            : "bg-surface-200"
+                                    }`}
                             />
                         );
                     })}
@@ -447,11 +446,10 @@ export default function SelectProfilePage() {
                                             setSelected("personal");
                                             if (!orgName) setOrgName("Mis Finanzas");
                                         }}
-                                        className={`rounded-2xl border p-5 text-left transition-all ${
-                                            selected === "personal"
+                                        className={`rounded-2xl border p-5 text-left transition-all ${selected === "personal"
                                                 ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
                                                 : "border-surface-200 bg-white hover:border-surface-300"
-                                        }`}
+                                            }`}
                                     >
                                         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0d4c7a] shadow-sm">
                                             <UserCircleIcon size={20} />
@@ -468,11 +466,10 @@ export default function SelectProfilePage() {
                                             setSelected("business");
                                             if (!orgName) setOrgName("Mi Negocio");
                                         }}
-                                        className={`rounded-2xl border p-5 text-left transition-all ${
-                                            selected === "business"
+                                        className={`rounded-2xl border p-5 text-left transition-all ${selected === "business"
                                                 ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
                                                 : "border-surface-200 bg-white hover:border-surface-300"
-                                        }`}
+                                            }`}
                                     >
                                         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0d4c7a] shadow-sm">
                                             <BuildingIcon size={20} />
@@ -956,128 +953,7 @@ export default function SelectProfilePage() {
                             </div>
                         )}
 
-                        {step === 6 && selected === "personal" && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div>
-                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Regla de distribución</h1>
-                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Elige cómo dividir tu bolsa mensual consolidada entre necesidades, ahorro y deuda.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
-                                        <label key={rule} className="flex items-center gap-3 rounded-xl border border-surface-200 bg-white px-4 py-3 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="distribution-rule"
-                                                checked={distributionRule === rule}
-                                                onChange={() => setDistributionRule(rule)}
-                                            />
-                                            <span className="text-sm text-[#0f2233] font-medium">{DISTRIBUTION_LABELS[rule]}</span>
-                                        </label>
-                                    ))}
-                                </div>
-
-                                {distributionRule === "custom" && (
-                                    <div className="grid gap-4 sm:grid-cols-2 rounded-2xl border border-surface-200 bg-surface-50 p-4">
-                                        <div>
-                                            <label className="label text-xs">Necesidades (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Deseos (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Ahorro (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Deuda/Inversión (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
-                                        </div>
-                                        <p className={`sm:col-span-2 text-sm ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-700" : "text-negative-700"}`}>
-                                            Total actual: {distributionTotal.toFixed(2)}%
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="rounded-2xl border border-surface-200 bg-surface-50 p-5">
-                                    <p className="text-xs uppercase tracking-[0.14em] text-surface-500">Bolsa consolidada</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
-                                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Necesidades</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Deseos</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Ahorro</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Deuda / inversión</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 6 && selected === "business" && (
-                            <div className="space-y-6 animate-fade-in">
-                                <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Configuración empresarial</h1>
-                                <p className="text-base text-surface-600 leading-relaxed">
-                                    Para perfil empresa no aplicamos regla de ahorro personal. Continuaremos con prioridad operativa y metas.
-                                </p>
-                            </div>
-                        )}
-
-                        {step === 7 && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div>
-                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Prioridad del ahorro</h1>
-                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Define el orden que seguirá CashFlow cuando la bolsa sea limitada.
-                                    </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-surface-200 bg-white p-5 space-y-3">
-                                    {savingsPriorities.map((priority, index) => (
-                                        <div key={priority} className="flex items-center justify-between rounded-xl border border-surface-200 px-4 py-3">
-                                            <div>
-                                                <p className="text-xs uppercase tracking-[0.1em] text-surface-500">Prioridad {index + 1}</p>
-                                                <p className="text-sm font-semibold text-[#0f2233]">{PRIORITY_LABELS[priority]}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => movePriority(index, "up")}
-                                                    disabled={index === 0}
-                                                    className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
-                                                >
-                                                    <ArrowUpIcon />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => movePriority(index, "down")}
-                                                    disabled={index === savingsPriorities.length - 1}
-                                                    className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
-                                                >
-                                                    <ArrowDownIcon />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 8 && (
+                        {step === 6 && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Metas de ahorro</h1>
@@ -1218,6 +1094,120 @@ export default function SelectProfilePage() {
                                     )}
                                 </div>
 
+
+                            </div>
+                        )}
+
+                        {step === 7 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Prioridad del ahorro</h1>
+                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
+                                        Define el orden que seguirá CashFlow cuando la bolsa sea limitada.
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-surface-200 bg-white p-5 space-y-3">
+                                    {savingsPriorities.map((priority, index) => (
+                                        <div key={priority} className="flex items-center justify-between rounded-xl border border-surface-200 px-4 py-3">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.1em] text-surface-500">Prioridad {index + 1}</p>
+                                                <p className="text-sm font-semibold text-[#0f2233]">{PRIORITY_LABELS[priority]}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => movePriority(index, "up")}
+                                                    disabled={index === 0}
+                                                    className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
+                                                >
+                                                    <ArrowUpIcon />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => movePriority(index, "down")}
+                                                    disabled={index === savingsPriorities.length - 1}
+                                                    className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
+                                                >
+                                                    <ArrowDownIcon />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 8 && selected === "personal" && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Regla de distribución y Resumen</h1>
+                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
+                                        Elige cómo dividir tu bolsa mensual. Te mostraremos cómo se financiarán tus metas con esta regla.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
+                                        <label key={rule} className="flex items-center gap-3 rounded-xl border border-surface-200 bg-white px-4 py-3 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="distribution-rule"
+                                                checked={distributionRule === rule}
+                                                onChange={() => setDistributionRule(rule)}
+                                            />
+                                            <span className="text-sm text-[#0f2233] font-medium">{DISTRIBUTION_LABELS[rule]}</span>
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {distributionRule === "custom" && (
+                                    <div className="grid gap-4 sm:grid-cols-2 rounded-2xl border border-surface-200 bg-surface-50 p-4">
+                                        <div>
+                                            <label className="label text-xs">Necesidades (%)</label>
+                                            <input type="number" className="input-field bg-white" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="label text-xs">Deseos (%)</label>
+                                            <input type="number" className="input-field bg-white" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="label text-xs">Ahorro (%)</label>
+                                            <input type="number" className="input-field bg-white" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="label text-xs">Deuda/Inversión (%)</label>
+                                            <input type="number" className="input-field bg-white" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
+                                        </div>
+                                        <p className={`sm:col-span-2 text-sm ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-700" : "text-negative-700"}`}>
+                                            Total actual: {distributionTotal.toFixed(2)}%
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="rounded-2xl border border-surface-200 bg-surface-50 p-5">
+                                    <p className="text-xs uppercase tracking-[0.14em] text-surface-500">Bolsa consolidada</p>
+                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
+                                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
+                                            <p className="text-surface-500">Necesidades</p>
+                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
+                                        </div>
+                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
+                                            <p className="text-surface-500">Deseos</p>
+                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</p>
+                                        </div>
+                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
+                                            <p className="text-surface-500">Ahorro</p>
+                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</p>
+                                        </div>
+                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
+                                            <p className="text-surface-500">Deuda / inversión</p>
+                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {hasSavingsGoals && projectedGoalRows.length > 0 && (
                                     <div className="rounded-2xl border border-surface-200 bg-white p-5">
                                         <h3 className="text-sm font-semibold text-[#0f2233] mb-3">Proyección inicial</h3>
@@ -1235,6 +1225,15 @@ export default function SelectProfilePage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {step === 8 && selected === "business" && (
+                            <div className="space-y-6 animate-fade-in">
+                                <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Configuración empresarial</h1>
+                                <p className="text-base text-surface-600 leading-relaxed">
+                                    Para perfil empresa no aplicamos regla de ahorro personal. Continuaremos con prioridad operativa y metas.
+                                </p>
                             </div>
                         )}
 
