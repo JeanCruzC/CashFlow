@@ -21,6 +21,10 @@ export async function createProfileOrganization(profileType: OrgType, setup?: On
         revalidatePath("/onboarding/select-profile");
         revalidatePath("/dashboard/settings");
         revalidatePath("/dashboard/accounts");
+        revalidatePath("/dashboard/categories");
+        revalidatePath("/dashboard/budget");
+        revalidatePath("/dashboard/forecast");
+        revalidatePath("/dashboard/transactions");
         return { success: true, orgId };
     } catch (error) {
         logError("Error creating profile organization", error);

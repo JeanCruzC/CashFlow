@@ -198,17 +198,25 @@ export default function SelectProfilePage() {
                     amount: Number(amount)
                 }));
 
-            const creditCardsPayload = hasCreditCards ? creditCards.map(cc => ({
-                name: cc.name.trim() || "Tarjeta de Crédito",
-                creditLimit: Number(cc.creditLimit) || 0,
-                currentBalance: Number(cc.currentBalance) || 0,
-            })) : undefined;
+            const creditCardsPayload = hasCreditCards
+                ? creditCards
+                    .map((cc) => ({
+                        name: cc.name.trim() || "Tarjeta de Crédito",
+                        creditLimit: Number(cc.creditLimit) || 0,
+                        currentBalance: Number(cc.currentBalance) || 0,
+                    }))
+                    .filter((cc) => cc.creditLimit > 0)
+                : undefined;
 
-            const savingsGoalsPayload = hasSavingsGoals ? savingsGoals.map(g => ({
-                name: g.name.trim() || "Meta de Ahorro",
-                targetAmount: Number(g.targetAmount) || 0,
-                deadlineDate: g.deadlineDate || null
-            })) : undefined;
+            const savingsGoalsPayload = hasSavingsGoals
+                ? savingsGoals
+                    .map((g) => ({
+                        name: g.name.trim() || "Meta de Ahorro",
+                        targetAmount: Number(g.targetAmount) || 0,
+                        deadlineDate: g.deadlineDate || null,
+                    }))
+                    .filter((g) => g.targetAmount > 0)
+                : undefined;
 
             const payload =
                 selected === "personal"
@@ -270,6 +278,8 @@ export default function SelectProfilePage() {
         ...defaultCategoriesForBudgets,
         ...customCategories.filter(c => c.kind === "expense" || c.kind === "cost_of_goods_sold").map(c => c.name)
     ];
+    const aiCategoryIsTransport = Boolean(aiCategory && aiCategory.toLowerCase().includes("transporte"));
+    const canEstimateAiBudget = aiCategoryIsTransport ? Boolean(transportCost.trim()) : Boolean(aiContext.trim());
 
     return (
         <div className="min-h-screen bg-[linear-gradient(165deg,#f7fbff_0%,#edf5fb_48%,#f9fcfd_100%)] px-4 py-8 sm:px-8 sm:py-12 flex items-center justify-center">
@@ -277,7 +287,7 @@ export default function SelectProfilePage() {
 
                 {/* Progress Bar */}
                 <div className="mb-8 flex items-center justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
                         <div
                             key={i}
                             className={`h-2.5 rounded-full transition-all duration-300 ${step === i ? "w-12 bg-[#0d4c7a]" : step > i ? "w-6 bg-[#0d4c7a]/40" : "w-6 bg-surface-200"
@@ -474,9 +484,11 @@ export default function SelectProfilePage() {
                                                     {creditCards.map((cc, idx) => (
                                                         <div key={cc.id} className="p-4 bg-white border border-surface-200 shadow-sm rounded-xl relative group">
                                                             <button
+                                                                type="button"
                                                                 onClick={() => setCreditCards(creditCards.filter(c => c.id !== cc.id))}
                                                                 className="absolute top-2 right-2 text-surface-300 hover:text-negative-500 p-2"
                                                                 title="Eliminar tarjeta"
+                                                                aria-label="Eliminar tarjeta"
                                                             >
                                                                 <TrashIcon size={16} />
                                                             </button>
@@ -526,6 +538,7 @@ export default function SelectProfilePage() {
                                                         </div>
                                                     ))}
                                                     <button
+                                                        type="button"
                                                         onClick={() => setCreditCards([...creditCards, { id: Date.now().toString(), name: "", creditLimit: "", currentBalance: "" }])}
                                                         className="mt-2 flex items-center justify-center gap-2 text-sm text-primary-600 font-medium hover:text-primary-700 hover:bg-primary-50 py-2 rounded-lg w-full transition-colors"
                                                     >
@@ -588,8 +601,10 @@ export default function SelectProfilePage() {
                                                     <li key={idx} className="flex items-center justify-between text-sm bg-white border border-surface-200 rounded-lg px-3 py-2">
                                                         <span>{c.kind === "income" ? "🟢" : "🔴"} <strong>{c.name}</strong></span>
                                                         <button
+                                                            type="button"
                                                             onClick={() => handleRemoveCategory(idx)}
                                                             className="text-surface-400 hover:text-negative-600 p-1"
+                                                            aria-label="Eliminar categoría personalizada"
                                                         >
                                                             <TrashIcon size={16} />
                                                         </button>
@@ -630,12 +645,14 @@ export default function SelectProfilePage() {
                                                 </div>
                                                 <div className="flex gap-2 justify-end">
                                                     <button
+                                                        type="button"
                                                         onClick={() => setShowAddCategory(false)}
                                                         className="px-3 py-1.5 text-sm font-medium text-surface-500 hover:text-surface-700"
                                                     >
                                                         Cancelar
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={handleAddCategory}
                                                         disabled={!newCatName.trim()}
                                                         className="px-4 py-1.5 text-sm font-medium bg-[#0f2233] text-white rounded-lg disabled:opacity-50"
@@ -646,6 +663,7 @@ export default function SelectProfilePage() {
                                             </div>
                                         ) : (
                                             <button
+                                                type="button"
                                                 onClick={() => setShowAddCategory(true)}
                                                 className="w-full py-3 border border-dashed border-surface-300 rounded-xl text-sm font-medium text-surface-600 hover:bg-white hover:border-surface-400 transition flex items-center justify-center gap-2"
                                             >
@@ -662,7 +680,7 @@ export default function SelectProfilePage() {
                             <div className="space-y-6 animate-fade-in">
                                 <div>
                                     <div className="inline-flex items-center gap-2 rounded-full border border-positive-200 bg-positive-50 px-3 py-1 text-sm font-semibold text-positive-700 mb-4">
-                                        <CheckCircleIcon size={16} /> Último paso
+                                        <CheckCircleIcon size={16} /> Paso 5 de 6
                                     </div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Tus Límites Mensuales</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
@@ -805,7 +823,7 @@ export default function SelectProfilePage() {
                                                 {!aiResult ? (
                                                     <button
                                                         onClick={handleEstimateBudget}
-                                                        disabled={aiLoading || !aiContext.trim()}
+                                                        disabled={aiLoading || !canEstimateAiBudget}
                                                         className="btn-primary w-fit bg-purple-600 hover:bg-purple-700 border-none px-5 py-2 inline-flex items-center gap-2"
                                                     >
                                                         {aiLoading ? <SpinnerIcon size={16} /> : <SparklesIcon size={16} />}
@@ -824,11 +842,6 @@ export default function SelectProfilePage() {
                                     </div>
                                 )}
 
-                                {error && (
-                                    <div className="mt-5 rounded-xl border border-negative-200 bg-negative-50 px-4 py-3 text-sm text-negative-700 font-medium">
-                                        {error}
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -866,9 +879,11 @@ export default function SelectProfilePage() {
                                             {savingsGoals.map((goal, idx) => (
                                                 <div key={goal.id} className="p-4 bg-white border border-surface-200 shadow-sm rounded-xl relative group">
                                                     <button
+                                                        type="button"
                                                         onClick={() => setSavingsGoals(savingsGoals.filter(g => g.id !== goal.id))}
                                                         className="absolute top-2 right-2 text-surface-300 hover:text-negative-500 p-2"
                                                         title="Eliminar meta"
+                                                        aria-label="Eliminar meta de ahorro"
                                                     >
                                                         <TrashIcon size={16} />
                                                     </button>
@@ -917,6 +932,7 @@ export default function SelectProfilePage() {
                                                 </div>
                                             ))}
                                             <button
+                                                type="button"
                                                 onClick={() => setSavingsGoals([...savingsGoals, { id: Date.now().toString(), name: "", targetAmount: "", deadlineDate: "" }])}
                                                 className="mt-2 flex items-center justify-center gap-2 text-sm text-primary-600 font-medium hover:text-primary-700 hover:bg-primary-50 py-2 rounded-lg w-full transition-colors"
                                             >
@@ -968,6 +984,11 @@ export default function SelectProfilePage() {
                                 </button>
                             )}
                         </div>
+                        {error && (
+                            <div aria-live="polite" className="mt-4 rounded-xl border border-negative-200 bg-negative-50 px-4 py-3 text-sm text-negative-700 font-medium">
+                                {error}
+                            </div>
+                        )}
 
                     </div>
                 </div>

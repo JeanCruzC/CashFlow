@@ -9,11 +9,15 @@ import type { OrgType } from "@/lib/types/finance";
 
 export async function getOrgType(): Promise<OrgType> {
     const { supabase, orgId } = await requireOrgContext();
-    const { data } = await supabase
-        .from("organizations")
+    const { data, error } = await supabase
+        .from("orgs")
         .select("type")
         .eq("id", orgId)
-        .single();
+        .maybeSingle();
+    if (error) {
+        logError("Error fetching org type", error, { orgId });
+        throw new Error("No se pudo cargar el tipo de organización");
+    }
     return (data?.type as OrgType) || "personal";
 }
 

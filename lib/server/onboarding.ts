@@ -140,6 +140,32 @@ function normalizeCurrency(value: string | undefined): string | undefined {
     return value.trim().toUpperCase();
 }
 
+function normalizeCategoryName(value: string): string {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+}
+
+const ONBOARDING_BUDGET_CATEGORY_ALIASES: Record<string, string> = {
+    vivienda: "Housing",
+    alimentacion: "Groceries",
+    alimentos: "Groceries",
+    transporte: "Transportation",
+    salud: "Healthcare",
+    operaciones: "Rent & Facilities",
+    sueldos: "Salaries & Benefits",
+    marketing: "Marketing & Advertising",
+    software: "Software & Tools",
+};
+
+function resolveBudgetCategoryCandidates(categoryName: string) {
+    const alias = ONBOARDING_BUDGET_CATEGORY_ALIASES[normalizeCategoryName(categoryName)];
+    return alias ? [alias, categoryName] : [categoryName];
+}
+
 function normalizeSupabaseError(error: unknown) {
     if (error instanceof Error) return error;
     if (typeof error === "object" && error !== null) {
@@ -545,7 +571,12 @@ export async function createOrganizationWithOnboarding(
         const customCategoriesRows = safeSetup.customCategories.map((c, idx) => ({
             org_id: orgId,
             name: c.name,
-            kind: c.kind,
+            kind:
+                c.kind === "cost_of_goods_sold"
+                    ? "cogs"
+                    : c.kind === "asset" || c.kind === "equity" || c.kind === "liability"
+                        ? "expense"
+                        : c.kind,
             sort_order: 1000 + idx, // Ensure they appear after default ones
             fixed_cost: false,
             variable_cost: false,
@@ -567,22 +598,38 @@ export async function createOrganizationWithOnboarding(
 
         if (!fetchCatError && allCategories) {
             const currentMonth = new Date().toISOString().slice(0, 7);
-            const budgetRows = [];
-
-            for (const budget of safeSetup.initialBudgets) {
-                // Find matching category ID by name (case insensitive for safety)
-                const category = allCategories.find(c => c.name.toLowerCase() === budget.categoryName.toLowerCase());
-                if (category && budget.amount > 0) {
-                    budgetRows.push({
-                        org_id: orgId,
-                        month: currentMonth,
-                        category_gl_id: category.id,
-                        cost_center_id: null,
-                        amount: budget.amount
-                    });
-                }
+            const categoryByNormalizedName = new Map<string, { id: string; name: string }>();
+            for (const category of allCategories) {
+                categoryByNormalizedName.set(normalizeCategoryName(category.name), category);
             }
 
+            const budgetRowsByCategoryId = new Map<string, {
+                org_id: string;
+                month: string;
+                category_gl_id: string;
+                cost_center_id: null;
+                amount: number;
+            }>();
+
+            for (const budget of safeSetup.initialBudgets) {
+                if (budget.amount <= 0) continue;
+                const candidates = resolveBudgetCategoryCandidates(budget.categoryName);
+                const category = candidates
+                    .map((candidate) => categoryByNormalizedName.get(normalizeCategoryName(candidate)))
+                    .find(Boolean);
+
+                if (!category) continue;
+
+                budgetRowsByCategoryId.set(category.id, {
+                    org_id: orgId,
+                    month: currentMonth,
+                    category_gl_id: category.id,
+                    cost_center_id: null,
+                    amount: budget.amount,
+                });
+            }
+
+            const budgetRows = Array.from(budgetRowsByCategoryId.values());
             if (budgetRows.length > 0) {
                 const { error: budgetError } = await supabase.from("budgets").insert(budgetRows);
                 if (budgetError) {
@@ -606,7 +653,7 @@ export async function createOrganizationWithOnboarding(
             org_id: orgId,
             user_id: user.id,
             profile_type: profileType,
-            step: profileType === "business" ? 6 : 5,
+            step: 6,
             answers,
             completed_at: new Date().toISOString(),
         },

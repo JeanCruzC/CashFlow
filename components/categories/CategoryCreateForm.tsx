@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createCategory } from "@/app/actions/categories";
 import { useRouter } from "next/navigation";
+import type { OrgType } from "@/lib/types/finance";
 
 const CATEGORY_KINDS = [
     { value: "income", label: "Ingreso personal" },
@@ -16,14 +17,26 @@ const CATEGORY_KINDS = [
     { value: "tax", label: "Impuestos" },
 ] as const;
 
-export function CategoryCreateForm() {
+interface CategoryCreateFormProps {
+    orgType: OrgType;
+}
+
+const PERSONAL_KIND_VALUES = new Set(["income", "expense", "transfer"]);
+
+export function CategoryCreateForm({ orgType }: CategoryCreateFormProps) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const filteredKinds = CATEGORY_KINDS.filter((item) =>
+        orgType === "personal"
+            ? PERSONAL_KIND_VALUES.has(item.value)
+            : !PERSONAL_KIND_VALUES.has(item.value) || item.value === "transfer"
+    );
+    const defaultKind = orgType === "personal" ? "expense" : "opex";
 
     const [name, setName] = useState("");
-    const [kind, setKind] = useState<(typeof CATEGORY_KINDS)[number]["value"]>("expense");
+    const [kind, setKind] = useState<(typeof CATEGORY_KINDS)[number]["value"]>(defaultKind);
     const [fixedCost, setFixedCost] = useState(false);
     const [variableCost, setVariableCost] = useState(true);
 
@@ -47,7 +60,7 @@ export function CategoryCreateForm() {
 
             setSuccess("Categoría creada correctamente.");
             setName("");
-            setKind("expense");
+            setKind(defaultKind);
             setFixedCost(false);
             setVariableCost(true);
             router.refresh();
@@ -74,7 +87,7 @@ export function CategoryCreateForm() {
                         value={kind}
                         onChange={(event) => setKind(event.target.value as (typeof CATEGORY_KINDS)[number]["value"])}
                     >
-                        {CATEGORY_KINDS.map((item) => (
+                        {filteredKinds.map((item) => (
                             <option key={item.value} value={item.value}>
                                 {item.label}
                             </option>

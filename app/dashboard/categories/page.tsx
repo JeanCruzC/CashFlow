@@ -88,7 +88,7 @@ export default async function CategoriesPage() {
                     Si necesitas una categoría nueva, créala aquí.
                 </p>
                 <div className="mt-4">
-                    <CategoryCreateForm />
+                    <CategoryCreateForm orgType={orgType} />
                 </div>
             </section>
 
