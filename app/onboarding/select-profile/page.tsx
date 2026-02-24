@@ -1161,6 +1161,11 @@ export default function SelectProfilePage() {
                                                                     <option value="minimum">Pago mínimo (Mantiene deuda)</option>
                                                                     <option value="fixed">Pago fijo (Abono mayor al mínimo)</option>
                                                                 </select>
+                                                                {card.paymentStrategy === "full" && (
+                                                                    <p className="mt-1.5 text-[10px] text-surface-500 leading-tight">
+                                                                        Al elegir pago total, CashFlow asume que usas la tarjeta como medio transaccional. Este saldo no se considerará "deuda estructural" en la cascada mensual.
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                             <div>
                                                                 <label className="label text-xs">Día de pago</label>
@@ -1197,7 +1202,7 @@ export default function SelectProfilePage() {
                                                                                         return next;
                                                                                     });
                                                                                 }}
-                                                                                placeholder="0"
+                                                                                placeholder="Dejar vacío para usar 5% del saldo"
                                                                             />
                                                                         </div>
                                                                     </div>
