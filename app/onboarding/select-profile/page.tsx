@@ -143,10 +143,22 @@ export default function SelectProfilePage() {
     const [preferredLocale, setPreferredLocale] = useState<"es" | "en">("es");
 
     const [monthlyIncomeNet, setMonthlyIncomeNet] = useState("");
+    const [salaryFrequency, setSalaryFrequency] = useState<"monthly" | "biweekly">("monthly");
+    const [salaryPaymentDay1, setSalaryPaymentDay1] = useState("30");
+    const [salaryPaymentDay2, setSalaryPaymentDay2] = useState("15");
+    const [firstFortnightAmount, setFirstFortnightAmount] = useState("");
+    const [secondFortnightAmount, setSecondFortnightAmount] = useState("");
+
     const [hasAdditionalIncome, setHasAdditionalIncome] = useState(false);
     const [additionalIncome, setAdditionalIncome] = useState("");
+
     const [sharesFinances, setSharesFinances] = useState(false);
     const [partnerContribution, setPartnerContribution] = useState("");
+    const [partnerSalaryFrequency, setPartnerSalaryFrequency] = useState<"monthly" | "biweekly">("monthly");
+    const [partnerSalaryPaymentDay1, setPartnerSalaryPaymentDay1] = useState("30");
+    const [partnerSalaryPaymentDay2, setPartnerSalaryPaymentDay2] = useState("15");
+    const [partnerFirstFortnightAmount, setPartnerFirstFortnightAmount] = useState("");
+    const [partnerSecondFortnightAmount, setPartnerSecondFortnightAmount] = useState("");
 
     const [accountName, setAccountName] = useState("Cuenta principal");
     const [accountType, setAccountType] = useState<"cash" | "bank" | "credit_card" | "loan" | "investment">("bank");
@@ -154,7 +166,7 @@ export default function SelectProfilePage() {
     const [legalName, setLegalName] = useState("");
 
     const [hasCreditCards, setHasCreditCards] = useState(false);
-    const [creditCards, setCreditCards] = useState<Array<{ id: string; name: string; creditLimit: string; currentBalance: string }>>([]);
+    const [creditCards, setCreditCards] = useState<Array<{ id: string; name: string; creditLimit: string; currentBalance: string; paymentDay: string; paymentStrategy: "full" | "minimum" | "fixed"; minimumPaymentAmount: string; }>>([]);
 
     const [customCategories, setCustomCategories] = useState<Array<{ name: string; kind: CategoryKind }>>([]);
     const [showAddCategory, setShowAddCategory] = useState(false);
@@ -179,11 +191,20 @@ export default function SelectProfilePage() {
     const [savingsGoals, setSavingsGoals] = useState<Array<{ id: string; name: string; targetAmount: string; deadlineDate: string; goalWeight: string }>>([]);
 
     const consolidatedIncome = useMemo(() => {
-        const base = parseAmount(monthlyIncomeNet);
+        const base = salaryFrequency === "monthly"
+            ? parseAmount(monthlyIncomeNet)
+            : parseAmount(firstFortnightAmount) + parseAmount(secondFortnightAmount);
+
         const extra = hasAdditionalIncome ? parseAmount(additionalIncome) : 0;
-        const partner = sharesFinances ? parseAmount(partnerContribution) : 0;
+
+        const partner = sharesFinances
+            ? (partnerSalaryFrequency === "monthly"
+                ? parseAmount(partnerContribution)
+                : parseAmount(partnerFirstFortnightAmount) + parseAmount(partnerSecondFortnightAmount))
+            : 0;
+
         return round2(base + extra + partner);
-    }, [monthlyIncomeNet, hasAdditionalIncome, additionalIncome, sharesFinances, partnerContribution]);
+    }, [monthlyIncomeNet, firstFortnightAmount, secondFortnightAmount, salaryFrequency, hasAdditionalIncome, additionalIncome, sharesFinances, partnerContribution, partnerFirstFortnightAmount, partnerSecondFortnightAmount, partnerSalaryFrequency]);
 
     const distribution = useMemo(() => {
         if (distributionRule === "50_30_20") {
@@ -414,9 +435,15 @@ export default function SelectProfilePage() {
                 setError("Ingresa el nombre del workspace.");
                 return;
             }
-            if (selected === "personal" && parseAmount(monthlyIncomeNet) <= 0) {
-                setError("Ingresa tu ingreso mensual neto para continuar.");
-                return;
+            if (selected === "personal") {
+                if (salaryFrequency === "monthly" && parseAmount(monthlyIncomeNet) <= 0) {
+                    setError("Ingresa tu ingreso mensual neto para continuar.");
+                    return;
+                }
+                if (salaryFrequency === "biweekly" && (parseAmount(firstFortnightAmount) <= 0 && parseAmount(secondFortnightAmount) <= 0)) {
+                    setError("Ingresa el monto de al menos una quincena para continuar.");
+                    return;
+                }
             }
         }
 
@@ -466,6 +493,9 @@ export default function SelectProfilePage() {
                         name: card.name.trim() || "Tarjeta de crédito",
                         creditLimit: parseAmount(card.creditLimit),
                         currentBalance: parseAmount(card.currentBalance),
+                        paymentDay: parseInt(card.paymentDay) || 30,
+                        paymentStrategy: card.paymentStrategy,
+                        minimumPaymentAmount: parseAmount(card.minimumPaymentAmount) || undefined,
                     }))
                     .filter((card) => card.creditLimit > 0)
                 : undefined;
@@ -482,9 +512,21 @@ export default function SelectProfilePage() {
                 : undefined;
 
             const financialProfilePayload = {
-                monthlyIncomeNet: parseAmount(monthlyIncomeNet),
+                monthlyIncomeNet: consolidatedIncome, // Let's simplify and send consolidated as the total, but wait we need original fields
+                salaryFrequency,
+                salaryPaymentDay1: parseAmount(salaryPaymentDay1),
+                salaryPaymentDay2: parseAmount(salaryPaymentDay2),
+                firstFortnightAmount: parseAmount(firstFortnightAmount),
+                secondFortnightAmount: parseAmount(secondFortnightAmount),
+                partnerSalaryFrequency,
+                partnerSalaryPaymentDay1: parseAmount(partnerSalaryPaymentDay1),
+                partnerSalaryPaymentDay2: parseAmount(partnerSalaryPaymentDay2),
+                partnerFirstFortnightAmount: parseAmount(partnerFirstFortnightAmount),
+                partnerSecondFortnightAmount: parseAmount(partnerSecondFortnightAmount),
                 additionalIncome: hasAdditionalIncome ? parseAmount(additionalIncome) : 0,
-                partnerContribution: sharesFinances ? parseAmount(partnerContribution) : 0,
+                partnerContribution: sharesFinances
+                    ? (partnerSalaryFrequency === "monthly" ? parseAmount(partnerContribution) : parseAmount(partnerFirstFortnightAmount) + parseAmount(partnerSecondFortnightAmount))
+                    : 0,
                 distributionRule,
                 customDistribution:
                     distributionRule === "custom"
@@ -560,10 +602,10 @@ export default function SelectProfilePage() {
                             <div
                                 key={currentStep}
                                 className={`h-2.5 rounded-full transition-all ${step === currentStep
-                                        ? "bg-[#0d4c7a]"
-                                        : step > currentStep
-                                            ? "bg-[#0d4c7a]/40"
-                                            : "bg-surface-200"
+                                    ? "bg-[#0d4c7a]"
+                                    : step > currentStep
+                                        ? "bg-[#0d4c7a]/40"
+                                        : "bg-surface-200"
                                     }`}
                             />
                         );
@@ -593,8 +635,8 @@ export default function SelectProfilePage() {
                                             if (!orgName) setOrgName("Mis Finanzas");
                                         }}
                                         className={`rounded-2xl border p-5 text-left transition-all ${selected === "personal"
-                                                ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
-                                                : "border-surface-200 bg-white hover:border-surface-300"
+                                            ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
+                                            : "border-surface-200 bg-white hover:border-surface-300"
                                             }`}
                                     >
                                         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0d4c7a] shadow-sm">
@@ -613,8 +655,8 @@ export default function SelectProfilePage() {
                                             if (!orgName) setOrgName("Mi Negocio");
                                         }}
                                         className={`rounded-2xl border p-5 text-left transition-all ${selected === "business"
-                                                ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
-                                                : "border-surface-200 bg-white hover:border-surface-300"
+                                            ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-glow"
+                                            : "border-surface-200 bg-white hover:border-surface-300"
                                             }`}
                                     >
                                         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0d4c7a] shadow-sm">
@@ -709,20 +751,79 @@ export default function SelectProfilePage() {
                                         <h3 className="font-semibold text-[#0d4c7a]">Bolsa familiar e ingresos</h3>
 
                                         <div>
-                                            <label className="label text-[#0d4c7a]">Ingreso mensual neto</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    className="input-field bg-white pl-12 border-[#b8d8f0]"
-                                                    value={monthlyIncomeNet}
-                                                    onChange={(event) => setMonthlyIncomeNet(event.target.value)}
-                                                    placeholder="0"
-                                                />
-                                            </div>
+                                            <label className="label text-[#0d4c7a]">Frecuencia de tus ingresos principales</label>
+                                            <select
+                                                className="input-field bg-white border-[#b8d8f0]"
+                                                value={salaryFrequency}
+                                                onChange={(event) => setSalaryFrequency(event.target.value as "monthly" | "biweekly")}
+                                            >
+                                                <option value="monthly">Mensual (1 vez al mes)</option>
+                                                <option value="biweekly">Quincenal (2 veces al mes)</option>
+                                            </select>
                                         </div>
+
+                                        {salaryFrequency === "monthly" ? (
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="label text-[#0d4c7a]">Ingreso mensual neto</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="input-field bg-white pl-12 border-[#b8d8f0]"
+                                                            value={monthlyIncomeNet}
+                                                            onChange={(event) => setMonthlyIncomeNet(event.target.value)}
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="label text-[#0d4c7a]">Día de pago</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="31"
+                                                        className="input-field bg-white border-[#b8d8f0]"
+                                                        value={salaryPaymentDay1}
+                                                        onChange={(event) => setSalaryPaymentDay1(event.target.value)}
+                                                        placeholder="30"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="space-y-3">
+                                                    <label className="label text-[#0d4c7a] font-medium text-sm">Primera Quincena</label>
+                                                    <div>
+                                                        <label className="label text-xs text-[#0d4c7a]/80">Día de pago</label>
+                                                        <input type="number" min="1" max="31" className="input-field bg-white border-[#b8d8f0]" value={salaryPaymentDay2} onChange={(event) => setSalaryPaymentDay2(event.target.value)} placeholder="15" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="label text-xs text-[#0d4c7a]/80">Monto depositado</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                            <input type="number" min="0" step="0.01" className="input-field bg-white pl-12 border-[#b8d8f0]" value={firstFortnightAmount} onChange={(event) => setFirstFortnightAmount(event.target.value)} placeholder="0" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="label text-[#0d4c7a] font-medium text-sm">Segunda Quincena</label>
+                                                    <div>
+                                                        <label className="label text-xs text-[#0d4c7a]/80">Día de pago</label>
+                                                        <input type="number" min="1" max="31" className="input-field bg-white border-[#b8d8f0]" value={salaryPaymentDay1} onChange={(event) => setSalaryPaymentDay1(event.target.value)} placeholder="30" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="label text-xs text-[#0d4c7a]/80">Monto depositado</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                            <input type="number" min="0" step="0.01" className="input-field bg-white pl-12 border-[#b8d8f0]" value={secondFortnightAmount} onChange={(event) => setSecondFortnightAmount(event.target.value)} placeholder="0" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <label className="flex items-start gap-3 cursor-pointer">
                                             <input
@@ -763,20 +864,81 @@ export default function SelectProfilePage() {
                                         </label>
 
                                         {sharesFinances && (
-                                            <div>
-                                                <label className="label text-[#0d4c7a]">Aporte mensual de pareja/familiar</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        className="input-field bg-white pl-12 border-[#b8d8f0]"
-                                                        value={partnerContribution}
-                                                        onChange={(event) => setPartnerContribution(event.target.value)}
-                                                        placeholder="0"
-                                                    />
+                                            <div className="space-y-4 pt-4 border-t border-[#b8d8f0]">
+                                                <div>
+                                                    <label className="label text-[#0d4c7a]">Frecuencia del aporte</label>
+                                                    <select
+                                                        className="input-field bg-white border-[#b8d8f0]"
+                                                        value={partnerSalaryFrequency}
+                                                        onChange={(event) => setPartnerSalaryFrequency(event.target.value as "monthly" | "biweekly")}
+                                                    >
+                                                        <option value="monthly">Mensual</option>
+                                                        <option value="biweekly">Quincenal</option>
+                                                    </select>
                                                 </div>
+
+                                                {partnerSalaryFrequency === "monthly" ? (
+                                                    <div className="grid gap-4 sm:grid-cols-2">
+                                                        <div>
+                                                            <label className="label text-[#0d4c7a]">Aporte mensual total</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    className="input-field bg-white pl-12 border-[#b8d8f0]"
+                                                                    value={partnerContribution}
+                                                                    onChange={(event) => setPartnerContribution(event.target.value)}
+                                                                    placeholder="0"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="label text-[#0d4c7a]">Día de aporte</label>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                max="31"
+                                                                className="input-field bg-white border-[#b8d8f0]"
+                                                                value={partnerSalaryPaymentDay1}
+                                                                onChange={(event) => setPartnerSalaryPaymentDay1(event.target.value)}
+                                                                placeholder="30"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid gap-4 sm:grid-cols-2">
+                                                        <div className="space-y-3">
+                                                            <label className="label text-[#0d4c7a] font-medium text-sm">Aporte 1ra Quincena</label>
+                                                            <div>
+                                                                <label className="label text-xs text-[#0d4c7a]/80">Día</label>
+                                                                <input type="number" min="1" max="31" className="input-field bg-white border-[#b8d8f0]" value={partnerSalaryPaymentDay2} onChange={(event) => setPartnerSalaryPaymentDay2(event.target.value)} placeholder="15" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="label text-xs text-[#0d4c7a]/80">Monto</label>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                                    <input type="number" min="0" step="0.01" className="input-field bg-white pl-12 border-[#b8d8f0]" value={partnerFirstFortnightAmount} onChange={(event) => setPartnerFirstFortnightAmount(event.target.value)} placeholder="0" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <label className="label text-[#0d4c7a] font-medium text-sm">Aporte 2da Quincena</label>
+                                                            <div>
+                                                                <label className="label text-xs text-[#0d4c7a]/80">Día</label>
+                                                                <input type="number" min="1" max="31" className="input-field bg-white border-[#b8d8f0]" value={partnerSalaryPaymentDay1} onChange={(event) => setPartnerSalaryPaymentDay1(event.target.value)} placeholder="30" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="label text-xs text-[#0d4c7a]/80">Monto</label>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-3 top-2.5 text-[#0d4c7a]/70 text-sm">{currency}</span>
+                                                                    <input type="number" min="0" step="0.01" className="input-field bg-white pl-12 border-[#b8d8f0]" value={partnerSecondFortnightAmount} onChange={(event) => setPartnerSecondFortnightAmount(event.target.value)} placeholder="0" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
@@ -863,6 +1025,9 @@ export default function SelectProfilePage() {
                                                                 name: "",
                                                                 creditLimit: "",
                                                                 currentBalance: "",
+                                                                paymentDay: "30",
+                                                                paymentStrategy: "full",
+                                                                minimumPaymentAmount: "",
                                                             },
                                                         ]);
                                                     }
@@ -890,9 +1055,9 @@ export default function SelectProfilePage() {
                                                             </button>
                                                         </div>
 
-                                                        <div className="grid gap-3 sm:grid-cols-2">
+                                                        <div className="grid gap-3 sm:grid-cols-2 mt-3">
                                                             <div className="sm:col-span-2">
-                                                                <label className="label text-xs">Nombre</label>
+                                                                <label className="label text-xs">Nombre de la tarjeta</label>
                                                                 <input
                                                                     className="input-field bg-surface-50"
                                                                     value={card.name}
@@ -935,6 +1100,63 @@ export default function SelectProfilePage() {
                                                                     }}
                                                                 />
                                                             </div>
+                                                            <div>
+                                                                <label className="label text-xs">Estrategia de pago habitual</label>
+                                                                <select
+                                                                    className="input-field bg-surface-50"
+                                                                    value={card.paymentStrategy}
+                                                                    onChange={(event) => {
+                                                                        setCreditCards((previous) => {
+                                                                            const next = [...previous];
+                                                                            next[index].paymentStrategy = event.target.value as "full" | "minimum" | "fixed";
+                                                                            return next;
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <option value="full">Pago total (No genera intereses)</option>
+                                                                    <option value="minimum">Pago mínimo (Mantiene deuda)</option>
+                                                                    <option value="fixed">Pago fijo (Abono mayor al mínimo)</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="label text-xs">Día de pago</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max="31"
+                                                                    className="input-field bg-surface-50"
+                                                                    value={card.paymentDay}
+                                                                    onChange={(event) => {
+                                                                        setCreditCards((previous) => {
+                                                                            const next = [...previous];
+                                                                            next[index].paymentDay = event.target.value;
+                                                                            return next;
+                                                                        });
+                                                                    }}
+                                                                    placeholder="30"
+                                                                />
+                                                            </div>
+                                                            {card.paymentStrategy !== "full" && (
+                                                                <div className="sm:col-span-2">
+                                                                    <label className="label text-xs">Monto de pago (Mínimo o Fijo mensual)</label>
+                                                                    <div className="relative">
+                                                                        <span className="absolute left-3 top-2.5 text-surface-500 text-sm">{currency}</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="input-field bg-surface-50 pl-12"
+                                                                            value={card.minimumPaymentAmount}
+                                                                            onChange={(event) => {
+                                                                                setCreditCards((previous) => {
+                                                                                    const next = [...previous];
+                                                                                    next[index].minimumPaymentAmount = event.target.value;
+                                                                                    return next;
+                                                                                });
+                                                                            }}
+                                                                            placeholder="0"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -949,6 +1171,9 @@ export default function SelectProfilePage() {
                                                                 name: "",
                                                                 creditLimit: "",
                                                                 currentBalance: "",
+                                                                paymentDay: "30",
+                                                                paymentStrategy: "full",
+                                                                minimumPaymentAmount: "",
                                                             },
                                                         ])
                                                     }
@@ -1294,11 +1519,17 @@ export default function SelectProfilePage() {
                                 </div>
 
                                 {totalCreditCardDebt > 0 && (
-                                    <div className="rounded-2xl border border-[#f0d9a8] bg-[#fff9ee] px-4 py-3 text-sm text-[#7a4c00]">
-                                        <p className="font-semibold">Tarjeta de crédito: se trata como deuda, no como ingreso.</p>
+                                    <div className={`rounded-2xl border px-4 py-3 text-sm ${distribution.debtPct === 0 ? "border-[#f5c2c7] bg-[#f8d7da] text-[#721c24]" : "border-[#f0d9a8] bg-[#fff9ee] text-[#7a4c00]"}`}>
+                                        <p className="font-semibold">{distribution.debtPct === 0 ? "⚠️ Cuidado: No estás destinando presupuesto a deudas" : "Tarjeta de crédito: se trata como deuda, no como ingreso"}</p>
                                         <p className="mt-1">
-                                            Deuda detectada: {currency} {totalCreditCardDebt.toFixed(2)}. Esto impacta el bucket de
-                                            <span className="font-semibold"> Deuda / inversión</span> y la proyección de metas.
+                                            Deuda detectada: {currency} {totalCreditCardDebt.toFixed(2)}.
+                                            {distribution.debtPct === 0 ? (
+                                                <span className="block mt-1">
+                                                    Has seleccionado una regla ({DISTRIBUTION_LABELS[distributionRule] || "Personalizada"}) que asigna <b>0%</b> a Deuda/Inversión. Considera usar 70/20/10 o una regla personalizada para no acumular intereses.
+                                                </span>
+                                            ) : (
+                                                <span> Esto impacta el bucket de <span className="font-semibold">Deuda / inversión</span> y la proyección de metas.</span>
+                                            )}
                                         </p>
                                     </div>
                                 )}

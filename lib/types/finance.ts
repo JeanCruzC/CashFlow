@@ -86,6 +86,16 @@ export interface OrgFinancialProfile {
     additional_income: number;
     partner_contribution: number;
     consolidated_income: number;
+    salary_frequency?: "monthly" | "biweekly";
+    salary_payment_day_1?: number;
+    salary_payment_day_2?: number;
+    first_fortnight_amount?: number;
+    second_fortnight_amount?: number;
+    partner_salary_frequency?: "monthly" | "biweekly";
+    partner_salary_payment_day_1?: number;
+    partner_salary_payment_day_2?: number;
+    partner_first_fortnight_amount?: number;
+    partner_second_fortnight_amount?: number;
     distribution_rule: DistributionRule;
     needs_pct: number;
     wants_pct: number;

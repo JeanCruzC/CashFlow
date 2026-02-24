@@ -15,6 +15,16 @@ const financialProfileSchema = z.object({
     monthlyIncomeNet: z.number().finite().min(0),
     additionalIncome: z.number().finite().min(0).optional(),
     partnerContribution: z.number().finite().min(0).optional(),
+    salaryFrequency: z.enum(["monthly", "biweekly"]).optional(),
+    salaryPaymentDay1: z.number().int().min(1).max(31).optional(),
+    salaryPaymentDay2: z.number().int().min(1).max(31).optional(),
+    firstFortnightAmount: z.number().finite().min(0).optional(),
+    secondFortnightAmount: z.number().finite().min(0).optional(),
+    partnerSalaryFrequency: z.enum(["monthly", "biweekly"]).optional(),
+    partnerSalaryPaymentDay1: z.number().int().min(1).max(31).optional(),
+    partnerSalaryPaymentDay2: z.number().int().min(1).max(31).optional(),
+    partnerFirstFortnightAmount: z.number().finite().min(0).optional(),
+    partnerSecondFortnightAmount: z.number().finite().min(0).optional(),
     distributionRule: distributionRuleSchema,
     customDistribution: z
         .object({
@@ -53,6 +63,9 @@ const onboardingSetupSchema = z.object({
                 name: z.string().trim().min(1).max(120),
                 creditLimit: z.number().finite().positive(),
                 currentBalance: z.number().finite(), // This is usually positive or 0 (debt)
+                paymentDay: z.number().int().min(1).max(31).optional(),
+                paymentStrategy: z.enum(["full", "minimum", "fixed"]).optional(),
+                minimumPaymentAmount: z.number().finite().min(0).optional(),
             })
         )
         .optional(),
@@ -710,6 +723,16 @@ export async function createOrganizationWithOnboarding(
                     savings_pct: distribution.savingsPct,
                     debt_pct: distribution.debtPct,
                     savings_priorities: savingsPriorities,
+                    salary_frequency: safeSetup.financialProfile.salaryFrequency,
+                    salary_payment_day_1: safeSetup.financialProfile.salaryPaymentDay1,
+                    salary_payment_day_2: safeSetup.financialProfile.salaryPaymentDay2,
+                    first_fortnight_amount: safeSetup.financialProfile.firstFortnightAmount,
+                    second_fortnight_amount: safeSetup.financialProfile.secondFortnightAmount,
+                    partner_salary_frequency: safeSetup.financialProfile.partnerSalaryFrequency,
+                    partner_salary_payment_day_1: safeSetup.financialProfile.partnerSalaryPaymentDay1,
+                    partner_salary_payment_day_2: safeSetup.financialProfile.partnerSalaryPaymentDay2,
+                    partner_first_fortnight_amount: safeSetup.financialProfile.partnerFirstFortnightAmount,
+                    partner_second_fortnight_amount: safeSetup.financialProfile.partnerSecondFortnightAmount,
                 },
                 { onConflict: "org_id" }
             );
@@ -761,6 +784,9 @@ export async function createOrganizationWithOnboarding(
             currency: normalizeCurrency(safeSetup.currency) || "USD",
             opening_balance: -Math.abs(cc.currentBalance), // Represent current debt as negative balance
             credit_limit: cc.creditLimit,
+            payment_day: cc.paymentDay,
+            card_payment_strategy: cc.paymentStrategy,
+            minimum_payment_amount: cc.minimumPaymentAmount,
             is_restricted_cash: false,
         }));
 
