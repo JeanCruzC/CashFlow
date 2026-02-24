@@ -30,6 +30,13 @@ interface TransactionGridProps {
 
 type SearchKey = "search" | "accountId" | "categoryId" | "direction" | "dateFrom" | "dateTo";
 
+function formatRowAmount(amount: number, currency?: string) {
+    return new Intl.NumberFormat("es-PE", {
+        style: "currency",
+        currency: (currency || "USD").toUpperCase(),
+    }).format(Math.abs(amount));
+}
+
 export function TransactionGrid({
     initialData,
     totalCount,
@@ -367,11 +374,8 @@ export function TransactionGrid({
                                         <td className="py-3 px-4 text-muted">{row.accounts?.name || "-"}</td>
                                         <td className="py-3 px-4 text-muted">{row.categories_gl?.name || "Sin categoría"}</td>
                                         <td className={`py-3 px-4 text-right font-medium ${row.amount >= 0 ? "amount-positive" : "amount-negative"}`}>
-                                            {row.amount >= 0 ? "+" : "-"}$
-                                            {Math.abs(row.amount).toLocaleString("es-PE", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}
+                                            {row.amount >= 0 ? "+" : "-"}
+                                            {formatRowAmount(row.amount, row.currency)}
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center justify-end gap-3 text-sm">

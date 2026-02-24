@@ -1,5 +1,6 @@
 import { getAccounts } from "@/app/actions/accounts";
 import { getAccountBalances } from "@/app/actions/accounts";
+import { getOrgSettings } from "@/app/actions/settings";
 import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { Account } from "@/lib/types/finance";
 
@@ -24,10 +25,23 @@ function accountTag(type: Account["account_type"]) {
 }
 
 export default async function AccountsPage() {
-    const [accounts, balanceMap] = await Promise.all([
+    const [accounts, balanceMap, orgSettings] = await Promise.all([
         getAccounts() as Promise<Account[]>,
         getAccountBalances(),
+        getOrgSettings(),
     ]);
+    const locale = orgSettings?.preferred_locale === "en" ? "en-US" : "es-PE";
+    const baseCurrency = (orgSettings?.currency || accounts[0]?.currency || "USD").toUpperCase();
+    const formatMoney = (
+        value: number,
+        currency: string = baseCurrency,
+        minimumFractionDigits?: number
+    ) =>
+        new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency,
+            minimumFractionDigits,
+        }).format(value);
 
     // Real balance = opening_balance + sum of all transactions for that account
     const getRealBalance = (account: Account) => {
@@ -62,19 +76,19 @@ export default async function AccountsPage() {
                 <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                     <p className="text-sm text-surface-500">Activos</p>
                     <p className="mt-1 text-2xl font-semibold text-positive-600">
-                        {new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD" }).format(totalAssets)}
+                        {formatMoney(totalAssets)}
                     </p>
                 </article>
                 <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                     <p className="text-sm text-surface-500">Pasivos</p>
                     <p className="mt-1 text-2xl font-semibold text-negative-600">
-                        {new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD" }).format(totalLiabilities)}
+                        {formatMoney(totalLiabilities)}
                     </p>
                 </article>
                 <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                     <p className="text-sm text-surface-500">Patrimonio neto</p>
                     <p className={`mt-1 text-2xl font-semibold ${netWorth >= 0 ? "text-[#0f2233]" : "text-negative-600"}`}>
-                        {new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD" }).format(netWorth)}
+                        {formatMoney(netWorth)}
                     </p>
                 </article>
             </section>
@@ -85,7 +99,7 @@ export default async function AccountsPage() {
                     Define moneda, tipo y saldo inicial para usarla en transacciones y reportes.
                 </p>
                 <div className="mt-4">
-                    <AccountCreateForm />
+                    <AccountCreateForm defaultCurrency={baseCurrency} />
                 </div>
             </section>
 
@@ -102,7 +116,7 @@ export default async function AccountsPage() {
                 ) : (
                     <div className="mt-4 divide-y rounded-2xl border border-surface-200">
                         {accounts.filter(a => a.account_type !== "credit_card" && a.account_type !== "loan").map((account) => {
-                            const balance = Number(account.opening_balance);
+                            const balance = getRealBalance(account);
                             return (
                                 <article key={account.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-surface-50 transition-colors">
                                     <div className="flex items-center gap-3">
@@ -117,7 +131,7 @@ export default async function AccountsPage() {
                                         </div>
                                     </div>
                                     <p className={`text-sm font-semibold ${balance >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                        {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD" }).format(balance)}
+                                        {formatMoney(balance, account.currency || baseCurrency)}
                                     </p>
                                 </article>
                             );
@@ -135,7 +149,7 @@ export default async function AccountsPage() {
 
                     <div className="mt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
                         {accounts.filter(a => a.account_type === "credit_card" || a.account_type === "loan").map((account) => {
-                            const debt = Math.abs(Number(account.opening_balance));
+                            const debt = Math.abs(getRealBalance(account));
                             const limit = Number(account.credit_limit) || 1; // prevent division by 0
                             const utilizationPercent = Math.min((debt / limit) * 100, 100);
 
@@ -157,15 +171,15 @@ export default async function AccountsPage() {
                                             </div>
                                         </div>
                                         <p className="text-sm font-semibold text-negative-600">
-                                            {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD" }).format(-debt)}
+                                            {formatMoney(-debt, account.currency || baseCurrency)}
                                         </p>
                                     </div>
 
                                     {account.account_type === "credit_card" && account.credit_limit && (
                                         <div className="space-y-1.5 mt-2">
                                             <div className="flex justify-between text-xs text-surface-500 font-medium">
-                                                <span>Deuda: {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD", minimumFractionDigits: 0 }).format(debt)}</span>
-                                                <span>Límite: {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD", minimumFractionDigits: 0 }).format(Number(account.credit_limit))}</span>
+                                                <span>Deuda: {formatMoney(debt, account.currency || baseCurrency, 0)}</span>
+                                                <span>Límite: {formatMoney(Number(account.credit_limit), account.currency || baseCurrency, 0)}</span>
                                             </div>
                                             <div className="h-2 w-full bg-surface-100 rounded-full overflow-hidden">
                                                 <div

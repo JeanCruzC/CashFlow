@@ -37,6 +37,7 @@ function monthShift(month: string, delta: number) {
 
 export interface ForecastOverview {
     month: string;
+    currency: string;
     horizon_months: number;
     revenue_growth_rate: number | null;
     revenue_amount: number | null;
@@ -57,9 +58,10 @@ export interface ForecastOverview {
     };
 }
 
-function emptyForecast(month: string, horizonMonths: number): ForecastOverview {
+function emptyForecast(month: string, horizonMonths: number, currency = "USD"): ForecastOverview {
     return {
         month,
+        currency,
         horizon_months: horizonMonths,
         revenue_growth_rate: null,
         revenue_amount: null,
@@ -109,13 +111,13 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
     const targetMonth = resolveMonth(month);
     const horizonMonths = resolveHorizon(horizon);
     const context = await getOrgContextOrNull();
-    if (!context) return emptyForecast(targetMonth, horizonMonths);
+    if (!context) return emptyForecast(targetMonth, horizonMonths, "USD");
 
     const { supabase, orgId } = context;
     const historyStartMonth = monthShift(targetMonth, -36);
 
     const [orgResult, assumptionsResult, categoriesResult, transactionsResult] = await Promise.all([
-        supabase.from("orgs").select("type").eq("id", orgId).maybeSingle(),
+        supabase.from("orgs").select("type, currency").eq("id", orgId).maybeSingle(),
         supabase
             .from("forecast_assumptions")
             .select("*")
@@ -139,6 +141,7 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
         logError("Error fetching org type for forecast", orgResult.error, { orgId, month: targetMonth });
         throw new Error("No se pudo cargar el pronóstico");
     }
+    const orgCurrency = orgResult.data.currency || "USD";
 
     if (assumptionsResult.error) {
         logError("Error fetching forecast assumptions", assumptionsResult.error, { orgId, month: targetMonth });
@@ -207,7 +210,7 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
         }
 
         return {
-            ...emptyForecast(targetMonth, horizonMonths),
+            ...emptyForecast(targetMonth, horizonMonths, orgCurrency),
             model: {
                 selected_model: "personal_average",
                 validation_mape_pct: null,
@@ -269,6 +272,7 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
 
     return {
         month: targetMonth,
+        currency: orgCurrency,
         horizon_months: horizonMonths,
         revenue_growth_rate: assumptionData?.revenue_growth_rate ?? null,
         revenue_amount: assumptionData?.revenue_amount ?? null,

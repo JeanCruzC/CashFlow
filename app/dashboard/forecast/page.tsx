@@ -25,9 +25,9 @@ function monthLabel(month: string) {
     );
 }
 
-function formatAmount(value: number | null) {
+function formatAmount(value: number | null, currency: string) {
     if (value == null) return "No definido";
-    return new Intl.NumberFormat("es-PE", { style: "currency", currency: "USD" }).format(value);
+    return new Intl.NumberFormat("es-PE", { style: "currency", currency }).format(value);
 }
 
 function formatPercent(value: number | null) {
@@ -109,22 +109,22 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <article className="rounded-2xl border border-[#bedfd8] bg-[#edf9f6] p-4 shadow-card">
                         <p className="text-sm text-[#117068]">Ingreso promedio mensual</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.drivers.fixed_opex > 0 ? (forecast.projections[0]?.revenue ?? 0) : 0)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.drivers.fixed_opex > 0 ? (forecast.projections[0]?.revenue ?? 0) : 0, forecast.currency)}</p>
                     </article>
                     <article className="rounded-2xl border border-[#f4d5bf] bg-[#fff4eb] p-4 shadow-card">
                         <p className="text-sm text-[#a3462a]">Gasto promedio mensual</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.drivers.fixed_opex)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.drivers.fixed_opex, forecast.currency)}</p>
                     </article>
                     <article className={`rounded-2xl border p-4 shadow-card ${(forecast.projections[0]?.ebit ?? 0) >= 0 ? "border-[#bedfd8] bg-[#edf9f6]" : "border-[#f4d5bf] bg-[#fff4eb]"}`}>
                         <p className={`text-sm ${(forecast.projections[0]?.ebit ?? 0) >= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}>Flujo neto mensual</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.projections[0]?.ebit ?? 0)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.projections[0]?.ebit ?? 0, forecast.currency)}</p>
                     </article>
                 </section>
             ) : (
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                         <p className="text-sm text-surface-500">Revenue Amount</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.revenue_amount)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.revenue_amount, forecast.currency)}</p>
                     </article>
                     <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                         <p className="text-sm text-surface-500">Revenue Growth</p>
@@ -136,7 +136,7 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                     </article>
                     <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                         <p className="text-sm text-surface-500">Fixed OPEX</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.fixed_opex)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.fixed_opex, forecast.currency)}</p>
                     </article>
                     <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                         <p className="text-sm text-surface-500">Variable OPEX %</p>
@@ -144,7 +144,7 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                     </article>
                     <article className="rounded-2xl border border-surface-200 bg-white p-4 shadow-card">
                         <p className="text-sm text-surface-500">One-off Items</p>
-                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.one_off_amount)}</p>
+                        <p className="mt-1 text-xl font-semibold text-[#0f2233]">{formatAmount(forecast.one_off_amount, forecast.currency)}</p>
                     </article>
                 </section>
             )}
@@ -190,7 +190,7 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                         </div>
                         <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
                             <p className="text-xs uppercase tracking-wider text-surface-500">Fixed OPEX</p>
-                            <p className="mt-1 text-base font-semibold text-[#10283b]">{formatAmount(forecast.drivers.fixed_opex)}</p>
+                            <p className="mt-1 text-base font-semibold text-[#10283b]">{formatAmount(forecast.drivers.fixed_opex, forecast.currency)}</p>
                         </div>
                         <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
                             <p className="text-xs uppercase tracking-wider text-surface-500">Variable OPEX</p>
@@ -198,7 +198,7 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                         </div>
                         <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
                             <p className="text-xs uppercase tracking-wider text-surface-500">One-off inicial</p>
-                            <p className="mt-1 text-base font-semibold text-[#10283b]">{formatAmount(forecast.drivers.one_off_amount)}</p>
+                            <p className="mt-1 text-base font-semibold text-[#10283b]">{formatAmount(forecast.drivers.one_off_amount, forecast.currency)}</p>
                         </div>
                     </div>
                 )}
@@ -241,10 +241,10 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                                 {forecast.projections.map((projection) => (
                                     <tr key={projection.month}>
                                         <td className="px-4 py-3 font-medium text-[#10283b]">{formatMonthCompact(projection.month)}</td>
-                                        <td className="px-4 py-3 text-positive-600">{formatAmount(projection.revenue)}</td>
-                                        <td className="px-4 py-3 text-negative-600">{formatAmount(projection.opex)}</td>
+                                        <td className="px-4 py-3 text-positive-600">{formatAmount(projection.revenue, forecast.currency)}</td>
+                                        <td className="px-4 py-3 text-negative-600">{formatAmount(projection.opex, forecast.currency)}</td>
                                         <td className={`px-4 py-3 font-semibold ${projection.ebit >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                            {formatAmount(projection.ebit)}
+                                            {formatAmount(projection.ebit, forecast.currency)}
                                         </td>
                                         <td className={`px-4 py-3 font-semibold ${projection.operating_margin_pct >= 0 ? "text-positive-600" : "text-negative-600"}`}>
                                             {projection.operating_margin_pct.toFixed(1)}%
@@ -271,11 +271,11 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                                 {forecast.projections.map((projection) => (
                                     <tr key={projection.month}>
                                         <td className="px-4 py-3 font-medium text-[#10283b]">{formatMonthCompact(projection.month)}</td>
-                                        <td className="px-4 py-3">{formatAmount(projection.revenue)}</td>
-                                        <td className="px-4 py-3">{formatAmount(projection.cogs)}</td>
-                                        <td className="px-4 py-3">{formatAmount(projection.opex)}</td>
+                                        <td className="px-4 py-3">{formatAmount(projection.revenue, forecast.currency)}</td>
+                                        <td className="px-4 py-3">{formatAmount(projection.cogs, forecast.currency)}</td>
+                                        <td className="px-4 py-3">{formatAmount(projection.opex, forecast.currency)}</td>
                                         <td className={`px-4 py-3 font-semibold ${projection.ebit >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                            {formatAmount(projection.ebit)}
+                                            {formatAmount(projection.ebit, forecast.currency)}
                                         </td>
                                         <td className={`px-4 py-3 font-semibold ${projection.operating_margin_pct >= 0 ? "text-positive-600" : "text-negative-600"}`}>
                                             {projection.operating_margin_pct.toFixed(2)}%

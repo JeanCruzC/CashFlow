@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createAccount } from "@/app/actions/accounts";
 import { useRouter } from "next/navigation";
 
@@ -12,23 +12,37 @@ const ACCOUNT_TYPES = [
     { value: "investment", label: "Inversión" },
 ] as const;
 
-export function AccountCreateForm() {
+interface AccountCreateFormProps {
+    defaultCurrency?: string;
+}
+
+function normalizeCurrency(currency?: string) {
+    const value = currency?.trim().toUpperCase();
+    return value && value.length === 3 ? value : "USD";
+}
+
+export function AccountCreateForm({ defaultCurrency }: AccountCreateFormProps) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const resolvedDefaultCurrency = normalizeCurrency(defaultCurrency);
 
     const [name, setName] = useState("");
     const [accountType, setAccountType] = useState<(typeof ACCOUNT_TYPES)[number]["value"]>("bank");
-    const [currency, setCurrency] = useState("USD");
+    const [currency, setCurrency] = useState(resolvedDefaultCurrency);
     const [openingBalance, setOpeningBalance] = useState("0");
     const [creditLimit, setCreditLimit] = useState("");
     const [interestRate, setInterestRate] = useState("");
 
+    useEffect(() => {
+        setCurrency(resolvedDefaultCurrency);
+    }, [resolvedDefaultCurrency]);
+
     function resetForm() {
         setName("");
         setAccountType("bank");
-        setCurrency("USD");
+        setCurrency(resolvedDefaultCurrency);
         setOpeningBalance("0");
         setCreditLimit("");
         setInterestRate("");
@@ -99,7 +113,7 @@ export function AccountCreateForm() {
                         maxLength={3}
                         value={currency}
                         onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-                        placeholder="USD"
+                        placeholder={resolvedDefaultCurrency}
                         required
                     />
                 </div>

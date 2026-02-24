@@ -59,6 +59,10 @@ export function TransactionForm({
     const [categoryId, setCategoryId] = useState(initialValues?.category_gl_id ?? "");
     const [savingsGoalId, setSavingsGoalId] = useState(initialValues?.savings_goal_id ?? "");
     const [notes, setNotes] = useState(initialValues?.notes ?? "");
+    const selectedAccountCurrency = useMemo(() => {
+        const accountCurrency = accounts.find((account) => account.id === accountId)?.currency;
+        return (accountCurrency || initialValues?.currency || accounts[0]?.currency || "USD").toUpperCase();
+    }, [accountId, accounts, initialValues?.currency]);
 
     const pageTitle = mode === "edit" ? "Editar transacción" : "Nueva transacción";
     const submitLabel = mode === "edit" ? "Guardar cambios" : "Crear transacción";
@@ -95,7 +99,7 @@ export function TransactionForm({
                 amount: direction === "outcome" ? -numericAmount : numericAmount,
                 account_id: accountId,
                 category_gl_id: categoryId || undefined,
-                currency: (initialValues?.currency || "USD").toUpperCase(),
+                currency: selectedAccountCurrency,
                 is_transfer: false,
                 counterparty_id: undefined,
                 cost_center_id: undefined,
@@ -197,14 +201,16 @@ export function TransactionForm({
                         <div>
                             <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Monto</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 font-medium">$</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-wide text-surface-400">
+                                    {selectedAccountCurrency}
+                                </span>
                                 <input
                                     type="number"
                                     step="0.01"
                                     required
                                     value={amount}
                                     onChange={(event) => setAmount(event.target.value)}
-                                    className="input-field pl-7"
+                                    className="input-field pl-16"
                                     placeholder="0.00"
                                 />
                             </div>
