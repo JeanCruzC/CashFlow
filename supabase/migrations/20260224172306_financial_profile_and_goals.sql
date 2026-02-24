@@ -46,6 +46,9 @@ CREATE POLICY "Users can insert their org financial profile" ON public.org_finan
             AND om.user_id = auth.uid()
         )
     );
+-- Enable the moddatetime extension
+CREATE EXTENSION IF NOT EXISTS moddatetime SCHEMA extensions;
+
 
 CREATE POLICY "Users can delete their org financial profile" ON public.org_financial_profile
     FOR DELETE USING (
