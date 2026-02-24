@@ -16,6 +16,13 @@ const PlusIcon = ({ size = 20 }: { size?: number }) => (
     </svg>
 );
 
+const SparklesIcon = ({ size = 16 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4M3 5h4" />
+    </svg>
+);
+
 const CheckCircleIcon = ({ size = 24 }: { size?: number }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M22 11.08V12C21.9988 14.1564 21.3001 16.2547 20.0093 17.9818C18.7185 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.88033 13.488 2.02808 11.3363C2.17583 9.18455 2.99721 7.13631 4.36421 5.49706C5.73121 3.85781 7.56837 2.71537 9.6006 2.23547C11.6328 1.75557 13.7505 1.96472 15.63 2.82" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -73,8 +80,15 @@ export default function SelectProfilePage() {
     const [newCatKind, setNewCatKind] = useState<"income" | "expense" | "cost_of_goods_sold">("expense");
     const [showAddCategory, setShowAddCategory] = useState(false);
 
-    // Step 5: Initial Budgets
+    // Step 5: Initial Budgets & AI
     const [budgets, setBudgets] = useState<Record<string, string>>({});
+
+    // AI Modal State
+    const [aiCategory, setAiCategory] = useState<string | null>(null);
+    const [aiContext, setAiContext] = useState("");
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiResult, setAiResult] = useState<{ amount: number, reasoning: string } | null>(null);
+    const [aiError, setAiError] = useState("");
 
     const handleNext = () => {
         if (step === 1 && !selected) return;
@@ -100,6 +114,44 @@ export default function SelectProfilePage() {
 
     const handleRemoveCategory = (index: number) => {
         setCustomCategories(customCategories.filter((_, i) => i !== index));
+    };
+
+    const handleEstimateBudget = async () => {
+        if (!aiContext.trim() || !aiCategory) return;
+        setAiLoading(true);
+        setAiError("");
+        setAiResult(null);
+
+        try {
+            const countryName = COUNTRIES.find(c => c.code === country)?.label || country;
+            const res = await fetch("/api/estimate-budget", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    category: aiCategory,
+                    country: countryName,
+                    currency,
+                    context: aiContext
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Error estimando presupuesto");
+
+            setAiResult(data);
+        } catch (e: unknown) {
+            setAiError(e instanceof Error ? e.message : "Error desconocido");
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    const applyAiEstimate = () => {
+        if (aiCategory && aiResult) {
+            setBudgets({ ...budgets, [aiCategory]: aiResult.amount.toString() });
+            setAiCategory(null);
+            setAiContext("");
+            setAiResult(null);
+        }
     };
 
     async function handleFinish() {
@@ -498,16 +550,24 @@ export default function SelectProfilePage() {
                                 <div className="mt-6 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                     <div className="space-y-4">
                                         {activeBudgetCategories.map((cat, idx) => (
-                                            <div key={idx} className="flex items-center justify-between gap-4">
-                                                <label className="text-sm font-medium text-surface-700 w-1/2">{cat}</label>
-                                                <div className="relative w-1/2">
+                                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 pb-4 border-b border-surface-100 last:border-0 last:pb-0">
+                                                <div className="flex flex-col sm:w-1/2">
+                                                    <label className="text-sm font-medium text-surface-700">{cat}</label>
+                                                    <button
+                                                        onClick={() => { setAiCategory(cat); setAiContext(""); setAiResult(null); setAiError(""); }}
+                                                        className="mt-1 flex items-center gap-1 w-fit text-xs font-medium text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition-colors"
+                                                    >
+                                                        <SparklesIcon size={12} /> Sugerencia IA
+                                                    </button>
+                                                </div>
+                                                <div className="relative w-full sm:w-1/2">
                                                     <span className="absolute left-3 top-2 text-surface-400 text-sm">{currency}</span>
                                                     <input
                                                         type="number"
                                                         min="0"
                                                         step="10"
                                                         placeholder="0"
-                                                        className="input-field pl-10 h-10 py-1 text-sm"
+                                                        className="input-field pl-10 h-10 py-1 text-sm bg-surface-50 focus:bg-white"
                                                         value={budgets[cat] || ""}
                                                         onChange={(e) => setBudgets({ ...budgets, [cat]: e.target.value })}
                                                     />
@@ -520,6 +580,84 @@ export default function SelectProfilePage() {
                                     </p>
                                 </div>
 
+                                {/* AI Estimation Modal / Popover */}
+                                {aiCategory && (
+                                    <div className="fixed inset-0 z-50 bg-surface-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
+                                            <div className="p-5 border-b border-surface-100 bg-purple-50 flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                                    <SparklesIcon size={18} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-purple-900 leading-tight">Estimar presupuesto</h3>
+                                                    <p className="text-xs font-medium text-purple-700/80">Para: {aiCategory}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-5 space-y-4">
+                                                {!aiResult && (
+                                                    <>
+                                                        <p className="text-sm text-surface-600">
+                                                            Cuéntale a la IA más detalles para calcular un monto promedio mensual en {country}.
+                                                        </p>
+                                                        <textarea
+                                                            placeholder={aiCategory.toLowerCase().includes("transporte") ? "Ej. Uso el bus de lunes a viernes y el tren los fines de semana..." : aiCategory.toLowerCase().includes("alimentación") ? "Ej. Somos 2 adultos que comemos en casa casi todos los días..." : "Escribe algunos detalles..."}
+                                                            rows={3}
+                                                            className="input-field text-sm w-full py-2 resize-none"
+                                                            value={aiContext}
+                                                            onChange={e => setAiContext(e.target.value)}
+                                                            autoFocus
+                                                        />
+                                                    </>
+                                                )}
+
+                                                {aiResult && (
+                                                    <div className="bg-positive-50 border border-positive-100 p-4 rounded-xl space-y-3 animate-fade-in">
+                                                        <div className="flex justify-between items-center pb-3 border-b border-positive-200">
+                                                            <span className="text-sm font-medium text-positive-800">Cálculo estimado:</span>
+                                                            <span className="text-lg font-bold text-positive-900">{currency} {aiResult.amount}</span>
+                                                        </div>
+                                                        <p className="text-sm text-positive-800 leading-relaxed italic">
+                                                            &quot;{aiResult.reasoning}&quot;
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {aiError && (
+                                                    <p className="text-sm text-negative-600 bg-negative-50 p-3 rounded-lg border border-negative-100">{aiError}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="p-4 bg-surface-50 border-t border-surface-100 flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => setAiCategory(null)}
+                                                    className="px-4 py-2 text-sm font-medium text-surface-600 hover:text-surface-900 transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+
+                                                {!aiResult ? (
+                                                    <button
+                                                        onClick={handleEstimateBudget}
+                                                        disabled={aiLoading || !aiContext.trim()}
+                                                        className="btn-primary w-fit bg-purple-600 hover:bg-purple-700 border-none px-5 py-2 inline-flex items-center gap-2"
+                                                    >
+                                                        {aiLoading ? <SpinnerIcon size={16} /> : <SparklesIcon size={16} />}
+                                                        Calcular estimado
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={applyAiEstimate}
+                                                        className="btn-primary w-fit bg-[#0f2233] hover:bg-[#1a3a5c] px-5 py-2"
+                                                    >
+                                                        Utilizar este valor
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {error && (
                                     <div className="mt-5 rounded-xl border border-negative-200 bg-negative-50 px-4 py-3 text-sm text-negative-700 font-medium">
                                         {error}
@@ -527,7 +665,6 @@ export default function SelectProfilePage() {
                                 )}
                             </div>
                         )}
-
 
                         {/* ================= BUTTON CONTROLS ================= */}
                         <div className="mt-10 flex items-center justify-between border-t border-surface-200 pt-6">
