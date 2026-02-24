@@ -51,3 +51,26 @@ export async function createAccount(input: AccountInput) {
     revalidatePath("/dashboard/accounts");
     return { success: true };
 }
+
+export async function getAccountBalances(): Promise<Record<string, number>> {
+    const { supabase, orgId } = await requireOrgContext();
+
+    const { data, error } = await supabase
+        .from("transactions")
+        .select("account_id, amount")
+        .eq("org_id", orgId);
+
+    if (error) {
+        logError("Error fetching transaction sums for account balances", error, { orgId });
+        return {};
+    }
+
+    const balanceMap: Record<string, number> = {};
+    for (const row of (data || [])) {
+        const accountId = row.account_id as string;
+        const amount = Number(row.amount) || 0;
+        balanceMap[accountId] = (balanceMap[accountId] || 0) + amount;
+    }
+
+    return balanceMap;
+}

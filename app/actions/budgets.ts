@@ -104,6 +104,59 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
     const budgets = (budgetsResult.data || []) as BudgetQueryRow[];
     const transactions = (transactionsResult.data || []) as TransactionQueryRow[];
 
+    // ── AUTO-CLONE: If no budgets exist for this month, copy from the most recent prior month ──
+    let effectiveBudgets = budgets;
+    if (budgets.length === 0) {
+        // Find the most recent month that has budgets
+        const { data: latestBudgets, error: latestError } = await supabase
+            .from("budgets")
+            .select("category_gl_id, amount, categories_gl(name)")
+            .eq("org_id", orgId)
+            .order("month", { ascending: false })
+            .limit(50);
+
+        if (!latestError && latestBudgets && latestBudgets.length > 0) {
+            // Get the month from the first row (most recent)
+            const { data: latestMonth } = await supabase
+                .from("budgets")
+                .select("month")
+                .eq("org_id", orgId)
+                .order("month", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (latestMonth?.month) {
+                const { data: priorBudgets } = await supabase
+                    .from("budgets")
+                    .select("category_gl_id, amount, categories_gl(name)")
+                    .eq("org_id", orgId)
+                    .eq("month", latestMonth.month);
+
+                if (priorBudgets && priorBudgets.length > 0) {
+                    // Clone them into the current month silently
+                    const cloneRows = priorBudgets.map((b: any) => ({
+                        org_id: orgId,
+                        month: targetMonth,
+                        category_gl_id: b.category_gl_id,
+                        cost_center_id: null,
+                        amount: Number(b.amount),
+                    }));
+
+                    await supabase.from("budgets").insert(cloneRows);
+
+                    // Re-fetch the now-inserted budgets
+                    const { data: freshBudgets } = await supabase
+                        .from("budgets")
+                        .select("category_gl_id, amount, categories_gl(name)")
+                        .eq("org_id", orgId)
+                        .eq("month", targetMonth);
+
+                    effectiveBudgets = (freshBudgets || []) as BudgetQueryRow[];
+                }
+            }
+        }
+    }
+
     const actualByCategory = new Map<string, number>();
     transactions.forEach((txn) => {
         if (!txn.category_gl_id) return;
@@ -111,7 +164,7 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
         actualByCategory.set(txn.category_gl_id, current + Math.abs(Number(txn.amount)));
     });
 
-    const rows: BudgetRow[] = budgets.map((item) => {
+    const rows: BudgetRow[] = effectiveBudgets.map((item) => {
         const budget = Number(item.amount);
         const actual = actualByCategory.get(item.category_gl_id) || 0;
         const remaining = budget - actual;

@@ -64,6 +64,7 @@ export const transactionSchema = z.object({
     tax_amount: z.number().optional(),
     is_transfer: z.boolean().default(false),
     transfer_group_id: z.string().uuid().optional(),
+    savings_goal_id: z.string().uuid().optional(),
     detraccion_rate: z.number().min(0).max(100).optional(),
     detraccion_amount: z.number().optional(),
     notes: z.string().optional(),

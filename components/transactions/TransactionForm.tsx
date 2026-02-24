@@ -15,11 +15,13 @@ interface TransactionFormInitialValues {
     category_gl_id?: string | null;
     currency?: string | null;
     notes?: string | null;
+    savings_goal_id?: string | null;
 }
 
 interface TransactionFormProps {
     accounts: Account[];
     categories: CategoryGL[];
+    savingsGoals?: any[];
     mode?: "create" | "edit";
     transactionId?: string;
     initialValues?: TransactionFormInitialValues;
@@ -33,6 +35,7 @@ function toInputDate(value?: string) {
 export function TransactionForm({
     accounts,
     categories,
+    savingsGoals,
     mode = "create",
     transactionId,
     initialValues,
@@ -54,6 +57,7 @@ export function TransactionForm({
         initialValues?.account_id || accounts[0]?.id || ""
     );
     const [categoryId, setCategoryId] = useState(initialValues?.category_gl_id ?? "");
+    const [savingsGoalId, setSavingsGoalId] = useState(initialValues?.savings_goal_id ?? "");
     const [notes, setNotes] = useState(initialValues?.notes ?? "");
 
     const pageTitle = mode === "edit" ? "Editar transacción" : "Nueva transacción";
@@ -96,6 +100,7 @@ export function TransactionForm({
                 counterparty_id: undefined,
                 cost_center_id: undefined,
                 transfer_group_id: undefined,
+                savings_goal_id: direction === "outcome" && savingsGoalId ? savingsGoalId : undefined,
                 detraccion_rate: undefined,
                 detraccion_amount: undefined,
                 notes: notes.trim() || undefined,
@@ -257,6 +262,21 @@ export function TransactionForm({
                                 </option>
                             ))}
                         </Select>
+
+                        {direction === "outcome" && savingsGoals && savingsGoals.length > 0 && (
+                            <Select
+                                label="Asignar a Meta de Ahorro (Opcional)"
+                                value={savingsGoalId}
+                                onChange={(event) => setSavingsGoalId(event.target.value)}
+                            >
+                                <option value="">No asociar a meta</option>
+                                {savingsGoals.map((goal) => (
+                                    <option key={goal.id} value={goal.id}>
+                                        {goal.name} (Meta: {goal.target_amount})
+                                    </option>
+                                ))}
+                            </Select>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Notas</label>

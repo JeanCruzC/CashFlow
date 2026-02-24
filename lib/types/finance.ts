@@ -58,6 +58,18 @@ export interface Account {
     created_at: string;
 }
 
+export interface SavingsGoal {
+    id: string;
+    org_id: string;
+    name: string;
+    target_amount: number;
+    current_amount: number;
+    deadline_date: string | null;
+    color_code: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface CategoryGL {
     id: string;
     org_id: string;
@@ -105,6 +117,7 @@ export interface Transaction {
     tax_amount: number | null;
     is_transfer: boolean;
     transfer_group_id: string | null;
+    savings_goal_id: string | null;
     detraccion_rate: number | null;
     detraccion_amount: number | null;
     status: string | null;

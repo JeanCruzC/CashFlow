@@ -28,6 +28,24 @@ const onboardingSetupSchema = z.object({
             currency: z.string().trim().length(3).optional(),
         })
         .optional(),
+    creditCards: z
+        .array(
+            z.object({
+                name: z.string().trim().min(1).max(120),
+                creditLimit: z.number().finite().positive(),
+                currentBalance: z.number().finite(), // This is usually positive or 0 (debt)
+            })
+        )
+        .optional(),
+    savingsGoals: z
+        .array(
+            z.object({
+                name: z.string().trim().min(1).max(120),
+                targetAmount: z.number().finite().positive(),
+                deadlineDate: z.string().nullable().optional(),
+            })
+        )
+        .optional(),
     forecast: z
         .object({
             revenueGrowthRate: z.number().finite().optional(),
@@ -430,6 +448,72 @@ export async function createOrganizationWithOnboarding(
             if (accountsError) {
                 logError("Error creating onboarding accounts", accountsError, { orgId, profileType });
                 throw new Error("No se pudieron crear las cuentas iniciales");
+            }
+        }
+    }
+
+    if (safeSetup.creditCards && safeSetup.creditCards.length > 0) {
+        const ccRows = safeSetup.creditCards.map((cc) => ({
+            org_id: orgId,
+            name: cc.name,
+            account_type: "credit_card",
+            currency: normalizeCurrency(safeSetup.currency) || "USD",
+            opening_balance: -Math.abs(cc.currentBalance), // Represent current debt as negative balance
+            credit_limit: cc.creditLimit,
+            is_restricted_cash: false,
+        }));
+
+        const { error: ccError } = await supabase.from("accounts").insert(ccRows);
+        if (ccError) {
+            logError("Error creating credit card accounts", ccError, { orgId });
+            throw new Error("No se pudieron crear las tarjetas de crédito");
+        }
+    }
+
+    if (safeSetup.savingsGoals && safeSetup.savingsGoals.length > 0) {
+        const goalRows = safeSetup.savingsGoals.map((g) => ({
+            org_id: orgId,
+            name: g.name,
+            target_amount: g.targetAmount,
+            current_amount: 0,
+            deadline_date: g.deadlineDate || null,
+        }));
+
+        const { error: goalsError } = await supabase.from("savings_goals").insert(goalRows);
+        if (goalsError) {
+            logError("Error creating savings goals", goalsError, { orgId });
+            throw new Error("No se pudieron crear las metas de ahorro");
+        }
+
+        // ── AUTO-CREATE "Ahorro / Metas" category + budget entry ──
+        const { data: savingsCategory, error: savCatError } = await supabase
+            .from("categories_gl")
+            .insert({
+                org_id: orgId,
+                name: "Ahorro / Metas",
+                kind: profileType === "business" ? "opex" : "expense",
+                fixed_cost: true,
+                variable_cost: false,
+                is_active: true,
+                sort_order: 999,
+            })
+            .select("id")
+            .single();
+
+        if (!savCatError && savingsCategory) {
+            // Calculate monthly savings contribution: sum of targets ÷ 12
+            const totalTargets = safeSetup.savingsGoals.reduce((sum, g) => sum + g.targetAmount, 0);
+            const monthlyContribution = Math.round(totalTargets / 12);
+
+            if (monthlyContribution > 0) {
+                const currentMonth = new Date().toISOString().slice(0, 7);
+                await supabase.from("budgets").insert({
+                    org_id: orgId,
+                    month: currentMonth,
+                    category_gl_id: savingsCategory.id,
+                    cost_center_id: null,
+                    amount: monthlyContribution,
+                });
             }
         }
     }

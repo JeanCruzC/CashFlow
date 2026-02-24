@@ -5,7 +5,8 @@ export type ForecastModelName =
   | "arima"
   | "sarima"
   | "random_forest"
-  | "manual_assumptions";
+  | "manual_assumptions"
+  | "personal_average";
 
 export interface ForecastModelCandidate {
   model: ForecastModelName;

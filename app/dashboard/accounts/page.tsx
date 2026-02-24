@@ -1,4 +1,5 @@
 import { getAccounts } from "@/app/actions/accounts";
+import { getAccountBalances } from "@/app/actions/accounts";
 import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { Account } from "@/lib/types/finance";
 
@@ -23,15 +24,24 @@ function accountTag(type: Account["account_type"]) {
 }
 
 export default async function AccountsPage() {
-    const accounts = (await getAccounts()) as Account[];
+    const [accounts, balanceMap] = await Promise.all([
+        getAccounts() as Promise<Account[]>,
+        getAccountBalances(),
+    ]);
+
+    // Real balance = opening_balance + sum of all transactions for that account
+    const getRealBalance = (account: Account) => {
+        const txnSum = balanceMap[account.id] || 0;
+        return Number(account.opening_balance) + txnSum;
+    };
 
     const totalAssets = accounts
-        .filter((account) => Number(account.opening_balance) > 0)
-        .reduce((sum, account) => sum + Number(account.opening_balance), 0);
+        .filter((account) => getRealBalance(account) > 0)
+        .reduce((sum, account) => sum + getRealBalance(account), 0);
 
     const totalLiabilities = accounts
-        .filter((account) => Number(account.opening_balance) < 0)
-        .reduce((sum, account) => sum + Math.abs(Number(account.opening_balance)), 0);
+        .filter((account) => getRealBalance(account) < 0)
+        .reduce((sum, account) => sum + Math.abs(getRealBalance(account)), 0);
 
     const netWorth = totalAssets - totalLiabilities;
 
@@ -80,21 +90,21 @@ export default async function AccountsPage() {
             </section>
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Listado de cuentas</h3>
+                <h3 className="text-lg font-semibold text-[#10283b]">Cuentas de Efectivo y Bancos</h3>
                 <p className="mt-1 text-sm text-surface-500">
-                    Estado actual de las cuentas activas dentro de la organización.
+                    Tu dinero líquido disponible para usar.
                 </p>
 
-                {accounts.length === 0 ? (
+                {accounts.filter(a => a.account_type !== "credit_card" && a.account_type !== "loan").length === 0 ? (
                     <div className="mt-4 rounded-2xl border border-surface-200 bg-surface-50 px-4 py-6 text-center text-sm text-surface-500">
                         Todavía no hay cuentas registradas.
                     </div>
                 ) : (
                     <div className="mt-4 divide-y rounded-2xl border border-surface-200">
-                        {accounts.map((account) => {
+                        {accounts.filter(a => a.account_type !== "credit_card" && a.account_type !== "loan").map((account) => {
                             const balance = Number(account.opening_balance);
                             return (
-                                <article key={account.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                                <article key={account.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-surface-50 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="inline-flex h-10 min-w-[44px] items-center justify-center rounded-xl border border-[#bfd7ec] bg-[#edf5fc] px-2 text-xs font-semibold text-[#0d4c7a]">
                                             {accountTag(account.account_type)}
@@ -115,6 +125,62 @@ export default async function AccountsPage() {
                     </div>
                 )}
             </section>
+
+            {accounts.filter(a => a.account_type === "credit_card" || a.account_type === "loan").length > 0 && (
+                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Tarjetas de Crédito y Préstamos</h3>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Límites de crédito, préstamos y estado de tus deudas actuales.
+                    </p>
+
+                    <div className="mt-4 grid gap-4 grid-cols-1 sm:grid-cols-2">
+                        {accounts.filter(a => a.account_type === "credit_card" || a.account_type === "loan").map((account) => {
+                            const debt = Math.abs(Number(account.opening_balance));
+                            const limit = Number(account.credit_limit) || 1; // prevent division by 0
+                            const utilizationPercent = Math.min((debt / limit) * 100, 100);
+
+                            // Visual color heuristics based on utilization
+                            const progressColor = utilizationPercent > 85 ? "bg-negative-500" : utilizationPercent > 50 ? "bg-amber-500" : "bg-primary-500";
+
+                            return (
+                                <article key={account.id} className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm hover:border-surface-300 transition-colors">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="inline-flex h-10 min-w-[44px] items-center justify-center rounded-xl border border-negative-200 bg-negative-50 text-negative-600 px-2 text-xs font-semibold">
+                                                {accountTag(account.account_type)}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-[#0f2233]">{account.name}</p>
+                                                <p className="text-xs text-surface-500">
+                                                    {accountTypeLabel(account.account_type)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-negative-600">
+                                            {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD" }).format(-debt)}
+                                        </p>
+                                    </div>
+
+                                    {account.account_type === "credit_card" && account.credit_limit && (
+                                        <div className="space-y-1.5 mt-2">
+                                            <div className="flex justify-between text-xs text-surface-500 font-medium">
+                                                <span>Deuda: {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD", minimumFractionDigits: 0 }).format(debt)}</span>
+                                                <span>Límite: {new Intl.NumberFormat("es-PE", { style: "currency", currency: account.currency || "USD", minimumFractionDigits: 0 }).format(Number(account.credit_limit))}</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-surface-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${progressColor} transition-all duration-500`}
+                                                    style={{ width: `${utilizationPercent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }

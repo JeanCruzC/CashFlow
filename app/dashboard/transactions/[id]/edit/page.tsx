@@ -1,5 +1,6 @@
 import { getAccounts } from "@/app/actions/accounts";
 import { getCategories } from "@/app/actions/categories";
+import { getSavingsGoals } from "@/app/actions/savings-goals";
 import { getTransactionById } from "@/app/actions/transactions";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
 import Link from "next/link";
@@ -11,9 +12,10 @@ interface EditTransactionPageProps {
 export default async function EditTransactionPage({ params }: EditTransactionPageProps) {
     const { id } = params;
 
-    const [accounts, categories, transaction] = await Promise.all([
+    const [accounts, categories, savingsGoals, transaction] = await Promise.all([
         getAccounts(),
         getCategories(),
+        getSavingsGoals(),
         getTransactionById(id),
     ]);
 
@@ -37,12 +39,14 @@ export default async function EditTransactionPage({ params }: EditTransactionPag
             transactionId={transaction.id}
             accounts={accounts || []}
             categories={categories || []}
+            savingsGoals={savingsGoals || []}
             initialValues={{
                 date: transaction.date,
                 description: transaction.description,
                 amount: Number(transaction.amount),
                 account_id: transaction.account_id,
                 category_gl_id: transaction.category_gl_id,
+                savings_goal_id: transaction.savings_goal_id,
                 currency: transaction.currency,
                 notes: transaction.notes,
             }}

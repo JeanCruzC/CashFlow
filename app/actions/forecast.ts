@@ -154,9 +154,97 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
     }
 
     if (orgResult.data.type !== "business") {
+        // ── PERSONAL FORECAST: simplified cashflow projection ──
+        const txns = (transactionsResult.data ?? []) as Array<{ date: string; amount: number; category_gl_id: string | null }>;
+        const cats = (categoriesResult.data ?? []) as Pick<CategoryGL, "id" | "kind">[];
+
+        const incomeKinds = new Set(["income", "other_income"]);
+        const incomeCatIds = new Set(cats.filter(c => incomeKinds.has(c.kind)).map(c => c.id));
+
+        // Group by month
+        const monthlyData = new Map<string, { income: number; expenses: number }>();
+        for (const tx of txns) {
+            const m = tx.date.slice(0, 7);
+            const entry = monthlyData.get(m) || { income: 0, expenses: 0 };
+            if (incomeCatIds.has(tx.category_gl_id || "") || tx.amount > 0) {
+                entry.income += Math.abs(Number(tx.amount));
+            } else {
+                entry.expenses += Math.abs(Number(tx.amount));
+            }
+            monthlyData.set(m, entry);
+        }
+
+        const monthsWithData = monthlyData.size;
+        const totalIncome = Array.from(monthlyData.values()).reduce((s, v) => s + v.income, 0);
+        const totalExpenses = Array.from(monthlyData.values()).reduce((s, v) => s + v.expenses, 0);
+        const avgIncome = monthsWithData > 0 ? totalIncome / monthsWithData : 0;
+        const avgExpenses = monthsWithData > 0 ? totalExpenses / monthsWithData : 0;
+        const avgNet = avgIncome - avgExpenses;
+
+        // Fetch current liquid balance
+        const { data: accountsData } = await supabase
+            .from("accounts")
+            .select("opening_balance")
+            .eq("org_id", orgId);
+
+        const currentBalance = (accountsData || []).reduce((s: number, a: any) => s + Number(a.opening_balance || 0), 0)
+            + txns.reduce((s, t) => s + Number(t.amount), 0);
+
+        // Build projections
+        const personalProjections: ForecastProjection[] = [];
+        let runningBalance = currentBalance;
+        for (let i = 1; i <= horizonMonths; i++) {
+            runningBalance += avgNet;
+            const m = monthShift(targetMonth, i);
+            personalProjections.push({
+                month: m,
+                revenue: avgIncome,
+                cogs: 0,
+                opex: avgExpenses,
+                ebit: avgNet,
+                operating_margin_pct: avgIncome > 0 ? (avgNet / avgIncome) * 100 : 0,
+            });
+        }
+
         return {
             ...emptyForecast(targetMonth, horizonMonths),
-            note: "El módulo de pronóstico operativo aplica para organizaciones de tipo empresa.",
+            model: {
+                selected_model: "personal_average",
+                validation_mape_pct: null,
+                history_months: monthsWithData,
+                horizon_months: horizonMonths,
+                reason: monthsWithData >= 2
+                    ? `Proyección basada en promedios de ${monthsWithData} meses de historial real.`
+                    : "Necesitas al menos 2 meses de transacciones para una proyección precisa.",
+                candidates: [{ model: "personal_average", mape_pct: null, status: "used" as const }],
+            },
+            drivers: {
+                cogs_percent: 0,
+                fixed_opex: avgExpenses,
+                variable_opex_percent: 0,
+                one_off_amount: 0,
+                sources: {
+                    cogs_percent: "not_applicable" as any,
+                    fixed_opex: "historical" as any,
+                    variable_opex_percent: "not_applicable" as any,
+                    one_off_amount: "default_zero" as any,
+                },
+            },
+            projections: personalProjections,
+            items_used: [
+                `Ingreso promedio mensual: ${avgIncome.toFixed(2)}`,
+                `Gasto promedio mensual: ${avgExpenses.toFixed(2)}`,
+                `Flujo neto promedio: ${avgNet.toFixed(2)}`,
+                `Saldo actual: ${currentBalance.toFixed(2)}`,
+                `Saldo proyectado (${horizonMonths}m): ${runningBalance.toFixed(2)}`,
+            ],
+            history: {
+                history_start_month: historyStartMonth,
+                history_end_month: monthShift(targetMonth, -1),
+                history_months_total: 36,
+                history_months_with_data: monthsWithData,
+            },
+            note: "Pronóstico personal basado en tu historial de ingresos y gastos.",
         };
     }
 

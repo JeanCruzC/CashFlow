@@ -3,7 +3,7 @@
 import { getOrgContextOrNull, requireOrgContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { calculateBusinessKPIs, calculatePersonalKPIs } from "@/lib/utils/kpi";
-import { Account, Budget, CategoryGL, Transaction } from "@/lib/types/finance";
+import { Account, Budget, CategoryGL, Transaction, SavingsGoal } from "@/lib/types/finance";
 import { computeBusinessForecast } from "@/lib/server/forecast-engine";
 
 export interface PersonalDashboardKPIs {
@@ -33,6 +33,7 @@ export interface DashboardKPIs {
     orgType: "personal" | "business";
     currency: string;
     locale: "es" | "en";
+    savingsGoals?: SavingsGoal[];
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
 }
@@ -72,6 +73,7 @@ function mapTransactions(raw: Array<Record<string, unknown>>): Transaction[] {
         tax_amount: item.tax_amount == null ? null : toNumber(item.tax_amount),
         is_transfer: Boolean(item.is_transfer),
         transfer_group_id: (item.transfer_group_id as string) ?? null,
+        savings_goal_id: (item.savings_goal_id as string) ?? null,
         detraccion_rate: item.detraccion_rate == null ? null : toNumber(item.detraccion_rate),
         detraccion_amount: item.detraccion_amount == null ? null : toNumber(item.detraccion_amount),
         status: (item.status as string) ?? null,
@@ -158,6 +160,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         budgetsResult,
         transactionsResult,
         forecastResult,
+        savingsGoalsResult,
     ] = await Promise.all([
         supabase
             .from("orgs")
@@ -178,6 +181,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             .eq("org_id", orgId)
             .eq("month", month)
             .maybeSingle(),
+        supabase.from("savings_goals").select("*").eq("org_id", orgId),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -204,11 +208,16 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         logError("Error fetching forecast assumptions for dashboard", forecastResult.error, { orgId });
         throw new Error("No se pudo cargar el dashboard");
     }
+    if (savingsGoalsResult.error) {
+        logError("Error fetching savings goals", savingsGoalsResult.error, { orgId });
+        // Don't throw for savings goals specifically to avoid breaking the whole dashboard
+    }
 
     const accounts = mapAccounts((accountsResult.data || []) as Array<Record<string, unknown>>);
     const categories = mapCategories((categoriesResult.data || []) as Array<Record<string, unknown>>);
     const budgets = mapBudgets((budgetsResult.data || []) as Array<Record<string, unknown>>);
     const transactions = mapTransactions((transactionsResult.data || []) as Array<Record<string, unknown>>);
+    const savingsGoals = (savingsGoalsResult.data || []) as SavingsGoal[];
 
     const orgType = orgResult.data.type;
     const currency = orgResult.data.currency || "USD";
@@ -241,6 +250,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             orgType,
             currency,
             locale,
+            savingsGoals,
             business: {
                 revenue: business.revenue,
                 cogs: business.cogs,
@@ -262,6 +272,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         orgType,
         currency,
         locale,
+        savingsGoals,
         personal: {
             netCashFlow: personal.netCashFlow,
             savingsRatePct: personal.savingsRate * 100,

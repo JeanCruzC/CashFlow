@@ -19,6 +19,7 @@ export default async function DashboardPage() {
         getRecentTransactions(),
     ]);
 
+    const savingsGoals = kpiBundle.savingsGoals || [];
     const format = formatter(kpiBundle.locale, kpiBundle.currency);
     const personal = kpiBundle.personal;
     const hasEmergencyFundBaseData =
@@ -152,6 +153,56 @@ export default async function DashboardPage() {
                     />
                 ))}
             </section>
+
+            {/* ================= SAVINGS GOALS (MIS METAS) ================= */}
+            {savingsGoals.length > 0 && (
+                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h3 className="text-lg font-semibold text-[#10283b]">Mis Metas 🎯</h3>
+                            <p className="text-sm text-surface-500">Progreso de tus objetivos de ahorro</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                        {savingsGoals.map((goal: any) => {
+                            const current = Number(goal.current_amount) || 0;
+                            const target = Number(goal.target_amount) || 1;
+                            const percent = Math.min((current / target) * 100, 100);
+
+                            return (
+                                <article key={goal.id} className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4 shadow-sm relative overflow-hidden group">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-bold text-[#0f2233] truncate pr-2">{goal.name}</p>
+                                        <span className="text-xs font-semibold px-2 py-1 bg-white border border-surface-200 rounded-full text-primary-700 whitespace-nowrap">
+                                            {format.percent.format(percent)}%
+                                        </span>
+                                    </div>
+
+                                    <div className="h-2.5 w-full bg-surface-200 rounded-full overflow-hidden mb-3">
+                                        <div
+                                            className="h-full bg-[linear-gradient(90deg,#0d4c7a_0%,#117068_100%)] transition-all duration-500"
+                                            style={{ width: `${percent}%` }}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs text-surface-600 font-medium">
+                                        <span>{format.money.format(current)}</span>
+                                        <span>Meta: {format.money.format(target)}</span>
+                                    </div>
+
+                                    {goal.deadline_date && (
+                                        <div className="mt-3 pt-3 border-t border-surface-200/60 text-[11px] text-surface-400 flex items-center justify-between">
+                                            <span>Fecha límite:</span>
+                                            <span className="font-semibold text-surface-500 text-right">{format.date.format(new Date(goal.deadline_date))}</span>
+                                        </div>
+                                    )}
+                                </article>
+                            )
+                        })}
+                    </div>
+                </section>
+            )}
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

@@ -20,6 +20,7 @@ function tx(overrides: Partial<Transaction>): Transaction {
         tax_amount: null,
         is_transfer: false,
         transfer_group_id: null,
+        savings_goal_id: null,
         detraccion_rate: null,
         detraccion_amount: null,
         status: "confirmed",

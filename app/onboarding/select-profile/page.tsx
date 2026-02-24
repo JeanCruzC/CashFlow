@@ -59,7 +59,7 @@ const COUNTRIES = [
 
 export default function SelectProfilePage() {
     const router = useRouter();
-    const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+    const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
     const [selected, setSelected] = useState<"personal" | "business" | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -73,6 +73,14 @@ export default function SelectProfilePage() {
     const [accountName, setAccountName] = useState("Cuenta principal");
     const [openingBalance, setOpeningBalance] = useState("0");
     const [legalName, setLegalName] = useState("");
+
+    // Credit Cards (Step 3)
+    const [hasCreditCards, setHasCreditCards] = useState(false);
+    const [creditCards, setCreditCards] = useState<{ id: string, name: string, creditLimit: string, currentBalance: string }[]>([]);
+
+    // Step 6: Savings Goals
+    const [hasSavingsGoals, setHasSavingsGoals] = useState(false);
+    const [savingsGoals, setSavingsGoals] = useState<{ id: string, name: string, targetAmount: string, deadlineDate: string }[]>([]);
 
     // Step 4: Custom Categories
     const [customCategories, setCustomCategories] = useState<{ name: string, kind: "income" | "expense" | "cost_of_goods_sold" }[]>([]);
@@ -103,12 +111,12 @@ export default function SelectProfilePage() {
             return;
         }
         setError("");
-        setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5);
+        setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5 | 6);
     };
 
     const handleBack = () => {
         setError("");
-        setStep((s) => (s - 1) as 1 | 2 | 3 | 4 | 5);
+        setStep((s) => (s - 1) as 1 | 2 | 3 | 4 | 5 | 6);
     };
 
     const handleAddCategory = () => {
@@ -190,6 +198,18 @@ export default function SelectProfilePage() {
                     amount: Number(amount)
                 }));
 
+            const creditCardsPayload = hasCreditCards ? creditCards.map(cc => ({
+                name: cc.name.trim() || "Tarjeta de Crédito",
+                creditLimit: Number(cc.creditLimit) || 0,
+                currentBalance: Number(cc.currentBalance) || 0,
+            })) : undefined;
+
+            const savingsGoalsPayload = hasSavingsGoals ? savingsGoals.map(g => ({
+                name: g.name.trim() || "Meta de Ahorro",
+                targetAmount: Number(g.targetAmount) || 0,
+                deadlineDate: g.deadlineDate || null
+            })) : undefined;
+
             const payload =
                 selected === "personal"
                     ? {
@@ -201,6 +221,8 @@ export default function SelectProfilePage() {
                             openingBalance: Number(openingBalance || "0"),
                             currency,
                         },
+                        creditCards: creditCardsPayload,
+                        savingsGoals: savingsGoalsPayload,
                         customCategories,
                         initialBudgets: initialBudgetsPayload
                     }
@@ -218,6 +240,8 @@ export default function SelectProfilePage() {
                             oneOffAmount: 0,
                             note: "Inicializado desde onboarding",
                         },
+                        creditCards: creditCardsPayload,
+                        savingsGoals: savingsGoalsPayload,
                         customCategories,
                         initialBudgets: initialBudgetsPayload
                     };
@@ -393,37 +417,122 @@ export default function SelectProfilePage() {
                                 </div>
 
                                 {selected === "personal" ? (
-                                    <div className="space-y-5 mt-6 border border-[#b8d8f0] bg-[#edf6fd] p-5 rounded-2xl">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="bg-white p-2 rounded-lg text-[#0d4c7a] shadow-sm">
-                                                <BuildingIcon size={20} />
+                                    <div className="space-y-6">
+                                        <div className="space-y-5 border border-[#b8d8f0] bg-[#edf6fd] p-5 rounded-2xl">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="bg-white p-2 rounded-lg text-[#0d4c7a] shadow-sm">
+                                                    <BuildingIcon size={20} />
+                                                </div>
+                                                <h3 className="font-semibold text-[#0d4c7a]">Cuenta Financiera Inicial</h3>
                                             </div>
-                                            <h3 className="font-semibold text-[#0d4c7a]">Cuenta Financiera Inicial</h3>
-                                        </div>
-                                        <div>
-                                            <label className="label text-[#0d4c7a]">Nombre de la cuenta</label>
-                                            <input
-                                                className="input-field bg-white border-[#b8d8f0]"
-                                                value={accountName}
-                                                onChange={(e) => setAccountName(e.target.value)}
-                                                placeholder="Ej: Banco BCP o Billetera en Efectivo"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="label text-[#0d4c7a]">Saldo actual (¿Cuánto dinero hay hoy en esa cuenta?)</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-2 text-surface-400">{currency}</span>
+                                            <div>
+                                                <label className="label text-[#0d4c7a]">Nombre de la cuenta principal</label>
                                                 <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    className="input-field bg-white pl-12 border-[#b8d8f0]"
-                                                    value={openingBalance}
-                                                    onChange={(e) => setOpeningBalance(e.target.value)}
+                                                    className="input-field bg-white border-[#b8d8f0]"
+                                                    value={accountName}
+                                                    onChange={(e) => setAccountName(e.target.value)}
+                                                    placeholder="Ej: Banco BCP o Efectivo"
                                                 />
                                             </div>
-                                            <p className="mt-1.5 text-xs text-[#0d4c7a]/80">
-                                                Si no sabes el monto exacto ahora, pon 0. Podrás editarlo o agregar más cuentas después.
-                                            </p>
+                                            <div>
+                                                <label className="label text-[#0d4c7a]">Saldo actual a favor</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-[#0d4c7a]/60">{currency}</span>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="input-field bg-white pl-12 border-[#b8d8f0]"
+                                                        value={openingBalance}
+                                                        onChange={(e) => setOpeningBalance(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Credit Cards Toggle */}
+                                        <div className="border border-surface-200 bg-surface-50 p-5 rounded-2xl">
+                                            <label className="flex items-center gap-3 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded border-surface-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                                    checked={hasCreditCards}
+                                                    onChange={(e) => {
+                                                        setHasCreditCards(e.target.checked);
+                                                        if (e.target.checked && creditCards.length === 0) {
+                                                            setCreditCards([{ id: Date.now().toString(), name: "", creditLimit: "", currentBalance: "" }]);
+                                                        }
+                                                    }}
+                                                />
+                                                <div>
+                                                    <span className="font-semibold text-surface-900 block leading-tight">Uso Tarjetas de Crédito</span>
+                                                    <span className="text-xs text-surface-500 font-medium">Lleva el control de tus líneas de crédito y deudas.</span>
+                                                </div>
+                                            </label>
+
+                                            {hasCreditCards && (
+                                                <div className="mt-5 space-y-4 animate-fade-in border-t border-surface-200 pt-5">
+                                                    {creditCards.map((cc, idx) => (
+                                                        <div key={cc.id} className="p-4 bg-white border border-surface-200 shadow-sm rounded-xl relative group">
+                                                            <button
+                                                                onClick={() => setCreditCards(creditCards.filter(c => c.id !== cc.id))}
+                                                                className="absolute top-2 right-2 text-surface-300 hover:text-negative-500 p-2"
+                                                                title="Eliminar tarjeta"
+                                                            >
+                                                                <TrashIcon size={16} />
+                                                            </button>
+                                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                                <div className="sm:col-span-2 pr-8">
+                                                                    <label className="label text-xs">Nombre de la Tarjeta</label>
+                                                                    <input
+                                                                        className="input-field py-1.5 text-sm"
+                                                                        placeholder="Ej: Visa Millas BCP"
+                                                                        value={cc.name}
+                                                                        onChange={(e) => {
+                                                                            const newCards = [...creditCards];
+                                                                            newCards[idx].name = e.target.value;
+                                                                            setCreditCards(newCards);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="label text-xs">Línea de Crédito</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="input-field py-1.5 text-sm"
+                                                                        placeholder="Ej: 5000"
+                                                                        value={cc.creditLimit}
+                                                                        onChange={(e) => {
+                                                                            const newCards = [...creditCards];
+                                                                            newCards[idx].creditLimit = e.target.value;
+                                                                            setCreditCards(newCards);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="label text-xs text-negative-700">Deuda actual a pagar (Aprox.)</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="input-field py-1.5 text-sm border-negative-200 focus:border-negative-500 focus:ring-negative-500"
+                                                                        placeholder="Ej: 450.50"
+                                                                        value={cc.currentBalance}
+                                                                        onChange={(e) => {
+                                                                            const newCards = [...creditCards];
+                                                                            newCards[idx].currentBalance = e.target.value;
+                                                                            setCreditCards(newCards);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        onClick={() => setCreditCards([...creditCards, { id: Date.now().toString(), name: "", creditLimit: "", currentBalance: "" }])}
+                                                        className="mt-2 flex items-center justify-center gap-2 text-sm text-primary-600 font-medium hover:text-primary-700 hover:bg-primary-50 py-2 rounded-lg w-full transition-colors"
+                                                    >
+                                                        <PlusIcon size={16} /> Añadir otra tarjeta
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (
@@ -723,6 +832,102 @@ export default function SelectProfilePage() {
                             </div>
                         )}
 
+                        {/* ================= STEP 6: SAVINGS GOALS ================= */}
+                        {step === 6 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Tus Metas de Ahorro</h1>
+                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
+                                        Todos necesitamos un motivo para ahorrar. ¿Tienes alguna meta específica como un viaje, un fondo de emergencia o comprar equipos nuevos?
+                                    </p>
+                                </div>
+
+                                <div className="border border-surface-200 bg-surface-50 p-5 rounded-2xl mt-6">
+                                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            className="w-5 h-5 rounded border-surface-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                            checked={hasSavingsGoals}
+                                            onChange={(e) => {
+                                                setHasSavingsGoals(e.target.checked);
+                                                if (e.target.checked && savingsGoals.length === 0) {
+                                                    setSavingsGoals([{ id: Date.now().toString(), name: "", targetAmount: "", deadlineDate: "" }]);
+                                                }
+                                            }}
+                                        />
+                                        <div>
+                                            <span className="font-semibold text-surface-900 block leading-tight">Sí, quiero configurar mis metas de ahorro</span>
+                                            <span className="text-xs text-surface-500 font-medium">Te ayudaremos a monitorear cuánto falta para lograrlas.</span>
+                                        </div>
+                                    </label>
+
+                                    {hasSavingsGoals && (
+                                        <div className="mt-5 space-y-4 animate-fade-in border-t border-surface-200 pt-5">
+                                            {savingsGoals.map((goal, idx) => (
+                                                <div key={goal.id} className="p-4 bg-white border border-surface-200 shadow-sm rounded-xl relative group">
+                                                    <button
+                                                        onClick={() => setSavingsGoals(savingsGoals.filter(g => g.id !== goal.id))}
+                                                        className="absolute top-2 right-2 text-surface-300 hover:text-negative-500 p-2"
+                                                        title="Eliminar meta"
+                                                    >
+                                                        <TrashIcon size={16} />
+                                                    </button>
+                                                    <div className="grid gap-4 sm:grid-cols-2">
+                                                        <div className="sm:col-span-2 pr-8">
+                                                            <label className="label text-xs">Nombre de la Meta</label>
+                                                            <input
+                                                                className="input-field py-1.5 text-sm"
+                                                                placeholder={selected === "personal" ? "Ej: Viaje a Cancún" : "Ej: Renovar laptops"}
+                                                                value={goal.name}
+                                                                onChange={(e) => {
+                                                                    const newGoals = [...savingsGoals];
+                                                                    newGoals[idx].name = e.target.value;
+                                                                    setSavingsGoals(newGoals);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="label text-xs">Monto Objetivo ({currency})</label>
+                                                            <input
+                                                                type="number"
+                                                                className="input-field py-1.5 text-sm"
+                                                                placeholder="Ej: 5000"
+                                                                value={goal.targetAmount}
+                                                                onChange={(e) => {
+                                                                    const newGoals = [...savingsGoals];
+                                                                    newGoals[idx].targetAmount = e.target.value;
+                                                                    setSavingsGoals(newGoals);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="label text-xs">Fecha límite (Opcional)</label>
+                                                            <input
+                                                                type="date"
+                                                                className="input-field py-1.5 text-sm"
+                                                                value={goal.deadlineDate}
+                                                                onChange={(e) => {
+                                                                    const newGoals = [...savingsGoals];
+                                                                    newGoals[idx].deadlineDate = e.target.value;
+                                                                    setSavingsGoals(newGoals);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <button
+                                                onClick={() => setSavingsGoals([...savingsGoals, { id: Date.now().toString(), name: "", targetAmount: "", deadlineDate: "" }])}
+                                                className="mt-2 flex items-center justify-center gap-2 text-sm text-primary-600 font-medium hover:text-primary-700 hover:bg-primary-50 py-2 rounded-lg w-full transition-colors"
+                                            >
+                                                <PlusIcon size={16} /> Agregar otra meta
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* ================= BUTTON CONTROLS ================= */}
                         <div className="mt-10 flex items-center justify-between border-t border-surface-200 pt-6">
                             {step > 1 ? (
@@ -738,7 +943,7 @@ export default function SelectProfilePage() {
                                 <div /> /* Empty div to push right side to the end */
                             )}
 
-                            {step < 5 ? (
+                            {step < 6 ? (
                                 <button
                                     type="button"
                                     onClick={handleNext}
@@ -753,7 +958,7 @@ export default function SelectProfilePage() {
                                 <button
                                     type="button"
                                     onClick={handleFinish}
-                                    disabled={loading}
+                                    disabled={loading || !selected}
                                     className="btn-primary min-w-[220px] bg-[#117068] hover:bg-[#0d5952] border-none shadow-[0_4px_14px_0_rgba(17,112,104,0.39)] hover:shadow-[0_6px_20px_rgba(17,112,104,0.23)]"
                                 >
                                     <span className="inline-flex items-center justify-center gap-2">
