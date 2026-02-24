@@ -921,9 +921,15 @@ export default function SelectProfilePage() {
         }
     }
 
+    const isPersonalDistributionCanvas = step === 8 && selected === "personal";
+
     return (
-        <div className="min-h-screen bg-[linear-gradient(165deg,#f7fbff_0%,#edf5fb_50%,#f9fcfd_100%)] px-4 py-8 sm:px-8 sm:py-12 flex items-center justify-center">
-            <div className="w-full max-w-3xl animate-fade-in relative">
+        <div
+            className={`min-h-screen bg-[linear-gradient(165deg,#f7fbff_0%,#edf5fb_50%,#f9fcfd_100%)] px-4 py-8 sm:py-12 flex justify-center ${
+                isPersonalDistributionCanvas ? "items-start sm:px-10 lg:px-12" : "items-center sm:px-8"
+            }`}
+        >
+            <div className={`w-full animate-fade-in relative ${isPersonalDistributionCanvas ? "max-w-[1360px]" : "max-w-3xl"}`}>
                 <div className="mb-8 grid grid-cols-8 gap-2">
                     {Array.from({ length: TOTAL_STEPS }, (_, index) => {
                         const currentStep = index + 1;
@@ -941,12 +947,16 @@ export default function SelectProfilePage() {
                     })}
                 </div>
 
-                <div className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card sm:p-10 relative overflow-hidden">
+                <div
+                    className={`rounded-3xl border border-surface-200 bg-white shadow-card relative overflow-hidden ${
+                        isPersonalDistributionCanvas ? "p-5 sm:p-7 lg:p-8" : "p-6 sm:p-10"
+                    }`}
+                >
                     <div className="absolute -top-8 -right-4 text-[120px] font-black text-surface-50 opacity-40 select-none pointer-events-none">
                         {step}
                     </div>
 
-                    <div className="relative z-10 w-full transition-all duration-300">
+                    <div className={`relative z-10 w-full transition-all duration-300 ${isPersonalDistributionCanvas ? "space-y-1" : ""}`}>
                         {step === 1 && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
@@ -1928,16 +1938,16 @@ export default function SelectProfilePage() {
                                 </div>
 
                                 {/* ═══ 3-COLUMN GRID ═══ */}
-                                <div className="grid gap-6 lg:grid-cols-12">
+                                <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
 
                                     {/* ── COLUMN 1: Ingresos & Flujo ── */}
-                                    <div className="space-y-4 lg:col-span-4">
-                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Ingresos &amp; Flujo</p>
+                                    <div className="space-y-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Ingresos &amp; Flujo</p>
                                         </div>
 
                                         {/* Bolsa consolidada */}
-                                        <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-5 text-white shadow-md">
+                                        <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-6 text-white shadow-md">
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Bolsa mensual consolidada</p>
                                             <p className="mt-2 text-3xl font-semibold tracking-tight">{currency} {consolidatedIncome.toFixed(2)}</p>
                                             <div className="mt-4 space-y-2">
@@ -1961,7 +1971,7 @@ export default function SelectProfilePage() {
                                         </div>
 
                                         {/* Flujo de dinero */}
-                                        <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-4 shadow-sm">
+                                        <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-5 shadow-sm">
                                             <div className="mb-3 flex items-center justify-between gap-2">
                                                 <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500">El flujo de tu dinero</h3>
                                                 <InfoPopover title="Detalle del flujo mensual" align="left">
@@ -1991,16 +2001,16 @@ export default function SelectProfilePage() {
                                                     </div>
                                                 </InfoPopover>
                                             </div>
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between text-xs">
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center justify-between text-sm">
                                                     <span className="text-surface-600">Ingreso mensual</span>
                                                     <span className="font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between text-xs">
+                                                <div className="flex items-center justify-between text-sm">
                                                     <span className="text-surface-600">Compromisos totales</span>
                                                     <span className="font-semibold text-negative-600">-{currency} {totalMandatoryOutflow.toFixed(2)}</span>
                                                 </div>
-                                                <div className="border-t border-surface-200 pt-2 flex items-center justify-between text-xs">
+                                                <div className="border-t border-surface-200 pt-2.5 flex items-center justify-between text-sm">
                                                     <span className="font-semibold text-[#117068]">Saldo libre real</span>
                                                     <span className="font-semibold text-[#117068]">{currency} {availableAfterVariable.toFixed(2)}</span>
                                                 </div>
@@ -2009,7 +2019,7 @@ export default function SelectProfilePage() {
 
                                         {/* Detalle presupuesto + tarjetas */}
                                         {(budgetBreakdownRows.length > 0 || creditCardBreakdownRows.length > 0) && (
-                                            <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                            <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                                 <div className="mb-3 flex items-center justify-between gap-2">
                                                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">Presupuesto declarado</p>
                                                     <InfoPopover title="Detalle de presupuesto y tarjetas" align="left">
@@ -2075,9 +2085,9 @@ export default function SelectProfilePage() {
                                     </div>
 
                                     {/* ── COLUMN 2: Análisis & Distribución ── */}
-                                    <div className="space-y-4 lg:col-span-4">
-                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Análisis &amp; Distribución</p>
+                                    <div className="space-y-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Análisis &amp; Distribución</p>
                                         </div>
 
                                         {/* Selección de Regla */}
@@ -2099,7 +2109,7 @@ export default function SelectProfilePage() {
                                                 </button>
                                             </div>
 
-                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
                                                 {(Object.keys(RULE_CARD_CONFIG) as Array<Exclude<DistributionRule, "custom">>).map((rule) => {
                                                     const card = RULE_CARD_CONFIG[rule];
                                                     const selectedRule = distributionRule === rule;
@@ -2177,7 +2187,7 @@ export default function SelectProfilePage() {
 
                                         {/* Inputs Custom */}
                                         {distributionRule === "custom" && (
-                                            <div className="grid gap-4 sm:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
+                                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
                                                 <div>
                                                     <label className="label text-xs">Necesidades (%)</label>
                                                     <input type="number" className="input-field bg-surface-50" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
@@ -2243,13 +2253,13 @@ export default function SelectProfilePage() {
                                     </div>{/* END COLUMN 2 */}
 
                                     {/* ── COLUMN 3: Control & Decisiones ── */}
-                                    <div className="space-y-4 lg:col-span-4">
-                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Control &amp; Decisiones</p>
+                                    <div className="space-y-4 lg:col-span-2 2xl:col-span-1">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Control &amp; Decisiones</p>
                                         </div>
 
                                         {/* Prioridad operativa */}
-                                        <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                             <h3 className="text-xs font-semibold text-[#0f2233]">Prioridad operativa</h3>
                                             <p className="mt-1 text-[11px] text-surface-500">Orden cuando el flujo es limitado.</p>
                                             <div className="mt-3 space-y-1.5">
@@ -2266,7 +2276,7 @@ export default function SelectProfilePage() {
                                         </div>
 
                                         {/* Análisis de buckets */}
-                                        <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                             <h3 className="text-xs font-semibold text-[#0f2233] mb-3">Análisis de distribución</h3>
                                             <div className={`rounded-lg border px-3 py-2 text-[11px] mb-3 ${operationalCashShortfall > 0 ? "border-[#f5c2c7] bg-[#fdf2f3] text-negative-700" : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
                                                 }`}>
@@ -2418,4 +2428,3 @@ export default function SelectProfilePage() {
         </div>
     );
 }
-
