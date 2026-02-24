@@ -85,7 +85,13 @@ export default function SelectProfilePage() {
 
     // AI Modal State
     const [aiCategory, setAiCategory] = useState<string | null>(null);
+    const [aiCountry, setAiCountry] = useState<string>(country);
     const [aiContext, setAiContext] = useState("");
+
+    // Transporte Specific State
+    const [transportDays, setTransportDays] = useState("5");
+    const [transportCost, setTransportCost] = useState("");
+
     const [aiLoading, setAiLoading] = useState(false);
     const [aiResult, setAiResult] = useState<{ amount: number, reasoning: string } | null>(null);
     const [aiError, setAiError] = useState("");
@@ -117,13 +123,22 @@ export default function SelectProfilePage() {
     };
 
     const handleEstimateBudget = async () => {
-        if (!aiContext.trim() || !aiCategory) return;
+        if (!aiCategory) return;
+
+        let finalContext = aiContext;
+        // If it's transport, build a deterministic context string
+        if (aiCategory.toLowerCase().includes("transporte") && transportCost) {
+            finalContext = `Viajo ${transportDays} días a la semana. El costo de O SÓLO IDA o SÓLO VUELTA es de ${transportCost} ${currency}. (Calcula el gasto considerando ida y vuelta por esos días al mes). Además: ${aiContext}`;
+        }
+
+        if (!finalContext.trim()) return;
+
         setAiLoading(true);
         setAiError("");
         setAiResult(null);
 
         try {
-            const countryName = COUNTRIES.find(c => c.code === country)?.label || country;
+            const countryName = COUNTRIES.find(c => c.code === aiCountry)?.label || aiCountry;
             const res = await fetch("/api/estimate-budget", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -131,7 +146,7 @@ export default function SelectProfilePage() {
                     category: aiCategory,
                     country: countryName,
                     currency,
-                    context: aiContext
+                    context: finalContext
                 })
             });
             const data = await res.json();
@@ -554,7 +569,7 @@ export default function SelectProfilePage() {
                                                 <div className="flex flex-col sm:w-1/2">
                                                     <label className="text-sm font-medium text-surface-700">{cat}</label>
                                                     <button
-                                                        onClick={() => { setAiCategory(cat); setAiContext(""); setAiResult(null); setAiError(""); }}
+                                                        onClick={() => { setAiCategory(cat); setAiContext(""); setAiResult(null); setAiError(""); setAiCountry(country); }}
                                                         className="mt-1 flex items-center gap-1 w-fit text-xs font-medium text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition-colors"
                                                     >
                                                         <SparklesIcon size={12} /> Sugerencia IA
@@ -584,29 +599,71 @@ export default function SelectProfilePage() {
                                 {aiCategory && (
                                     <div className="fixed inset-0 z-50 bg-surface-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
                                         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-                                            <div className="p-5 border-b border-surface-100 bg-purple-50 flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                                                    <SparklesIcon size={18} />
+                                            <div className="p-5 border-b border-surface-100 bg-purple-50 flex flex-col gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                                        <SparklesIcon size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-semibold text-purple-900 leading-tight">Estimar presupuesto</h3>
+                                                        <p className="text-xs font-medium text-purple-700/80">Para: {aiCategory}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-purple-900 leading-tight">Estimar presupuesto</h3>
-                                                    <p className="text-xs font-medium text-purple-700/80">Para: {aiCategory}</p>
+
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <span className="text-xs text-purple-800">País a estimar:</span>
+                                                    <select
+                                                        className="text-xs font-medium bg-white border border-purple-200 text-purple-900 rounded-md py-1 px-2 focus:ring-purple-500 max-w-[150px]"
+                                                        value={aiCountry}
+                                                        onChange={e => setAiCountry(e.target.value)}
+                                                    >
+                                                        {COUNTRIES.map(c => (
+                                                            <option key={c.code} value={c.code}>{c.label}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                             </div>
 
                                             <div className="p-5 space-y-4">
                                                 {!aiResult && (
                                                     <>
-                                                        <p className="text-sm text-surface-600">
-                                                            Cuéntale a la IA más detalles para calcular un monto promedio mensual en {country}.
-                                                        </p>
+                                                        {aiCategory.toLowerCase().includes("transporte") ? (
+                                                            <div className="space-y-3 bg-surface-50 p-3 rounded-xl border border-surface-100">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-xs font-medium text-surface-700">Días de viaje por semana</label>
+                                                                    <select
+                                                                        className="input-field text-sm"
+                                                                        value={transportDays}
+                                                                        onChange={e => setTransportDays(e.target.value)}
+                                                                    >
+                                                                        {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>{d} días</option>)}
+                                                                    </select>
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-xs font-medium text-surface-700">Costo de cada pasaje (Solo ida)</label>
+                                                                    <div className="relative">
+                                                                        <span className="absolute left-3 top-2 text-surface-500 text-sm">{currency}</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="input-field text-sm pl-12"
+                                                                            placeholder="Ej. 2.50"
+                                                                            value={transportCost}
+                                                                            onChange={e => setTransportCost(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-surface-600">
+                                                                Cuéntale a la IA más detalles para calcular un monto realista mensual.
+                                                            </p>
+                                                        )}
                                                         <textarea
-                                                            placeholder={aiCategory.toLowerCase().includes("transporte") ? "Ej. Uso el bus de lunes a viernes y el tren los fines de semana..." : aiCategory.toLowerCase().includes("alimentación") ? "Ej. Somos 2 adultos que comemos en casa casi todos los días..." : "Escribe algunos detalles..."}
-                                                            rows={3}
-                                                            className="input-field text-sm w-full py-2 resize-none"
+                                                            placeholder={aiCategory.toLowerCase().includes("transporte") ? "Detalles extra (opcional)..." : aiCategory.toLowerCase().includes("alimentación") ? "Ej. Somos 2 adultos que comemos en casa casi todos los días..." : "Escribe algunos detalles..."}
+                                                            rows={2}
+                                                            className="input-field text-sm w-full py-2 resize-none mt-2"
                                                             value={aiContext}
                                                             onChange={e => setAiContext(e.target.value)}
-                                                            autoFocus
                                                         />
                                                     </>
                                                 )}

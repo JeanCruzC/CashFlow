@@ -26,7 +26,7 @@ Devuelve un objeto JSON con dos propiedades:
 2. reasoning: Una breve explicación de 1 o 2 oraciones de cómo calculaste este monto, para que el usuario sepa que es razonable.`;
 
         const { object } = await generateObject({
-            model: google("gemini-1.5-pro-latest"),
+            model: google("gemini-2.5-flash"),
             schema: z.object({
                 amount: z.number().describe("Monto estimado mensual"),
                 reasoning: z.string().describe("Breve explicación del cálculo"),
