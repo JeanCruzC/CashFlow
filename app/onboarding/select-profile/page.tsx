@@ -396,16 +396,21 @@ export default function SelectProfilePage() {
         [savingsPriorities]
     );
 
+    const operationalCashRequired = useMemo(
+        () => round2(fixedExpensesBudget + variableExpensesBudget + fullPaymentCardsCashOutflow),
+        [fixedExpensesBudget, variableExpensesBudget, fullPaymentCardsCashOutflow]
+    );
+
     const fixedNeedsShortfall = useMemo(
         () =>
-            round2(Math.max(fixedExpensesBudget - distributionAmounts.needs, 0)),
-        [fixedExpensesBudget, distributionAmounts.needs]
+            round2(Math.max(operationalCashRequired - distributionAmounts.needs, 0)),
+        [operationalCashRequired, distributionAmounts.needs]
     );
 
     const fixedNeedsSurplus = useMemo(
         () =>
-            round2(Math.max(distributionAmounts.needs - fixedExpensesBudget, 0)),
-        [distributionAmounts.needs, fixedExpensesBudget]
+            round2(Math.max(distributionAmounts.needs - operationalCashRequired, 0)),
+        [distributionAmounts.needs, operationalCashRequired]
     );
 
     const debtBucketShortfall = useMemo(
@@ -455,14 +460,9 @@ export default function SelectProfilePage() {
         ]
     );
 
-    const operationalCashRequired = useMemo(
-        () => round2(fixedExpensesBudget + variableExpensesBudget + fullPaymentCardsCashOutflow),
-        [fixedExpensesBudget, variableExpensesBudget, fullPaymentCardsCashOutflow]
-    );
-
     const operationalBucketsAvailable = useMemo(
-        () => round2(distributionAmounts.needs + distributionAmounts.wants),
-        [distributionAmounts.needs, distributionAmounts.wants]
+        () => round2(distributionAmounts.needs),
+        [distributionAmounts.needs]
     );
 
     const operationalCashShortfall = useMemo(
@@ -599,9 +599,9 @@ export default function SelectProfilePage() {
                 const operationalRatio = (fixedExpensesBudget + variableExpensesBudget + fullPaymentCardsCashOutflow) / safeIncome;
                 setDistributionRule("custom");
                 const debtPctBase = debtRatio >= 1.5 ? 20 : debtRatio >= 0.75 ? 15 : debtRatio > 0 ? 10 : 0;
-                const operationalPctBase = Math.min(Math.max(Math.ceil(operationalRatio * 100), 45), 90);
                 const availablePct = Math.max(100 - debtPctBase, 0);
-                const needsPct = Math.min(operationalPctBase, availablePct);
+                const operationalPctBase = Math.min(Math.max(Math.ceil(operationalRatio * 100), 0), availablePct);
+                const needsPct = operationalPctBase;
                 const wantsPct = Math.max(availablePct - needsPct, 0);
                 const savingsPct = Math.max(100 - needsPct - wantsPct - debtPctBase, 0);
 
@@ -2073,8 +2073,8 @@ export default function SelectProfilePage() {
                                         }`}
                                     >
                                         {operationalCashShortfall > 0
-                                            ? `Alerta de flujo: Necesidades + Deseos cubren ${currency} ${operationalBucketsAvailable.toFixed(2)}, pero tus compromisos operativos y pago total de tarjetas requieren ${currency} ${operationalCashRequired.toFixed(2)}. Te faltan ${currency} ${operationalCashShortfall.toFixed(2)}.`
-                                            : `Correcto: Necesidades + Deseos cubren tus compromisos operativos y pagos totales de tarjeta. Tienes un margen operativo de ${currency} ${operationalCashSurplus.toFixed(2)}.`}
+                                            ? `Alerta de flujo: Necesidades cubre ${currency} ${operationalBucketsAvailable.toFixed(2)}, pero tus compromisos operativos y pago total de tarjetas requieren ${currency} ${operationalCashRequired.toFixed(2)}. Te faltan ${currency} ${operationalCashShortfall.toFixed(2)}.`
+                                            : `Correcto: Necesidades cubre tus compromisos operativos y pagos totales de tarjeta. Tienes un margen operativo en ese bucket de ${currency} ${operationalCashSurplus.toFixed(2)}.`}
                                     </div>
                                     <div className="grid sm:grid-cols-2 gap-4">
 
@@ -2088,15 +2088,15 @@ export default function SelectProfilePage() {
                                                 <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</span>
                                             </div>
                                             <p className="text-xs text-surface-600 mt-2">
-                                                Este bucket está asignado para cubrir tus Gastos Fijos de <b>{currency} {fixedExpensesBudget.toFixed(2)}</b>.
+                                                Este bucket cubre gastos operativos obligatorios por <b>{currency} {operationalCashRequired.toFixed(2)}</b> (fijos + variables + pago total de tarjetas).
                                             </p>
                                             {fixedNeedsShortfall > 0 ? (
                                                 <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor a tus gastos fijos declarados. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Considera aumentar el % de necesidades.
+                                                    Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor al flujo obligatorio. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Sube % de necesidades o baja gastos.
                                                 </p>
                                             ) : (
                                                 <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
-                                                    Correcto: Tus gastos fijos están cubiertos. Te sobran {currency} {fixedNeedsSurplus.toFixed(2)} para imprevistos u otras necesidades.
+                                                    Correcto: Tus compromisos obligatorios están cubiertos. Te sobran {currency} {fixedNeedsSurplus.toFixed(2)} dentro de necesidades.
                                                 </p>
                                             )}
                                         </div>

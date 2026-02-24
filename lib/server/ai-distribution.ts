@@ -83,7 +83,7 @@ function applyMinimumCoverageConstraints(
         input.variableExpensesBudget +
         input.fullPaymentCardsCashOutflow
     );
-    const requiredOperationalPct = Math.min(
+    const requiredNeedsPct = Math.min(
         toPercent(operationalCashRequired, safeIncome),
         100
     );
@@ -97,7 +97,7 @@ function applyMinimumCoverageConstraints(
     let savings = normalized.savings;
     let debt = normalized.debt;
 
-    const totalRequired = requiredOperationalPct + requiredDebtPct;
+    const totalRequired = requiredNeedsPct + requiredDebtPct;
     if (totalRequired >= 100) {
         // El flujo está totalmente comprometido: priorizamos cobertura operativa + deuda mínima.
         debt = Math.min(requiredDebtPct, 100);
@@ -137,29 +137,28 @@ function applyMinimumCoverageConstraints(
         debt = Math.max(debt, coveredDebt);
     }
 
-    // 2) Garantizar cobertura operativa de caja (gastos + pago total tarjetas).
-    const operationalCurrent = round2(needs + wants);
-    if (operationalCurrent < requiredOperationalPct) {
-        let missingOperational = round2(requiredOperationalPct - operationalCurrent);
+    // 2) Garantizar que NEEDS cubra completamente lo obligatorio:
+    // gastos fijos + variables + pago total de tarjetas "full".
+    if (needs < requiredNeedsPct) {
+        let missingNeeds = round2(requiredNeedsPct - needs);
 
-        const fromSavings = Math.min(savings, missingOperational);
-        savings = round2(savings - fromSavings);
-        needs = round2(needs + fromSavings);
-        missingOperational = round2(missingOperational - fromSavings);
+        const fromWants = Math.min(wants, missingNeeds);
+        wants = round2(wants - fromWants);
+        needs = round2(needs + fromWants);
+        missingNeeds = round2(missingNeeds - fromWants);
 
-        if (missingOperational > 0) {
-            const debtSurplus = Math.max(debt - requiredDebtPct, 0);
-            const fromDebtSurplus = Math.min(debtSurplus, missingOperational);
-            debt = round2(debt - fromDebtSurplus);
-            needs = round2(needs + fromDebtSurplus);
-            missingOperational = round2(missingOperational - fromDebtSurplus);
+        if (missingNeeds > 0) {
+            const fromSavings = Math.min(savings, missingNeeds);
+            savings = round2(savings - fromSavings);
+            needs = round2(needs + fromSavings);
+            missingNeeds = round2(missingNeeds - fromSavings);
         }
 
-        if (missingOperational > 0) {
-            // No hay más buckets para mover: priorizamos llevar wants a 0.
-            const fromWantsToNeeds = Math.min(wants, missingOperational);
-            wants = round2(wants - fromWantsToNeeds);
-            needs = round2(needs + fromWantsToNeeds);
+        if (missingNeeds > 0) {
+            const debtSurplus = Math.max(debt - requiredDebtPct, 0);
+            const fromDebtSurplus = Math.min(debtSurplus, missingNeeds);
+            debt = round2(debt - fromDebtSurplus);
+            needs = round2(needs + fromDebtSurplus);
         }
     }
 
@@ -203,7 +202,7 @@ export async function generateSmartDistribution(input: DistributionInput) {
                     system: `Eres un asesor financiero actuando para la app CashFlow. Tu objetivo es recomendar una regla de distribución presupuestaria porcentual exacta (valores numéricos de 0 a 100 para Needs, Wants, Savings y Debt). 
 Reglas Críticas:
 1. La suma de los 4 porcentajes devueltos debe ser exactamente 100.
-2. "needs" + "wants" deben cubrir al menos el flujo operativo: gastos fijos + gastos variables + pago total de tarjetas con estrategia "full" (esas tarjetas sí salen de caja mensual).
+2. "needs" debe cubrir al menos el flujo operativo obligatorio: gastos fijos + gastos variables + pago total de tarjetas con estrategia "full" (esas tarjetas sí salen de caja mensual).
 3. "debt" debe cubrir al menos los pagos mínimos de deuda revolvente (tarjetas no "full"), idealmente más para amortizar capital.
 4. Si una tarjeta está marcada con paymentStrategy="full", NO la clasifiques como deuda revolvente, pero SÍ considera su salida de caja mensual.
 5. Solo asigna ahorro cuando las obligaciones operativas y de deuda mínima estén cubiertas.
