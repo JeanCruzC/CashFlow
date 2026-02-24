@@ -1926,6 +1926,14 @@ export default function SelectProfilePage() {
                                     </p>
                                 </div>
 
+                                <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
+                                    <div className="space-y-4 lg:col-span-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                Base financiera
+                                            </p>
+                                        </div>
+
                                 <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-5 text-white shadow-md">
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Bolsa mensual consolidada</p>
                                     <p className="mt-2 text-3xl font-semibold tracking-tight">
@@ -2079,6 +2087,15 @@ export default function SelectProfilePage() {
                                         </div>
                                     </div>
                                 )}
+
+                                    </div>
+
+                                    <div className="space-y-4 lg:col-span-4 lg:border-l lg:border-surface-200 lg:pl-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                Modelo de distribución
+                                            </p>
+                                        </div>
 
                                 {/* Selección de Regla */}
                                 <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
@@ -2260,6 +2277,15 @@ export default function SelectProfilePage() {
                                     </div>
                                 </div>
 
+                                    </div>
+
+                                    <div className="space-y-4 lg:col-span-4 lg:border-l lg:border-surface-200 lg:pl-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                Control y decisiones
+                                            </p>
+                                        </div>
+
                                 <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                     <h3 className="text-sm font-semibold text-[#0f2233]">Prioridad operativa actual</h3>
                                     <p className="mt-1 text-xs text-surface-500">
@@ -2405,10 +2431,11 @@ export default function SelectProfilePage() {
                                                 </p>
                                             )}
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
                         )}
 
                         {step === 8 && selected === "business" && (
