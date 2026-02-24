@@ -187,7 +187,7 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
             .select("opening_balance")
             .eq("org_id", orgId);
 
-        const currentBalance = (accountsData || []).reduce((s: number, a: any) => s + Number(a.opening_balance || 0), 0)
+        const currentBalance = (accountsData || []).reduce((s: number, a: { opening_balance: number | string | null }) => s + Number(a.opening_balance || 0), 0)
             + txns.reduce((s, t) => s + Number(t.amount), 0);
 
         // Build projections
@@ -224,10 +224,10 @@ export async function getForecastOverview(month?: string, horizon?: number): Pro
                 variable_opex_percent: 0,
                 one_off_amount: 0,
                 sources: {
-                    cogs_percent: "not_applicable" as any,
-                    fixed_opex: "historical" as any,
-                    variable_opex_percent: "not_applicable" as any,
-                    one_off_amount: "default_zero" as any,
+                    cogs_percent: "historical",
+                    fixed_opex: "historical",
+                    variable_opex_percent: "historical",
+                    one_off_amount: "default_zero",
                 },
             },
             projections: personalProjections,

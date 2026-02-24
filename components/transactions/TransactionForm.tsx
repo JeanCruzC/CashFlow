@@ -21,7 +21,7 @@ interface TransactionFormInitialValues {
 interface TransactionFormProps {
     accounts: Account[];
     categories: CategoryGL[];
-    savingsGoals?: any[];
+    savingsGoals?: { id: string; name: string; target_amount: number }[];
     mode?: "create" | "edit";
     transactionId?: string;
     initialValues?: TransactionFormInitialValues;

@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                     </div>
 
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                        {savingsGoals.map((goal: any) => {
+                        {savingsGoals.map((goal) => {
                             const current = Number(goal.current_amount) || 0;
                             const target = Number(goal.target_amount) || 1;
                             const percent = Math.min((current / target) * 100, 100);

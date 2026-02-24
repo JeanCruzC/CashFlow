@@ -134,7 +134,7 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
 
                 if (priorBudgets && priorBudgets.length > 0) {
                     // Clone them into the current month silently
-                    const cloneRows = priorBudgets.map((b: any) => ({
+                    const cloneRows = priorBudgets.map((b: { category_gl_id: string; amount: number | string }) => ({
                         org_id: orgId,
                         month: targetMonth,
                         category_gl_id: b.category_gl_id,
