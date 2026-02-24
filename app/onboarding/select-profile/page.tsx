@@ -16,6 +16,7 @@ type ProfileType = "personal" | "business";
 type CategoryKind = "income" | "expense" | "cost_of_goods_sold";
 type DistributionRule = "50_30_20" | "70_20_10" | "80_20" | "custom";
 type SavingsPriority = "fixed_expenses" | "debt_payments" | "savings_goals";
+type RulePillTone = "needs" | "wants" | "savings" | "debt";
 
 const TOTAL_STEPS = 8;
 
@@ -30,17 +31,52 @@ const COUNTRIES = [
     { code: "ES", label: "España", timezone: "Europe/Madrid", currency: "EUR" },
 ] as const;
 
-const DISTRIBUTION_LABELS: Record<DistributionRule, string> = {
-    "50_30_20": "50/30/20 - Necesidades / Deseos / Ahorro",
-    "70_20_10": "70/20/10 - Gastos / Ahorro / Deuda o inversión",
-    "80_20": "80/20 - Gastos / Ahorro",
-    custom: "Personalizada",
-};
-
 const PRIORITY_LABELS: Record<SavingsPriority, string> = {
     fixed_expenses: "Cubrir gastos fijos",
     debt_payments: "Pagar deudas o tarjetas",
     savings_goals: "Aportar a metas de ahorro",
+};
+
+const PRIORITY_HELPER_TEXT: Record<SavingsPriority, string> = {
+    fixed_expenses: "Asegura vivienda, salud, servicios y gastos inamovibles.",
+    debt_payments: "Cubre mínimos de deuda y reduce intereses con prepagos.",
+    savings_goals: "Destina el remanente a metas con una cascada mensual.",
+};
+
+const RULE_CARD_CONFIG: Record<
+    Exclude<DistributionRule, "custom">,
+    {
+        title: string;
+        description: string;
+        pills: Array<{ label: string; value: number; tone: RulePillTone }>;
+    }
+> = {
+    "50_30_20": {
+        title: "50 / 30 / 20",
+        description: "Necesidades · Deseos · Ahorro",
+        pills: [
+            { label: "Necesidades", value: 50, tone: "needs" },
+            { label: "Deseos", value: 30, tone: "wants" },
+            { label: "Ahorro", value: 20, tone: "savings" },
+        ],
+    },
+    "70_20_10": {
+        title: "70 / 20 / 10",
+        description: "Gastos · Ahorro · Deuda o inversión",
+        pills: [
+            { label: "Gastos", value: 70, tone: "needs" },
+            { label: "Ahorro", value: 20, tone: "savings" },
+            { label: "Deuda", value: 10, tone: "debt" },
+        ],
+    },
+    "80_20": {
+        title: "80 / 20",
+        description: "Simple: gastos y ahorro",
+        pills: [
+            { label: "Gastos", value: 80, tone: "needs" },
+            { label: "Ahorro", value: 20, tone: "savings" },
+        ],
+    },
 };
 
 const FIXED_EXPENSE_KEYWORDS = [
@@ -135,6 +171,13 @@ function isFixedExpenseCategory(value: string) {
     return FIXED_EXPENSE_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
+function getRulePillClasses(tone: RulePillTone) {
+    if (tone === "needs") return "bg-[#eaf3ff] text-[#1d4ed8]";
+    if (tone === "wants") return "bg-[#fff4dc] text-[#a16207]";
+    if (tone === "savings") return "bg-[#e8f8f0] text-[#117068]";
+    return "bg-[#fcebea] text-[#b42318]";
+}
+
 export default function SelectProfilePage() {
     const router = useRouter();
 
@@ -216,6 +259,39 @@ export default function SelectProfilePage() {
 
         return round2(base + extra + partner);
     }, [monthlyIncomeNet, firstFortnightAmount, secondFortnightAmount, salaryFrequency, hasAdditionalIncome, additionalIncome, sharesFinances, partnerContribution, partnerFirstFortnightAmount, partnerSecondFortnightAmount, partnerSalaryFrequency]);
+
+    const primaryIncomeMonthly = useMemo(
+        () =>
+            round2(
+                salaryFrequency === "monthly"
+                    ? parseAmount(monthlyIncomeNet)
+                    : parseAmount(firstFortnightAmount) + parseAmount(secondFortnightAmount)
+            ),
+        [salaryFrequency, monthlyIncomeNet, firstFortnightAmount, secondFortnightAmount]
+    );
+
+    const partnerIncomeMonthly = useMemo(
+        () =>
+            round2(
+                sharesFinances
+                    ? (partnerSalaryFrequency === "monthly"
+                        ? parseAmount(partnerContribution)
+                        : parseAmount(partnerFirstFortnightAmount) + parseAmount(partnerSecondFortnightAmount))
+                    : 0
+            ),
+        [
+            sharesFinances,
+            partnerSalaryFrequency,
+            partnerContribution,
+            partnerFirstFortnightAmount,
+            partnerSecondFortnightAmount,
+        ]
+    );
+
+    const additionalIncomeMonthly = useMemo(
+        () => round2(hasAdditionalIncome ? parseAmount(additionalIncome) : 0),
+        [hasAdditionalIncome, additionalIncome]
+    );
 
     const distribution = useMemo(() => {
         if (distributionRule === "50_30_20") {
@@ -1818,6 +1894,35 @@ export default function SelectProfilePage() {
                                     </p>
                                 </div>
 
+                                <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-5 text-white shadow-md">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Bolsa mensual consolidada</p>
+                                    <p className="mt-2 text-3xl font-semibold tracking-tight">
+                                        {currency} {consolidatedIncome.toFixed(2)}
+                                    </p>
+                                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                                        <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                            <p className="text-[11px] text-white/65">Ingreso principal</p>
+                                            <p className="mt-1 text-sm font-semibold">{currency} {primaryIncomeMonthly.toFixed(2)}</p>
+                                        </article>
+                                        {(sharesFinances && partnerIncomeMonthly > 0) && (
+                                            <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                                <p className="text-[11px] text-white/65">Aporte de pareja</p>
+                                                <p className="mt-1 text-sm font-semibold text-[#b8f2d7]">
+                                                    +{currency} {partnerIncomeMonthly.toFixed(2)}
+                                                </p>
+                                            </article>
+                                        )}
+                                        {(hasAdditionalIncome && additionalIncomeMonthly > 0) && (
+                                            <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                                <p className="text-[11px] text-white/65">Ingreso adicional</p>
+                                                <p className="mt-1 text-sm font-semibold text-[#d0e7ff]">
+                                                    +{currency} {additionalIncomeMonthly.toFixed(2)}
+                                                </p>
+                                            </article>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* Cascada de Obligaciones (Resumen) */}
                                 <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-5 shadow-sm">
                                     <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-500 mb-4">El flujo de tu dinero</h3>
@@ -1986,54 +2091,99 @@ export default function SelectProfilePage() {
                                 </div>
 
                                 {/* Selección de Regla */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-sm font-semibold text-[#0f2233]">Selecciona tu modelo de distribución</h3>
+                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center justify-between gap-3 mb-4">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-[#0f2233]">Selecciona tu modelo de distribución</h3>
+                                            <p className="mt-1 text-xs text-surface-500">
+                                                Ajusta cómo repartir la bolsa mensual entre operación, ahorro y deuda.
+                                            </p>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={applySmartDebtDistribution}
                                             disabled={isAiLoading}
-                                            className="text-xs font-semibold text-[#0d4c7a] hover:text-[#0a3a5e] underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="rounded-lg border border-[#bfdbec] bg-[#f2f8fc] px-3 py-2 text-xs font-semibold text-[#0d4c7a] hover:bg-[#e8f3fb] disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA"}
                                         </button>
                                     </div>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
-                                            <label
-                                                key={rule}
-                                                className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-4 cursor-pointer transition-all ${distributionRule === rule ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-sm" : "border-surface-200 bg-white hover:border-surface-300"}`}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="distribution-rule"
-                                                    className="sr-only"
-                                                    checked={distributionRule === rule}
-                                                    onChange={() => {
-                                                        setDistributionRule(rule);
-                                                        setAiReasoning(""); // Limpiar razonamiento al cambiar regla manual
-                                                    }}
-                                                />
-                                                <span className={`text-sm font-bold ${distributionRule === rule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
-                                                    {DISTRIBUTION_LABELS[rule] === "Personalizada" ? "A medida" : DISTRIBUTION_LABELS[rule]}
-                                                </span>
-                                            </label>
-                                        ))}
+
+                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                        {(Object.keys(RULE_CARD_CONFIG) as Array<Exclude<DistributionRule, "custom">>).map((rule) => {
+                                            const card = RULE_CARD_CONFIG[rule];
+                                            const selectedRule = distributionRule === rule;
+
+                                            return (
+                                                <label
+                                                    key={rule}
+                                                    className={`rounded-xl border p-4 cursor-pointer transition-all ${
+                                                        selectedRule
+                                                            ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-sm"
+                                                            : "border-surface-200 bg-white hover:border-[#c7d7e6]"
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="distribution-rule"
+                                                        className="sr-only"
+                                                        checked={selectedRule}
+                                                        onChange={() => {
+                                                            setDistributionRule(rule);
+                                                            setAiReasoning("");
+                                                        }}
+                                                    />
+                                                    <p className={`text-sm font-semibold ${selectedRule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
+                                                        {card.title}
+                                                    </p>
+                                                    <p className="mt-1 text-[11px] text-surface-500">
+                                                        {card.description}
+                                                    </p>
+                                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                                        {card.pills.map((pill) => (
+                                                            <span
+                                                                key={`${rule}-${pill.label}`}
+                                                                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${getRulePillClasses(pill.tone)}`}
+                                                            >
+                                                                {pill.value}% {pill.label}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
 
-                                    {aiError && (
-                                        <p className="mt-2 text-xs text-negative-600 bg-negative-50 p-2 rounded-lg">{aiError}</p>
-                                    )}
+                                    <label
+                                        className={`mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 cursor-pointer transition-all ${
+                                            distributionRule === "custom"
+                                                ? "border-[#0d4c7a] bg-[#f2f8fc]"
+                                                : "border-surface-300 bg-surface-50 hover:border-[#0d4c7a]/40"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="distribution-rule"
+                                            className="sr-only"
+                                            checked={distributionRule === "custom"}
+                                            onChange={() => {
+                                                setDistributionRule("custom");
+                                                setAiReasoning("");
+                                            }}
+                                        />
+                                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#0d4c7a] border border-surface-200">
+                                            %
+                                        </span>
+                                        <span>
+                                            <span className="block text-sm font-semibold text-[#0f2233]">A medida</span>
+                                            <span className="block text-[11px] text-surface-500">
+                                                Defino mis propios porcentajes de distribución.
+                                            </span>
+                                        </span>
+                                    </label>
 
-                                    {aiReasoning && distributionRule === "custom" && !isAiLoading && (
-                                        <div className="mt-4 rounded-xl border border-[#0d4c7a] bg-[#f2f8fc] p-4 animate-fade-in shadow-sm">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h4 className="text-sm font-semibold text-[#0d4c7a]">Recomendación de Gemini AI</h4>
-                                            </div>
-                                            <p className="text-sm text-[#0a3a5e] leading-relaxed">
-                                                {aiReasoning}
-                                            </p>
-                                        </div>
+                                    {aiError && (
+                                        <p className="mt-3 text-xs text-negative-600 bg-negative-50 p-2 rounded-lg">{aiError}</p>
                                     )}
                                 </div>
 
@@ -2061,6 +2211,88 @@ export default function SelectProfilePage() {
                                         </p>
                                     </div>
                                 )}
+
+                                {aiReasoning && !isAiLoading && (
+                                    <div className="rounded-2xl border border-[#10283b] bg-[linear-gradient(140deg,#10283b_0%,#153a56_60%,#1d4f70_100%)] p-5 text-white shadow-md">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9fd4f3]">
+                                            Recomendación de IA
+                                        </p>
+                                        <p className="mt-2 text-sm leading-relaxed text-white/85">
+                                            {aiReasoning}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-surface-500">
+                                            Distribución final del ingreso
+                                        </h3>
+                                        <p className="text-xs text-surface-500">
+                                            {currency} {consolidatedIncome.toFixed(2)} / mes
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-surface-100">
+                                        <span className="bg-[#3b82f6]" style={{ width: `${Math.max(distribution.needsPct, 0)}%` }} />
+                                        <span className="bg-[#f59e0b]" style={{ width: `${Math.max(distribution.wantsPct, 0)}%` }} />
+                                        <span className="bg-[#10b981]" style={{ width: `${Math.max(distribution.savingsPct, 0)}%` }} />
+                                        <span className="bg-[#ef4444]" style={{ width: `${Math.max(distribution.debtPct, 0)}%` }} />
+                                    </div>
+
+                                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <p className="text-[11px] font-semibold text-[#1d4ed8]">Necesidades {distribution.needsPct.toFixed(2)}%</p>
+                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
+                                        </article>
+                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <p className="text-[11px] font-semibold text-[#a16207]">Deseos {distribution.wantsPct.toFixed(2)}%</p>
+                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</p>
+                                        </article>
+                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <p className="text-[11px] font-semibold text-[#117068]">Ahorro {distribution.savingsPct.toFixed(2)}%</p>
+                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</p>
+                                        </article>
+                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <p className="text-[11px] font-semibold text-[#b42318]">Deuda {distribution.debtPct.toFixed(2)}%</p>
+                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
+                                        </article>
+                                    </div>
+
+                                    <div className={`mt-4 rounded-lg border px-3 py-2 text-xs ${
+                                        operationalCashShortfall > 0
+                                            ? "border-[#f4c2c7] bg-[#fdf1f2] text-[#b42318]"
+                                            : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
+                                    }`}>
+                                        {operationalCashShortfall > 0
+                                            ? `La distribución todavía no cubre todo el flujo obligatorio. Ajusta necesidades o reduce compromisos por ${currency} ${operationalCashShortfall.toFixed(2)}.`
+                                            : `Tus compromisos obligatorios están cubiertos. Saldo libre real del mes: ${currency} ${availableAfterVariable.toFixed(2)}.`}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Prioridad operativa actual</h3>
+                                    <p className="mt-1 text-xs text-surface-500">
+                                        Este orden se aplicará cuando el flujo sea limitado.
+                                    </p>
+                                    <div className="mt-3 space-y-2">
+                                        {savingsPriorities.map((priority, index) => (
+                                            <article key={`priority-summary-${priority}`} className="flex items-start gap-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2.5">
+                                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0d4c7a] text-[11px] font-semibold text-white">
+                                                    {index + 1}
+                                                </span>
+                                                <span>
+                                                    <span className="block text-sm font-semibold text-[#0f2233]">
+                                                        {PRIORITY_LABELS[priority]}
+                                                    </span>
+                                                    <span className="block text-xs text-surface-500">
+                                                        {PRIORITY_HELPER_TEXT[priority]}
+                                                    </span>
+                                                </span>
+                                            </article>
+                                        ))}
+                                    </div>
+                                </div>
 
                                 {/* Análisis Dinámico de Buckets */}
                                 <div className="space-y-4">
