@@ -188,34 +188,6 @@ const DISTRIBUTION_PRESETS: Record<
     custom: { needsPct: 50, wantsPct: 30, savingsPct: 20, debtPct: 0 },
 };
 
-const FIXED_EXPENSE_KEYWORDS = [
-    "alquiler",
-    "rent",
-    "hipoteca",
-    "mortgage",
-    "vivienda",
-    "housing",
-    "servicios",
-    "utilities",
-    "internet",
-    "telefono",
-    "phone",
-    "seguro",
-    "insurance",
-    "colegio",
-    "educacion",
-    "education",
-    "deuda",
-    "debt",
-    "debt payments",
-    "loan",
-    "prestamo",
-    "suscripcion",
-    "subscription",
-    "salud",
-    "health",
-];
-
 function round2(value: number) {
     return Math.round(value * 100) / 100;
 }
@@ -264,22 +236,22 @@ function estimateTotalCreditCardMinimums(setup: OnboardingSetupInput) {
     );
 }
 
-function isFixedExpenseCategory(categoryName: string) {
-    const normalized = normalizeCategoryName(categoryName);
-    return FIXED_EXPENSE_KEYWORDS.some((keyword) =>
-        normalized.includes(keyword)
-    );
-}
-
-function estimateFixedExpenseBudget(setup: OnboardingSetupInput) {
+function estimateTotalExpenseBudget(setup: OnboardingSetupInput) {
     const budgets = setup.initialBudgets || [];
     return round2(
         budgets.reduce((sum, budget) => {
             if (budget.amount <= 0) return sum;
-            return isFixedExpenseCategory(budget.categoryName)
-                ? sum + budget.amount
-                : sum;
+            return sum + budget.amount;
         }, 0)
+    );
+}
+
+function estimateFullPaymentCardsCashOutflow(setup: OnboardingSetupInput) {
+    const cards = setup.creditCards || [];
+    return round2(
+        cards
+            .filter((card) => card.paymentStrategy === "full")
+            .reduce((sum, card) => sum + Math.max(card.currentBalance, 0), 0)
     );
 }
 
@@ -293,13 +265,22 @@ function resolveMonthlyGoalsPool(setup: OnboardingSetupInput) {
         (setup.financialProfile.partnerContribution ?? 0);
 
     const needsBucket = round2((consolidatedIncome * distribution.needsPct) / 100);
+    const wantsBucket = round2((consolidatedIncome * distribution.wantsPct) / 100);
     const savingsBucket = round2(
         (consolidatedIncome * distribution.savingsPct) / 100
     );
     const debtBucket = round2((consolidatedIncome * distribution.debtPct) / 100);
 
-    const fixedExpenseBudget = estimateFixedExpenseBudget(setup);
-    const fixedNeedsShortfall = Math.max(fixedExpenseBudget - needsBucket, 0);
+    const totalExpenseBudget = estimateTotalExpenseBudget(setup);
+    const fullPaymentCardsCashOutflow = estimateFullPaymentCardsCashOutflow(setup);
+    const operationalCashRequired = round2(
+        totalExpenseBudget + fullPaymentCardsCashOutflow
+    );
+    const operationalBucket = round2(needsBucket + wantsBucket);
+    const operationalCashShortfall = Math.max(
+        operationalCashRequired - operationalBucket,
+        0
+    );
 
     const estimatedDebtPayment = estimateTotalCreditCardMinimums(setup);
     const debtBucketShortfall = Math.max(estimatedDebtPayment - debtBucket, 0);
@@ -313,7 +294,7 @@ function resolveMonthlyGoalsPool(setup: OnboardingSetupInput) {
 
     let availableForGoals = savingsBucket;
     if (goalsIndex !== -1 && fixedIndex !== -1 && fixedIndex < goalsIndex) {
-        availableForGoals -= fixedNeedsShortfall;
+        availableForGoals -= operationalCashShortfall;
     }
     if (goalsIndex !== -1 && debtIndex !== -1 && debtIndex < goalsIndex) {
         availableForGoals -= debtBucketShortfall;

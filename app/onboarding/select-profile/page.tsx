@@ -339,6 +339,16 @@ export default function SelectProfilePage() {
         [budgetBreakdownRows]
     );
 
+    const fixedBudgetRows = useMemo(
+        () => budgetBreakdownRows.filter((row) => row.isFixed),
+        [budgetBreakdownRows]
+    );
+
+    const variableBudgetRows = useMemo(
+        () => budgetBreakdownRows.filter((row) => !row.isFixed),
+        [budgetBreakdownRows]
+    );
+
     const fixedExpensesBudget = useMemo(
         () =>
             round2(
@@ -410,6 +420,61 @@ export default function SelectProfilePage() {
         [distributionAmounts.debt, estimatedDebtPayment]
     );
 
+    const totalCardCashCommitment = useMemo(
+        () => round2(estimatedDebtPayment + fullPaymentCardsCashOutflow),
+        [estimatedDebtPayment, fullPaymentCardsCashOutflow]
+    );
+
+    const availableBeforeVariable = useMemo(
+        () =>
+            round2(
+                Math.max(
+                    consolidatedIncome - fixedExpensesBudget - totalCardCashCommitment,
+                    0
+                )
+            ),
+        [consolidatedIncome, fixedExpensesBudget, totalCardCashCommitment]
+    );
+
+    const availableAfterVariable = useMemo(
+        () =>
+            round2(
+                Math.max(
+                    consolidatedIncome -
+                    fixedExpensesBudget -
+                    variableExpensesBudget -
+                    totalCardCashCommitment,
+                    0
+                )
+            ),
+        [
+            consolidatedIncome,
+            fixedExpensesBudget,
+            variableExpensesBudget,
+            totalCardCashCommitment,
+        ]
+    );
+
+    const operationalCashRequired = useMemo(
+        () => round2(fixedExpensesBudget + variableExpensesBudget + fullPaymentCardsCashOutflow),
+        [fixedExpensesBudget, variableExpensesBudget, fullPaymentCardsCashOutflow]
+    );
+
+    const operationalBucketsAvailable = useMemo(
+        () => round2(distributionAmounts.needs + distributionAmounts.wants),
+        [distributionAmounts.needs, distributionAmounts.wants]
+    );
+
+    const operationalCashShortfall = useMemo(
+        () => round2(Math.max(operationalCashRequired - operationalBucketsAvailable, 0)),
+        [operationalCashRequired, operationalBucketsAvailable]
+    );
+
+    const operationalCashSurplus = useMemo(
+        () => round2(Math.max(operationalBucketsAvailable - operationalCashRequired, 0)),
+        [operationalBucketsAvailable, operationalCashRequired]
+    );
+
     const dynamicSavingsPool = useMemo(() => {
         let available = distributionAmounts.savings;
         if (
@@ -417,7 +482,7 @@ export default function SelectProfilePage() {
             priorityIndex.goals !== -1 &&
             priorityIndex.fixed < priorityIndex.goals
         ) {
-            available -= fixedNeedsShortfall;
+            available -= operationalCashShortfall;
         }
         if (
             priorityIndex.debt !== -1 &&
@@ -429,7 +494,7 @@ export default function SelectProfilePage() {
         return round2(Math.max(available, 0));
     }, [
         distributionAmounts.savings,
-        fixedNeedsShortfall,
+        operationalCashShortfall,
         debtBucketShortfall,
         priorityIndex.fixed,
         priorityIndex.goals,
@@ -500,6 +565,9 @@ export default function SelectProfilePage() {
                 currency,
                 consolidatedIncome,
                 fixedExpensesBudget,
+                variableExpensesBudget,
+                estimatedDebtPayment,
+                fullPaymentCardsCashOutflow,
                 creditCards: creditCards.map((c) => ({
                     name: c.name || "Tarjeta",
                     currentBalance: parseAmount(c.currentBalance),
@@ -528,16 +596,19 @@ export default function SelectProfilePage() {
                 // Fallback matématico
                 const safeIncome = Math.max(consolidatedIncome, 1);
                 const debtRatio = totalCreditCardDebt / safeIncome;
+                const operationalRatio = (fixedExpensesBudget + variableExpensesBudget + fullPaymentCardsCashOutflow) / safeIncome;
                 setDistributionRule("custom");
-                if (debtRatio >= 1.5) {
-                    setCustomNeedsPct("55"); setCustomWantsPct("10"); setCustomSavingsPct("15"); setCustomDebtPct("20");
-                } else if (debtRatio >= 0.75) {
-                    setCustomNeedsPct("58"); setCustomWantsPct("12"); setCustomSavingsPct("15"); setCustomDebtPct("15");
-                } else if (debtRatio > 0) {
-                    setCustomNeedsPct("60"); setCustomWantsPct("15"); setCustomSavingsPct("15"); setCustomDebtPct("10");
-                } else {
-                    setDistributionRule("50_30_20");
-                }
+                const debtPctBase = debtRatio >= 1.5 ? 20 : debtRatio >= 0.75 ? 15 : debtRatio > 0 ? 10 : 0;
+                const operationalPctBase = Math.min(Math.max(Math.ceil(operationalRatio * 100), 45), 90);
+                const availablePct = Math.max(100 - debtPctBase, 0);
+                const needsPct = Math.min(operationalPctBase, availablePct);
+                const wantsPct = Math.max(availablePct - needsPct, 0);
+                const savingsPct = Math.max(100 - needsPct - wantsPct - debtPctBase, 0);
+
+                setCustomNeedsPct(needsPct.toString());
+                setCustomWantsPct(wantsPct.toString());
+                setCustomSavingsPct(savingsPct.toString());
+                setCustomDebtPct(debtPctBase.toString());
             }
         } catch {
             setAiError("Ocurrió un error inesperado al llamar a la IA.");
@@ -1753,74 +1824,131 @@ export default function SelectProfilePage() {
 
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-[#0f2233]">Ingreso Consolidado</span>
+                                            <span className="text-sm font-medium text-[#0f2233]">Ingreso consolidado mensual</span>
                                             <span className="text-base font-semibold text-positive-600">{currency} {consolidatedIncome.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex items-center justify-between border-t border-surface-200 pt-3">
-                                            <span className="text-sm text-surface-600">Gastos Fijos Presupuestados</span>
+                                            <span className="text-sm text-surface-600">Gastos fijos presupuestados</span>
                                             <span className="text-sm font-medium text-negative-600">-{currency} {fixedExpensesBudget.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-surface-600">Gastos Variables Planificados</span>
+                                            <span className="text-sm text-surface-600">Gastos variables planificados</span>
                                             <span className="text-sm font-medium text-negative-600">-{currency} {variableExpensesBudget.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-surface-600">Compromisos de Tarjetas (deuda revolvente)</span>
+                                            <span className="text-sm text-surface-600">Pago mínimo de deuda revolvente</span>
                                             <span className="text-sm font-medium text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
                                         </div>
 
                                         {fullPaymentCardsCashOutflow > 0 && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-surface-600">Pago total de tarjetas (flujo transaccional)</span>
-                                                <span className="text-sm font-medium text-[#0f2233]">
-                                                    {currency} {fullPaymentCardsCashOutflow.toFixed(2)}
+                                            <div className="flex items-center justify-between rounded-lg border border-[#f2dcb6] bg-[#fff8eb] px-3 py-2">
+                                                <span className="text-sm text-[#7a5b00]">Pago total de tarjetas (compromiso mensual de caja)</span>
+                                                <span className="text-sm font-semibold text-[#7a5b00]">
+                                                    -{currency} {fullPaymentCardsCashOutflow.toFixed(2)}
                                                 </span>
                                             </div>
                                         )}
-
-                                        <div className="flex items-center justify-between border-t border-surface-200 pt-3 mt-3">
-                                            <span className="text-sm font-medium text-[#0f2233]">Teórico Libre Restante</span>
-                                            <span className="text-base font-semibold text-[#0f2233]">
-                                                {currency} {Math.max(0, consolidatedIncome - fixedExpensesBudget - estimatedDebtPayment).toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-[#0f2233]">Libre tras gastos variables</span>
-                                            <span className="text-base font-semibold text-[#0f2233]">
-                                                {currency} {Math.max(0, consolidatedIncome - fixedExpensesBudget - variableExpensesBudget - estimatedDebtPayment).toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-surface-500 text-right mt-1">Este es el dinero real disponible para deseos, ahorro y prepago de deuda.</p>
-                                        {fullPaymentCardsCashOutflow > 0 && (
-                                            <p className="text-xs text-surface-500 text-right">
-                                                El pago total de tarjeta se cubre con tus buckets de necesidades/deseos y no se cuenta como deuda revolvente.
-                                            </p>
-                                        )}
                                     </div>
+
+                                    <div className="mt-4 space-y-3">
+                                        <article className="rounded-xl border border-[#d8e7f2] bg-[#f6fbff] p-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#0d4c7a]">
+                                                    Paso 1: Saldo Base (Sin Variables)
+                                                </p>
+                                                <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#0d4c7a]">
+                                                    Control operativo
+                                                </span>
+                                            </div>
+                                            <p className="mt-2 text-2xl font-semibold text-[#0d4c7a]">
+                                                {currency} {availableBeforeVariable.toFixed(2)}
+                                            </p>
+                                            <p className="mt-1 text-xs text-[#1f5174]">
+                                                Lo que queda después de gastos fijos y de todos los pagos de tarjeta del mes.
+                                            </p>
+                                        </article>
+
+                                        <div className="rounded-lg border border-[#f1e4cd] bg-[#fffaf2] px-4 py-2 text-sm text-[#8a5a08]">
+                                            <span className="font-semibold">Ajuste por gastos variables:</span>{" "}
+                                            -{currency} {variableExpensesBudget.toFixed(2)}
+                                        </div>
+
+                                        <article className="rounded-xl border border-[#bfe1d8] bg-[#eef9f5] p-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#117068]">
+                                                    Paso 2: Saldo Libre Real Del Mes
+                                                </p>
+                                                <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#117068]">
+                                                    Monto para repartir
+                                                </span>
+                                            </div>
+                                            <p className="mt-2 text-2xl font-semibold text-[#117068]">
+                                                {currency} {availableAfterVariable.toFixed(2)}
+                                            </p>
+                                            <p className="mt-1 text-xs text-[#1f6a63]">
+                                                Este es el monto recomendado para repartir entre deseos, ahorro, metas y prepago de deuda.
+                                            </p>
+                                        </article>
+                                    </div>
+
+                                    <p className="mt-2 text-xs text-surface-600">
+                                        Usa el Saldo Base como referencia de control y el Saldo Libre Real para decidir cuánto puedes asignar sin desbalancearte.
+                                    </p>
+                                    {fullPaymentCardsCashOutflow > 0 && (
+                                        <p className="text-xs text-[#7a5b00]">
+                                            El pago total de tarjetas no es deuda revolvente, pero sí ya fue descontado como salida de caja mensual.
+                                        </p>
+                                    )}
 
                                     {budgetBreakdownRows.length > 0 && (
                                         <div className="mt-4 rounded-xl border border-surface-200 bg-white p-4">
-                                            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                                                Detalle de presupuesto declarado
-                                            </p>
-                                            <div className="mt-3 space-y-2">
-                                                {budgetBreakdownRows.map((row) => (
-                                                    <div key={row.categoryName} className="flex items-center justify-between text-sm">
-                                                        <span className="text-surface-700">
-                                                            {row.categoryName}
-                                                            <span className="ml-2 text-xs text-surface-500">
-                                                                ({row.isFixed ? "fijo" : "variable"})
-                                                            </span>
-                                                        </span>
-                                                        <span className="font-medium text-[#0f2233]">
-                                                            {currency} {row.amount.toFixed(2)}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                                                    Detalle de presupuesto declarado
+                                                </p>
+                                                <p className="text-sm font-semibold text-[#0f2233]">
+                                                    Total {currency} {(fixedExpensesBudget + variableExpensesBudget).toFixed(2)}
+                                                </p>
                                             </div>
+
+                                            {fixedBudgetRows.length > 0 && (
+                                                <div className="mt-3 rounded-lg border border-[#d8e7f2] bg-[#f6fbff] p-3">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#0d4c7a]">
+                                                        Gastos Fijos
+                                                    </p>
+                                                    <div className="mt-2 space-y-1.5">
+                                                        {fixedBudgetRows.map((row) => (
+                                                            <div key={row.categoryName} className="flex items-center justify-between text-sm">
+                                                                <span className="text-surface-700">{row.categoryName}</span>
+                                                                <span className="font-medium text-[#0f2233]">
+                                                                    {currency} {row.amount.toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {variableBudgetRows.length > 0 && (
+                                                <div className="mt-3 rounded-lg border border-[#f1e4cd] bg-[#fffaf2] p-3">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#8a5a08]">
+                                                        Gastos Variables
+                                                    </p>
+                                                    <div className="mt-2 space-y-1.5">
+                                                        {variableBudgetRows.map((row) => (
+                                                            <div key={row.categoryName} className="flex items-center justify-between text-sm">
+                                                                <span className="text-surface-700">{row.categoryName}</span>
+                                                                <span className="font-medium text-[#0f2233]">
+                                                                    {currency} {row.amount.toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -1937,6 +2065,17 @@ export default function SelectProfilePage() {
                                 {/* Análisis Dinámico de Buckets */}
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-semibold text-[#0f2233]">Análisis de tu distribución</h3>
+                                    <div
+                                        className={`rounded-xl border p-3 text-xs ${
+                                            operationalCashShortfall > 0
+                                                ? "border-[#f5c2c7] bg-[#fdf2f3] text-negative-700"
+                                                : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
+                                        }`}
+                                    >
+                                        {operationalCashShortfall > 0
+                                            ? `Alerta de flujo: Necesidades + Deseos cubren ${currency} ${operationalBucketsAvailable.toFixed(2)}, pero tus compromisos operativos y pago total de tarjetas requieren ${currency} ${operationalCashRequired.toFixed(2)}. Te faltan ${currency} ${operationalCashShortfall.toFixed(2)}.`
+                                            : `Correcto: Necesidades + Deseos cubren tus compromisos operativos y pagos totales de tarjeta. Tienes un margen operativo de ${currency} ${operationalCashSurplus.toFixed(2)}.`}
+                                    </div>
                                     <div className="grid sm:grid-cols-2 gap-4">
 
                                         {/* Tarjeta Necesidades */}
@@ -1975,8 +2114,8 @@ export default function SelectProfilePage() {
                                                 {totalCreditCardDebt > 0
                                                     ? `Tienes una deuda de ${currency} ${totalCreditCardDebt.toFixed(2)} que genera pagos mínimos aprox. de ${currency} ${estimatedDebtPayment.toFixed(2)}.`
                                                     : totalCreditCardBalance > 0
-                                                        ? `Tienes tarjetas registradas con estrategia de pago total. Salen ${currency} ${fullPaymentCardsCashOutflow.toFixed(2)} de caja mensual desde necesidades/deseos, sin generar deuda revolvente.`
-                                                    : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
+                                                        ? `Tienes tarjetas registradas con estrategia de pago total. Salen ${currency} ${fullPaymentCardsCashOutflow.toFixed(2)} de caja mensual y ya están consideradas en el flujo operativo, sin generar deuda revolvente.`
+                                                        : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
                                             </p>
 
                                             {totalCreditCardDebt > 0 && distribution.debtPct === 0 ? (
@@ -2034,9 +2173,15 @@ export default function SelectProfilePage() {
                                                 </div>
                                                 <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</span>
                                             </div>
-                                            <p className="text-xs text-surface-600 mt-2">
-                                                Capital 100% de libre disposición (Cine, restaurantes, compras, viajes impulsivos). Este es el fondo para disfrutar tu esfuerzo mensual sin comprometer tu futuro financiero ni endeudarte.
-                                            </p>
+                                            {operationalCashShortfall > 0 ? (
+                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
+                                                    Tu flujo está ajustado. Antes de gastos discrecionales, necesitas cerrar una brecha operativa de {currency} {operationalCashShortfall.toFixed(2)}.
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs text-surface-600 mt-2">
+                                                    Capital de libre disposición (ocio, compras, viajes) sin comprometer tus obligaciones operativas ni tus pagos de tarjeta.
+                                                </p>
+                                            )}
                                         </div>
 
                                     </div>

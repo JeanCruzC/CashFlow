@@ -20,6 +20,9 @@ type DistributionInput = {
     currency: string;
     consolidatedIncome: number;
     fixedExpensesBudget: number;
+    variableExpensesBudget: number;
+    estimatedDebtPayment: number;
+    fullPaymentCardsCashOutflow: number;
     creditCards: Array<{
         name: string;
         currentBalance: number;
@@ -63,6 +66,116 @@ function normalizeDistribution(object: z.infer<typeof distributionSchema>) {
     };
 }
 
+function toPercent(amount: number, income: number) {
+    if (income <= 0) return 0;
+    return round2((Math.max(amount, 0) / income) * 100);
+}
+
+function applyMinimumCoverageConstraints(
+    normalized: ReturnType<typeof normalizeDistribution>,
+    input: DistributionInput
+) {
+    const safeIncome = Math.max(input.consolidatedIncome, 0);
+    if (safeIncome <= 0) return normalized;
+
+    const operationalCashRequired = round2(
+        input.fixedExpensesBudget +
+        input.variableExpensesBudget +
+        input.fullPaymentCardsCashOutflow
+    );
+    const requiredOperationalPct = Math.min(
+        toPercent(operationalCashRequired, safeIncome),
+        100
+    );
+    const requiredDebtPct = Math.min(
+        toPercent(input.estimatedDebtPayment, safeIncome),
+        100
+    );
+
+    let needs = normalized.needs;
+    let wants = normalized.wants;
+    let savings = normalized.savings;
+    let debt = normalized.debt;
+
+    const totalRequired = requiredOperationalPct + requiredDebtPct;
+    if (totalRequired >= 100) {
+        // El flujo está totalmente comprometido: priorizamos cobertura operativa + deuda mínima.
+        debt = Math.min(requiredDebtPct, 100);
+        needs = Math.max(100 - debt, 0);
+        wants = 0;
+        savings = 0;
+        return {
+            ...normalized,
+            needs: round2(needs),
+            wants: round2(wants),
+            savings: round2(savings),
+            debt: round2(debt),
+        };
+    }
+
+    // 1) Garantizar bucket de deuda para cubrir mínimo revolvente.
+    if (debt < requiredDebtPct) {
+        let missingDebt = round2(requiredDebtPct - debt);
+
+        const fromWants = Math.min(wants, missingDebt);
+        wants = round2(wants - fromWants);
+        missingDebt = round2(missingDebt - fromWants);
+
+        if (missingDebt > 0) {
+            const fromSavings = Math.min(savings, missingDebt);
+            savings = round2(savings - fromSavings);
+            missingDebt = round2(missingDebt - fromSavings);
+        }
+
+        if (missingDebt > 0) {
+            const fromNeeds = Math.min(needs, missingDebt);
+            needs = round2(needs - fromNeeds);
+            missingDebt = round2(missingDebt - fromNeeds);
+        }
+
+        const coveredDebt = round2(requiredDebtPct - missingDebt);
+        debt = Math.max(debt, coveredDebt);
+    }
+
+    // 2) Garantizar cobertura operativa de caja (gastos + pago total tarjetas).
+    const operationalCurrent = round2(needs + wants);
+    if (operationalCurrent < requiredOperationalPct) {
+        let missingOperational = round2(requiredOperationalPct - operationalCurrent);
+
+        const fromSavings = Math.min(savings, missingOperational);
+        savings = round2(savings - fromSavings);
+        needs = round2(needs + fromSavings);
+        missingOperational = round2(missingOperational - fromSavings);
+
+        if (missingOperational > 0) {
+            const debtSurplus = Math.max(debt - requiredDebtPct, 0);
+            const fromDebtSurplus = Math.min(debtSurplus, missingOperational);
+            debt = round2(debt - fromDebtSurplus);
+            needs = round2(needs + fromDebtSurplus);
+            missingOperational = round2(missingOperational - fromDebtSurplus);
+        }
+
+        if (missingOperational > 0) {
+            // No hay más buckets para mover: priorizamos llevar wants a 0.
+            const fromWantsToNeeds = Math.min(wants, missingOperational);
+            wants = round2(wants - fromWantsToNeeds);
+            needs = round2(needs + fromWantsToNeeds);
+        }
+    }
+
+    const currentTotal = round2(needs + wants + savings + debt);
+    const correction = round2(100 - currentTotal);
+    needs = round2(needs + correction);
+
+    return {
+        ...normalized,
+        needs,
+        wants,
+        savings,
+        debt,
+    };
+}
+
 export async function generateSmartDistribution(input: DistributionInput) {
     try {
         const { user } = await requireUserContext();
@@ -90,10 +203,10 @@ export async function generateSmartDistribution(input: DistributionInput) {
                     system: `Eres un asesor financiero actuando para la app CashFlow. Tu objetivo es recomendar una regla de distribución presupuestaria porcentual exacta (valores numéricos de 0 a 100 para Needs, Wants, Savings y Debt). 
 Reglas Críticas:
 1. La suma de los 4 porcentajes devueltos debe ser exactamente 100.
-2. "needs" debe ser suficiente porcentaje para cubrir los gastos fijos mensuales declarados.
-3. "debt" debe ser suficiente porcentaje para cubrir al menos los pagos mínimos de las tarjetas de crédito (idealmente deberías destinar más para abono a capital si tienen deudas revolventes con alta TEA).
-4. Fondeo de ahorros y deseos.
-5. Si una tarjeta está marcada con paymentStrategy="full", trátala como medio de pago transaccional y no como deuda revolvente.
+2. "needs" + "wants" deben cubrir al menos el flujo operativo: gastos fijos + gastos variables + pago total de tarjetas con estrategia "full" (esas tarjetas sí salen de caja mensual).
+3. "debt" debe cubrir al menos los pagos mínimos de deuda revolvente (tarjetas no "full"), idealmente más para amortizar capital.
+4. Si una tarjeta está marcada con paymentStrategy="full", NO la clasifiques como deuda revolvente, pero SÍ considera su salida de caja mensual.
+5. Solo asigna ahorro cuando las obligaciones operativas y de deuda mínima estén cubiertas.
 
 Debes devolver un JSON estructurado de acuerdo al schema: needs, wants, savings, debt y un campo textual 'reasoning' (motivando de forma precisa la decisión, en español, dirígete directamente al usuario en segunda persona).`,
                     prompt: `
@@ -102,11 +215,14 @@ Costos Locales: País: ${input.country}, Moneda: ${input.currency}
 Contexto Financiero del Usuario:
 Ingreso Neto Consolidado: ${input.consolidatedIncome}
 Gastos Fijos Presupuestados: ${input.fixedExpensesBudget}
+Gastos Variables Presupuestados: ${input.variableExpensesBudget}
+Pago Mínimo Deuda Revolvente: ${input.estimatedDebtPayment}
+Pago Total Tarjetas (estrategia full, flujo de caja): ${input.fullPaymentCardsCashOutflow}
 Tarjetas de Crédito Registradas: ${JSON.stringify(input.creditCards)}
 Metas de Ahorro Programadas: ${JSON.stringify(input.savingsGoals)}
 
 Asigna los 4 porcentajes (que sumen 100) y justifica claramente tu elección basándote en su deuda, gastos y meta.
-		`,
+			`,
                 });
                 object = result.object;
                 break;
@@ -120,22 +236,26 @@ Asigna los 4 porcentajes (que sumen 100) y justifica claramente tu elección bas
         }
 
         const normalized = normalizeDistribution(object);
+        const constrained = applyMinimumCoverageConstraints(normalized, input);
         const total =
-            normalized.needs +
-            normalized.wants +
-            normalized.savings +
-            normalized.debt;
+            constrained.needs +
+            constrained.wants +
+            constrained.savings +
+            constrained.debt;
         if (Math.abs(total - 100) > 0.01) {
             throw new Error("Los porcentajes normalizados no suman 100");
         }
 
-        return { success: true, data: normalized };
+        return { success: true, data: constrained };
     } catch (error) {
         logError("Error in generateSmartDistribution", error, {
             country: input.country,
             currency: input.currency,
             consolidatedIncome: input.consolidatedIncome,
             fixedExpensesBudget: input.fixedExpensesBudget,
+            variableExpensesBudget: input.variableExpensesBudget,
+            estimatedDebtPayment: input.estimatedDebtPayment,
+            fullPaymentCardsCashOutflow: input.fullPaymentCardsCashOutflow,
             creditCardsCount: input.creditCards.length,
             savingsGoalsCount: input.savingsGoals.length,
         });
