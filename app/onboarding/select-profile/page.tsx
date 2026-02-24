@@ -390,7 +390,7 @@ export default function SelectProfilePage() {
                     (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
                     0
                 )
-        ),
+            ),
         [revolvingCreditCards]
     );
 
@@ -1919,523 +1919,441 @@ export default function SelectProfilePage() {
 
                         {step === 8 && selected === "personal" && (
                             <div className="space-y-6 animate-fade-in">
+                                {/* Header */}
                                 <div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Distribución Inteligente</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Analizamos tu ingreso, presupuesto por categoría (vivienda, alimentación, salud y más) y tus tarjetas para recomendar una estructura realista.
+                                        Analizamos tu ingreso, presupuesto por categoría y tus tarjetas para recomendar una estructura realista.
                                     </p>
                                 </div>
 
-                                <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
+                                {/* ═══ 3-COLUMN GRID ═══ */}
+                                <div className="grid gap-6 lg:grid-cols-12">
+
+                                    {/* ── COLUMN 1: Ingresos & Flujo ── */}
                                     <div className="space-y-4 lg:col-span-4">
                                         <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
-                                                Base financiera
-                                            </p>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Ingresos &amp; Flujo</p>
                                         </div>
 
-                                <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-5 text-white shadow-md">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Bolsa mensual consolidada</p>
-                                    <p className="mt-2 text-3xl font-semibold tracking-tight">
-                                        {currency} {consolidatedIncome.toFixed(2)}
-                                    </p>
-                                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                                        <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
-                                            <p className="text-[11px] text-white/65">Ingreso principal</p>
-                                            <p className="mt-1 text-sm font-semibold">{currency} {primaryIncomeMonthly.toFixed(2)}</p>
-                                        </article>
-                                        {(sharesFinances && partnerIncomeMonthly > 0) && (
-                                            <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
-                                                <p className="text-[11px] text-white/65">Aporte de pareja</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#b8f2d7]">
-                                                    +{currency} {partnerIncomeMonthly.toFixed(2)}
-                                                </p>
-                                            </article>
-                                        )}
-                                        {(hasAdditionalIncome && additionalIncomeMonthly > 0) && (
-                                            <article className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">
-                                                <p className="text-[11px] text-white/65">Ingreso adicional</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#d0e7ff]">
-                                                    +{currency} {additionalIncomeMonthly.toFixed(2)}
-                                                </p>
-                                            </article>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Cascada de Obligaciones (Resumen) */}
-                                <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-5 shadow-sm">
-                                    <div className="mb-4 flex items-center justify-between gap-3">
-                                        <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-500">El flujo de tu dinero</h3>
-                                        <InfoPopover title="Detalle del flujo mensual">
-                                            <div className="space-y-1.5">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span>Ingreso consolidado mensual</span>
-                                                    <span className="font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</span>
+                                        {/* Bolsa consolidada */}
+                                        <div className="rounded-2xl border border-[#0d4c7a]/20 bg-[linear-gradient(135deg,#0d2b43_0%,#143c5c_58%,#1a5579_100%)] p-5 text-white shadow-md">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60">Bolsa mensual consolidada</p>
+                                            <p className="mt-2 text-3xl font-semibold tracking-tight">{currency} {consolidatedIncome.toFixed(2)}</p>
+                                            <div className="mt-4 space-y-2">
+                                                <div className="flex items-center justify-between rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                                    <span className="text-[11px] text-white/65">Ingreso principal</span>
+                                                    <span className="text-sm font-semibold">{currency} {primaryIncomeMonthly.toFixed(2)}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span>Gastos fijos presupuestados</span>
-                                                    <span className="font-semibold text-negative-600">-{currency} {fixedExpensesBudget.toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span>Gastos variables planificados</span>
-                                                    <span className="font-semibold text-negative-600">-{currency} {variableExpensesBudget.toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span>Pago mínimo de deuda revolvente</span>
-                                                    <span className="font-semibold text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
-                                                </div>
-                                                {fullPaymentCardsCashOutflow > 0 && (
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <span>Pago total de tarjetas (compromiso mensual de caja)</span>
-                                                        <span className="font-semibold text-negative-600">-{currency} {fullPaymentCardsCashOutflow.toFixed(2)}</span>
+                                                {(sharesFinances && partnerIncomeMonthly > 0) && (
+                                                    <div className="flex items-center justify-between rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                                        <span className="text-[11px] text-white/65">Aporte de pareja</span>
+                                                        <span className="text-sm font-semibold text-[#b8f2d7]">+{currency} {partnerIncomeMonthly.toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                                {(hasAdditionalIncome && additionalIncomeMonthly > 0) && (
+                                                    <div className="flex items-center justify-between rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                                                        <span className="text-[11px] text-white/65">Ingreso adicional</span>
+                                                        <span className="text-sm font-semibold text-[#d0e7ff]">+{currency} {additionalIncomeMonthly.toFixed(2)}</span>
                                                     </div>
                                                 )}
                                             </div>
-                                        </InfoPopover>
-                                    </div>
+                                        </div>
 
-                                    <div className="grid gap-3 sm:grid-cols-3">
-                                        <article className="rounded-xl border border-surface-200 bg-white p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500">Ingreso mensual</p>
-                                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
-                                        </article>
-                                        <article className="rounded-xl border border-surface-200 bg-white p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500">Compromisos totales</p>
-                                            <p className="mt-1 text-xl font-semibold text-negative-600">-{currency} {totalMandatoryOutflow.toFixed(2)}</p>
-                                        </article>
-                                        <article className="rounded-xl border border-[#bfe1d8] bg-[#eef9f5] p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#117068]">Saldo libre real</p>
-                                            <p className="mt-1 text-xl font-semibold text-[#117068]">{currency} {availableAfterVariable.toFixed(2)}</p>
-                                        </article>
-                                    </div>
-
-                                    <p className="mt-3 text-xs text-surface-600">
-                                        El saldo libre real es el monto disponible para deseos, ahorro y metas, después de cubrir obligaciones mensuales.
-                                    </p>
-                                </div>
-
-                                {(budgetBreakdownRows.length > 0 || creditCardBreakdownRows.length > 0) && (
-                                    <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
-                                        <div className="mb-4 flex items-center justify-between gap-3">
-                                            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                                                Detalle de presupuesto declarado
-                                            </p>
-                                            <InfoPopover title="Detalle de presupuesto y tarjetas">
-                                                <div className="space-y-2">
-                                                    {fixedBudgetRows.length > 0 && (
-                                                        <div>
-                                                            <p className="mb-1 font-semibold text-[#0d4c7a]">Gastos fijos</p>
-                                                            {fixedBudgetRows.map((row) => (
-                                                                <div key={`fixed-popover-${row.categoryName}`} className="flex items-center justify-between gap-3">
-                                                                    <span>{row.categoryName}</span>
-                                                                    <span className="font-semibold text-[#0f2233]">{currency} {row.amount.toFixed(2)}</span>
-                                                                </div>
-                                                            ))}
+                                        {/* Flujo de dinero */}
+                                        <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-4 shadow-sm">
+                                            <div className="mb-3 flex items-center justify-between gap-2">
+                                                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500">El flujo de tu dinero</h3>
+                                                <InfoPopover title="Detalle del flujo mensual" align="left">
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span>Ingreso consolidado</span>
+                                                            <span className="font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</span>
                                                         </div>
-                                                    )}
-                                                    {variableBudgetRows.length > 0 && (
-                                                        <div>
-                                                            <p className="mb-1 font-semibold text-[#8a5a08]">Gastos variables</p>
-                                                            {variableBudgetRows.map((row) => (
-                                                                <div key={`var-popover-${row.categoryName}`} className="flex items-center justify-between gap-3">
-                                                                    <span>{row.categoryName}</span>
-                                                                    <span className="font-semibold text-[#0f2233]">{currency} {row.amount.toFixed(2)}</span>
-                                                                </div>
-                                                            ))}
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span>Gastos fijos</span>
+                                                            <span className="font-semibold text-negative-600">-{currency} {fixedExpensesBudget.toFixed(2)}</span>
                                                         </div>
-                                                    )}
-                                                    {creditCardBreakdownRows.length > 0 && (
-                                                        <div>
-                                                            <p className="mb-1 font-semibold text-[#0f2233]">Tarjetas de crédito registradas</p>
-                                                            {creditCardBreakdownRows.map((card) => (
-                                                                <div key={`cc-popover-${card.id}`} className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5 mb-1">
-                                                                    <p className="font-semibold text-[#0f2233]">{card.name}</p>
-                                                                    <p>Saldo: {currency} {card.currentBalance.toFixed(2)}</p>
-                                                                    <p>
-                                                                        Estrategia: {card.paymentStrategy === "full" ? "Pago total" : card.paymentStrategy === "minimum" ? "Pago mínimo" : "Pago fijo"}
-                                                                    </p>
-                                                                    <p>{card.paymentStrategy === "full" ? "Pago esperado" : "Mínimo estimado"}: {currency} {card.expectedCashOutflow.toFixed(2)}</p>
-                                                                </div>
-                                                            ))}
-                                                            <p>
-                                                                Saldo total tarjetas: {currency} {totalCreditCardBalance.toFixed(2)}. Saldo revolvente: {currency} {totalCreditCardDebt.toFixed(2)}.
-                                                            </p>
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span>Gastos variables</span>
+                                                            <span className="font-semibold text-negative-600">-{currency} {variableExpensesBudget.toFixed(2)}</span>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </InfoPopover>
-                                        </div>
-
-                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                            <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                <p className="text-[11px] text-surface-500">Total presupuesto</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {(fixedExpensesBudget + variableExpensesBudget).toFixed(2)}</p>
-                                            </article>
-                                            <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                <p className="text-[11px] text-surface-500">Gastos fijos</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {fixedExpensesBudget.toFixed(2)}</p>
-                                            </article>
-                                            <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                <p className="text-[11px] text-surface-500">Gastos variables</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {variableExpensesBudget.toFixed(2)}</p>
-                                            </article>
-                                            <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                <p className="text-[11px] text-surface-500">Tarjetas (saldo)</p>
-                                                <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {totalCreditCardBalance.toFixed(2)}</p>
-                                            </article>
-                                        </div>
-                                    </div>
-                                )}
-
-                                    </div>
-
-                                    <div className="space-y-4 lg:col-span-4 lg:border-l lg:border-surface-200 lg:pl-4">
-                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
-                                                Modelo de distribución
-                                            </p>
-                                        </div>
-
-                                {/* Selección de Regla */}
-                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
-                                    <div className="flex items-center justify-between gap-3 mb-4">
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-[#0f2233]">Selecciona tu modelo de distribución</h3>
-                                            <p className="mt-1 text-xs text-surface-500">
-                                                Ajusta cómo repartir la bolsa mensual entre operación, ahorro y deuda.
-                                            </p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={applySmartDebtDistribution}
-                                            disabled={isAiLoading}
-                                            className="rounded-lg border border-[#bfdbec] bg-[#f2f8fc] px-3 py-2 text-xs font-semibold text-[#0d4c7a] hover:bg-[#e8f3fb] disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA"}
-                                        </button>
-                                    </div>
-
-                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                        {(Object.keys(RULE_CARD_CONFIG) as Array<Exclude<DistributionRule, "custom">>).map((rule) => {
-                                            const card = RULE_CARD_CONFIG[rule];
-                                            const selectedRule = distributionRule === rule;
-
-                                            return (
-                                                <label
-                                                    key={rule}
-                                                    className={`rounded-xl border p-4 cursor-pointer transition-all ${
-                                                        selectedRule
-                                                            ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-sm"
-                                                            : "border-surface-200 bg-white hover:border-[#c7d7e6]"
-                                                    }`}
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name="distribution-rule"
-                                                        className="sr-only"
-                                                        checked={selectedRule}
-                                                        onChange={() => {
-                                                            setDistributionRule(rule);
-                                                            setAiReasoning("");
-                                                        }}
-                                                    />
-                                                    <p className={`text-sm font-semibold ${selectedRule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
-                                                        {card.title}
-                                                    </p>
-                                                    <p className="mt-1 text-[11px] text-surface-500">
-                                                        {card.description}
-                                                    </p>
-                                                    <div className="mt-3 flex flex-wrap gap-1.5">
-                                                        {card.pills.map((pill) => (
-                                                            <span
-                                                                key={`${rule}-${pill.label}`}
-                                                                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${getRulePillClasses(pill.tone)}`}
-                                                            >
-                                                                {pill.value}% {pill.label}
-                                                            </span>
-                                                        ))}
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span>Pago mínimo revolvente</span>
+                                                            <span className="font-semibold text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
+                                                        </div>
+                                                        {fullPaymentCardsCashOutflow > 0 && (
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span>Pago total tarjetas (caja)</span>
+                                                                <span className="font-semibold text-negative-600">-{currency} {fullPaymentCardsCashOutflow.toFixed(2)}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <label
-                                        className={`mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 cursor-pointer transition-all ${
-                                            distributionRule === "custom"
-                                                ? "border-[#0d4c7a] bg-[#f2f8fc]"
-                                                : "border-surface-300 bg-surface-50 hover:border-[#0d4c7a]/40"
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="distribution-rule"
-                                            className="sr-only"
-                                            checked={distributionRule === "custom"}
-                                            onChange={() => {
-                                                setDistributionRule("custom");
-                                                setAiReasoning("");
-                                            }}
-                                        />
-                                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#0d4c7a] border border-surface-200">
-                                            %
-                                        </span>
-                                        <span>
-                                            <span className="block text-sm font-semibold text-[#0f2233]">A medida</span>
-                                            <span className="block text-[11px] text-surface-500">
-                                                Defino mis propios porcentajes de distribución.
-                                            </span>
-                                        </span>
-                                    </label>
-
-                                    {aiError && (
-                                        <p className="mt-3 text-xs text-negative-600 bg-negative-50 p-2 rounded-lg">{aiError}</p>
-                                    )}
-                                </div>
-
-                                {/* Inputs Custom */}
-                                {distributionRule === "custom" && (
-                                    <div className="grid gap-4 sm:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
-                                        <div>
-                                            <label className="label text-xs">Necesidades (%)</label>
-                                            <input type="number" className="input-field bg-surface-50" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
+                                                </InfoPopover>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="text-surface-600">Ingreso mensual</span>
+                                                    <span className="font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="text-surface-600">Compromisos totales</span>
+                                                    <span className="font-semibold text-negative-600">-{currency} {totalMandatoryOutflow.toFixed(2)}</span>
+                                                </div>
+                                                <div className="border-t border-surface-200 pt-2 flex items-center justify-between text-xs">
+                                                    <span className="font-semibold text-[#117068]">Saldo libre real</span>
+                                                    <span className="font-semibold text-[#117068]">{currency} {availableAfterVariable.toFixed(2)}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="label text-xs">Deseos (%)</label>
-                                            <input type="number" className="input-field bg-surface-50" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Ahorro (%)</label>
-                                            <input type="number" className="input-field bg-surface-50" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Deuda (%)</label>
-                                            <input type="number" className="input-field bg-surface-50" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
-                                        </div>
-                                        <p className={`sm:col-span-4 text-xs font-medium text-right ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-600" : "text-negative-600"}`}>
-                                            El total suma: {distributionTotal.toFixed(2)}%
-                                        </p>
-                                    </div>
-                                )}
 
-                                {aiReasoning && !isAiLoading && (
-                                    <div className="rounded-2xl border border-[#10283b] bg-[linear-gradient(140deg,#10283b_0%,#153a56_60%,#1d4f70_100%)] p-5 text-white shadow-md">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9fd4f3]">
-                                            Recomendación de IA
-                                        </p>
-                                        <p className="mt-2 text-sm leading-relaxed text-white/85">
-                                            {aiReasoning}
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-surface-500">
-                                            Distribución final del ingreso
-                                        </h3>
-                                        <p className="text-xs text-surface-500">
-                                            {currency} {consolidatedIncome.toFixed(2)} / mes
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-surface-100">
-                                        <span className="bg-[#3b82f6]" style={{ width: `${Math.max(distribution.needsPct, 0)}%` }} />
-                                        <span className="bg-[#f59e0b]" style={{ width: `${Math.max(distribution.wantsPct, 0)}%` }} />
-                                        <span className="bg-[#10b981]" style={{ width: `${Math.max(distribution.savingsPct, 0)}%` }} />
-                                        <span className="bg-[#ef4444]" style={{ width: `${Math.max(distribution.debtPct, 0)}%` }} />
-                                    </div>
-
-                                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                            <p className="text-[11px] font-semibold text-[#1d4ed8]">Necesidades {distribution.needsPct.toFixed(2)}%</p>
-                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
-                                        </article>
-                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                            <p className="text-[11px] font-semibold text-[#a16207]">Deseos {distribution.wantsPct.toFixed(2)}%</p>
-                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</p>
-                                        </article>
-                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                            <p className="text-[11px] font-semibold text-[#117068]">Ahorro {distribution.savingsPct.toFixed(2)}%</p>
-                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</p>
-                                        </article>
-                                        <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                            <p className="text-[11px] font-semibold text-[#b42318]">Deuda {distribution.debtPct.toFixed(2)}%</p>
-                                            <p className="mt-1 text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
-                                        </article>
-                                    </div>
-
-                                    <div className={`mt-4 rounded-lg border px-3 py-2 text-xs ${
-                                        operationalCashShortfall > 0
-                                            ? "border-[#f4c2c7] bg-[#fdf1f2] text-[#b42318]"
-                                            : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
-                                    }`}>
-                                        {operationalCashShortfall > 0
-                                            ? `La distribución todavía no cubre todo el flujo obligatorio. Ajusta necesidades o reduce compromisos por ${currency} ${operationalCashShortfall.toFixed(2)}.`
-                                            : `Tus compromisos obligatorios están cubiertos. Saldo libre real del mes: ${currency} ${availableAfterVariable.toFixed(2)}.`}
-                                    </div>
-                                </div>
-
+                                        {/* Detalle presupuesto + tarjetas */}
+                                        {(budgetBreakdownRows.length > 0 || creditCardBreakdownRows.length > 0) && (
+                                            <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                                <div className="mb-3 flex items-center justify-between gap-2">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">Presupuesto declarado</p>
+                                                    <InfoPopover title="Detalle de presupuesto y tarjetas" align="left">
+                                                        <div className="space-y-2">
+                                                            {fixedBudgetRows.length > 0 && (
+                                                                <div>
+                                                                    <p className="mb-1 font-semibold text-[#0d4c7a]">Gastos fijos</p>
+                                                                    {fixedBudgetRows.map((row) => (
+                                                                        <div key={`fixed-popover-${row.categoryName}`} className="flex items-center justify-between gap-3">
+                                                                            <span>{row.categoryName}</span>
+                                                                            <span className="font-semibold text-[#0f2233]">{currency} {row.amount.toFixed(2)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {variableBudgetRows.length > 0 && (
+                                                                <div>
+                                                                    <p className="mb-1 font-semibold text-[#8a5a08]">Gastos variables</p>
+                                                                    {variableBudgetRows.map((row) => (
+                                                                        <div key={`var-popover-${row.categoryName}`} className="flex items-center justify-between gap-3">
+                                                                            <span>{row.categoryName}</span>
+                                                                            <span className="font-semibold text-[#0f2233]">{currency} {row.amount.toFixed(2)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {creditCardBreakdownRows.length > 0 && (
+                                                                <div>
+                                                                    <p className="mb-1 font-semibold text-[#0f2233]">Tarjetas registradas</p>
+                                                                    {creditCardBreakdownRows.map((card) => (
+                                                                        <div key={`cc-popover-${card.id}`} className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5 mb-1">
+                                                                            <p className="font-semibold text-[#0f2233]">{card.name}</p>
+                                                                            <p>Saldo: {currency} {card.currentBalance.toFixed(2)}</p>
+                                                                            <p>Estrategia: {card.paymentStrategy === "full" ? "Pago total" : card.paymentStrategy === "minimum" ? "Pago mínimo" : "Pago fijo"}</p>
+                                                                            <p>{card.paymentStrategy === "full" ? "Pago esperado" : "Mínimo estimado"}: {currency} {card.expectedCashOutflow.toFixed(2)}</p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </InfoPopover>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[10px] text-surface-500">Gastos fijos</p>
+                                                        <p className="mt-0.5 text-sm font-semibold text-[#0f2233]">{currency} {fixedExpensesBudget.toFixed(2)}</p>
+                                                    </article>
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[10px] text-surface-500">Gastos variables</p>
+                                                        <p className="mt-0.5 text-sm font-semibold text-[#0f2233]">{currency} {variableExpensesBudget.toFixed(2)}</p>
+                                                    </article>
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[10px] text-surface-500">Tarjetas (saldo)</p>
+                                                        <p className="mt-0.5 text-sm font-semibold text-[#0f2233]">{currency} {totalCreditCardBalance.toFixed(2)}</p>
+                                                    </article>
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[10px] text-surface-500">Total presupuesto</p>
+                                                        <p className="mt-0.5 text-sm font-semibold text-[#0f2233]">{currency} {(fixedExpensesBudget + variableExpensesBudget).toFixed(2)}</p>
+                                                    </article>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="space-y-4 lg:col-span-4 lg:border-l lg:border-surface-200 lg:pl-4">
+                                    {/* ── COLUMN 2: Análisis & Distribución ── */}
+                                    <div className="space-y-4 lg:col-span-4">
                                         <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
-                                                Control y decisiones
-                                            </p>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Análisis &amp; Distribución</p>
                                         </div>
 
-                                <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Prioridad operativa actual</h3>
-                                    <p className="mt-1 text-xs text-surface-500">
-                                        Este orden se aplicará cuando el flujo sea limitado.
-                                    </p>
-                                    <div className="mt-3 space-y-2">
-                                        {savingsPriorities.map((priority, index) => (
-                                            <article key={`priority-summary-${priority}`} className="flex items-start gap-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2.5">
-                                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0d4c7a] text-[11px] font-semibold text-white">
-                                                    {index + 1}
+                                        {/* Selección de Regla */}
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                            <div className="flex items-center justify-between gap-3 mb-4">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-[#0f2233]">Selecciona tu modelo de distribución</h3>
+                                                    <p className="mt-1 text-xs text-surface-500">
+                                                        Ajusta cómo repartir la bolsa mensual entre operación, ahorro y deuda.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={applySmartDebtDistribution}
+                                                    disabled={isAiLoading}
+                                                    className="rounded-lg border border-[#bfdbec] bg-[#f2f8fc] px-3 py-2 text-xs font-semibold text-[#0d4c7a] hover:bg-[#e8f3fb] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA"}
+                                                </button>
+                                            </div>
+
+                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                                {(Object.keys(RULE_CARD_CONFIG) as Array<Exclude<DistributionRule, "custom">>).map((rule) => {
+                                                    const card = RULE_CARD_CONFIG[rule];
+                                                    const selectedRule = distributionRule === rule;
+
+                                                    return (
+                                                        <label
+                                                            key={rule}
+                                                            className={`rounded-xl border p-4 cursor-pointer transition-all ${selectedRule
+                                                                ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-sm"
+                                                                : "border-surface-200 bg-white hover:border-[#c7d7e6]"
+                                                                }`}
+                                                        >
+                                                            <input
+                                                                type="radio"
+                                                                name="distribution-rule"
+                                                                className="sr-only"
+                                                                checked={selectedRule}
+                                                                onChange={() => {
+                                                                    setDistributionRule(rule);
+                                                                    setAiReasoning("");
+                                                                }}
+                                                            />
+                                                            <p className={`text-sm font-semibold ${selectedRule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
+                                                                {card.title}
+                                                            </p>
+                                                            <p className="mt-1 text-[11px] text-surface-500">
+                                                                {card.description}
+                                                            </p>
+                                                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                                                {card.pills.map((pill) => (
+                                                                    <span
+                                                                        key={`${rule}-${pill.label}`}
+                                                                        className={`rounded-full px-2 py-1 text-[10px] font-semibold ${getRulePillClasses(pill.tone)}`}
+                                                                    >
+                                                                        {pill.value}% {pill.label}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            <label
+                                                className={`mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3 cursor-pointer transition-all ${distributionRule === "custom"
+                                                    ? "border-[#0d4c7a] bg-[#f2f8fc]"
+                                                    : "border-surface-300 bg-surface-50 hover:border-[#0d4c7a]/40"
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="distribution-rule"
+                                                    className="sr-only"
+                                                    checked={distributionRule === "custom"}
+                                                    onChange={() => {
+                                                        setDistributionRule("custom");
+                                                        setAiReasoning("");
+                                                    }}
+                                                />
+                                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#0d4c7a] border border-surface-200">
+                                                    %
                                                 </span>
                                                 <span>
-                                                    <span className="block text-sm font-semibold text-[#0f2233]">
-                                                        {PRIORITY_LABELS[priority]}
-                                                    </span>
-                                                    <span className="block text-xs text-surface-500">
-                                                        {PRIORITY_HELPER_TEXT[priority]}
+                                                    <span className="block text-sm font-semibold text-[#0f2233]">A medida</span>
+                                                    <span className="block text-[11px] text-surface-500">
+                                                        Defino mis propios porcentajes de distribución.
                                                     </span>
                                                 </span>
-                                            </article>
-                                        ))}
-                                    </div>
-                                </div>
+                                            </label>
 
-                                {/* Análisis Dinámico de Buckets */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Análisis de tu distribución</h3>
-                                    <div
-                                        className={`rounded-xl border p-3 text-xs ${
-                                            operationalCashShortfall > 0
-                                                ? "border-[#f5c2c7] bg-[#fdf2f3] text-negative-700"
-                                                : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
-                                        }`}
-                                    >
-                                        {operationalCashShortfall > 0
-                                            ? `Alerta de flujo: Necesidades cubre ${currency} ${operationalBucketsAvailable.toFixed(2)}, pero tus compromisos operativos y pago total de tarjetas requieren ${currency} ${operationalCashRequired.toFixed(2)}. Te faltan ${currency} ${operationalCashShortfall.toFixed(2)}.`
-                                            : `Correcto: Necesidades cubre tus compromisos operativos y pagos totales de tarjeta. Tienes un margen operativo en ese bucket de ${currency} ${operationalCashSurplus.toFixed(2)}.`}
-                                    </div>
-                                    <div className="grid sm:grid-cols-2 gap-4">
-
-                                        {/* Tarjeta Necesidades */}
-                                        <div className={`rounded-xl border p-4 ${fixedNeedsShortfall > 0 ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-white"}`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-3 h-3 rounded-full ${fixedNeedsShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
-                                                    <span className="text-sm font-bold text-[#0f2233]">1. Necesidades ({distribution.needsPct}%)</span>
-                                                </div>
-                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</span>
-                                            </div>
-                                            <p className="text-xs text-surface-600 mt-2">
-                                                Este bucket cubre gastos operativos obligatorios por <b>{currency} {operationalCashRequired.toFixed(2)}</b> (fijos + variables + pago total de tarjetas).
-                                            </p>
-                                            {fixedNeedsShortfall > 0 ? (
-                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor al flujo obligatorio. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Sube % de necesidades o baja gastos.
-                                                </p>
-                                            ) : (
-                                                <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
-                                                    Correcto: Tus compromisos obligatorios están cubiertos. Te sobran {currency} {fixedNeedsSurplus.toFixed(2)} dentro de necesidades.
-                                                </p>
+                                            {aiError && (
+                                                <p className="mt-3 text-xs text-negative-600 bg-negative-50 p-2 rounded-lg">{aiError}</p>
                                             )}
                                         </div>
 
-                                        {/* Tarjeta Deuda */}
-                                        <div className={`rounded-xl border p-4 ${debtBucketShortfall > 0 || (totalCreditCardDebt > 0 && distribution.debtPct === 0) ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-white"}`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-3 h-3 rounded-full ${debtBucketShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
-                                                    <span className="text-sm font-bold text-[#0f2233]">2. Deuda / Inversión ({distribution.debtPct}%)</span>
+                                        {/* Inputs Custom */}
+                                        {distributionRule === "custom" && (
+                                            <div className="grid gap-4 sm:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
+                                                <div>
+                                                    <label className="label text-xs">Necesidades (%)</label>
+                                                    <input type="number" className="input-field bg-surface-50" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
                                                 </div>
-                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</span>
+                                                <div>
+                                                    <label className="label text-xs">Deseos (%)</label>
+                                                    <input type="number" className="input-field bg-surface-50" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="label text-xs">Ahorro (%)</label>
+                                                    <input type="number" className="input-field bg-surface-50" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="label text-xs">Deuda (%)</label>
+                                                    <input type="number" className="input-field bg-surface-50" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
+                                                </div>
+                                                <p className={`sm:col-span-4 text-xs font-medium text-right ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-600" : "text-negative-600"}`}>
+                                                    El total suma: {distributionTotal.toFixed(2)}%
+                                                </p>
                                             </div>
-                                            <p className="text-xs text-surface-600 mt-2">
-                                                {totalCreditCardDebt > 0
-                                                    ? `Tienes una deuda de ${currency} ${totalCreditCardDebt.toFixed(2)} que genera pagos mínimos aprox. de ${currency} ${estimatedDebtPayment.toFixed(2)}.`
-                                                    : totalCreditCardBalance > 0
-                                                        ? `Tienes tarjetas registradas con estrategia de pago total. Salen ${currency} ${fullPaymentCardsCashOutflow.toFixed(2)} de caja mensual y ya están consideradas en el flujo operativo, sin generar deuda revolvente.`
-                                                        : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
-                                            </p>
+                                        )}
 
-                                            {totalCreditCardDebt > 0 && distribution.debtPct === 0 ? (
-                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    Alerta crítica: Tienes deuda, pero has seleccionado una regla que destina 0% a reducirla. Asigna porcentaje a deudas para evitar intereses altos.
-                                                </p>
-                                            ) : debtBucketShortfall > 0 ? (
-                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    Alerta: Estás destinando {currency} {distributionAmounts.debt.toFixed(2)}, pero tus pagos mínimos comprometen {currency} {estimatedDebtPayment.toFixed(2)}. Te faltan {currency} {debtBucketShortfall.toFixed(2)}.
-                                                </p>
-                                            ) : totalCreditCardDebt > 0 ? (
-                                                <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
-                                                    Correcto: Cubres el mínimo obligatorio e incluso estás prepagando capital por un extra de {currency} {debtBucketSurplus.toFixed(2)}, lo que reduce intereses.
-                                                </p>
-                                            ) : (
-                                                <p className="text-xs font-medium text-surface-500 mt-2 bg-surface-50 p-2 rounded-lg">
-                                                    Todo este bucket puede ir a inversión libre o prepago voluntario de tarjeta.
-                                                </p>
-                                            )}
+                                        {aiReasoning && !isAiLoading && (
+                                            <div className="rounded-2xl border border-[#10283b] bg-[linear-gradient(140deg,#10283b_0%,#153a56_60%,#1d4f70_100%)] p-4 text-white shadow-md">
+                                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9fd4f3]">Recomendación de IA</p>
+                                                <p className="mt-2 text-xs leading-relaxed text-white/85">{aiReasoning}</p>
+                                            </div>
+                                        )}
+
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-surface-500">Distribución final</h3>
+                                                <p className="text-[10px] text-surface-500">{currency} {consolidatedIncome.toFixed(2)} / mes</p>
+                                            </div>
+
+                                            <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-surface-100">
+                                                <span className="bg-[#3b82f6]" style={{ width: `${Math.max(distribution.needsPct, 0)}%` }} />
+                                                <span className="bg-[#f59e0b]" style={{ width: `${Math.max(distribution.wantsPct, 0)}%` }} />
+                                                <span className="bg-[#10b981]" style={{ width: `${Math.max(distribution.savingsPct, 0)}%` }} />
+                                                <span className="bg-[#ef4444]" style={{ width: `${Math.max(distribution.debtPct, 0)}%` }} />
+                                            </div>
+                                            <div className="mt-3 space-y-1.5">
+                                                {[
+                                                    { label: "Necesidades", pct: distribution.needsPct, amount: distributionAmounts.needs, color: "bg-[#3b82f6]" },
+                                                    { label: "Deseos", pct: distribution.wantsPct, amount: distributionAmounts.wants, color: "bg-[#f59e0b]" },
+                                                    { label: "Ahorro", pct: distribution.savingsPct, amount: distributionAmounts.savings, color: "bg-[#10b981]" },
+                                                    { label: "Deuda", pct: distribution.debtPct, amount: distributionAmounts.debt, color: "bg-[#ef4444]" },
+                                                ].map((item) => (
+                                                    <div key={item.label} className="flex items-center gap-1.5 text-[11px]">
+                                                        <span className={`inline-block h-2 w-2 rounded-full ${item.color}`} />
+                                                        <span className="text-surface-600">{item.label} {item.pct.toFixed(1)}%</span>
+                                                        <span className="ml-auto font-semibold text-[#0f2233]">{currency} {item.amount.toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${operationalCashShortfall > 0 ? "border-[#f4c2c7] bg-[#fdf1f2] text-[#b42318]" : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
+                                                }`}>
+                                                {operationalCashShortfall > 0
+                                                    ? `Ajusta necesidades o reduce compromisos por ${currency} ${operationalCashShortfall.toFixed(2)}.`
+                                                    : `Compromisos cubiertos. Saldo libre: ${currency} ${availableAfterVariable.toFixed(2)}.`}
+                                            </div>
+                                        </div>
+                                    </div>{/* END COLUMN 2 */}
+
+                                    {/* ── COLUMN 3: Control & Decisiones ── */}
+                                    <div className="space-y-4 lg:col-span-4">
+                                        <div className="rounded-xl border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">Control &amp; Decisiones</p>
                                         </div>
 
-                                        {/* Tarjeta Ahorro */}
-                                        <div className="rounded-xl border border-surface-200 bg-white p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-3 h-3 rounded-full bg-[#117068]" />
-                                                    <span className="text-sm font-bold text-[#0f2233]">3. Ahorro ({distribution.savingsPct}%)</span>
-                                                </div>
-                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</span>
-                                            </div>
-
-                                            {hasSavingsGoals && projectedGoalRows.length > 0 ? (
-                                                <div className="mt-3 space-y-2">
-                                                    <p className="text-xs text-surface-600">Este dinero se distribuye directamente (en cascada) hacia tus metas:</p>
-                                                    {projectedGoalRows.map((goal) => (
-                                                        <div key={goal.id} className="flex items-center justify-between text-xs bg-surface-50 p-1.5 rounded">
-                                                            <span className="text-surface-700">{goal.name || "Meta"}</span>
-                                                            <span className="font-semibold text-[#0f2233]">+{currency} {goal.projectedContribution.toFixed(2)}/mes</span>
+                                        {/* Prioridad operativa */}
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                            <h3 className="text-xs font-semibold text-[#0f2233]">Prioridad operativa</h3>
+                                            <p className="mt-1 text-[11px] text-surface-500">Orden cuando el flujo es limitado.</p>
+                                            <div className="mt-3 space-y-1.5">
+                                                {savingsPriorities.map((priority, index) => (
+                                                    <div key={`priority-summary-${priority}`} className="flex items-start gap-2 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0d4c7a] text-[10px] font-semibold text-white">{index + 1}</span>
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-[#0f2233]">{PRIORITY_LABELS[priority]}</p>
+                                                            <p className="text-[10px] text-surface-500">{PRIORITY_HELPER_TEXT[priority]}</p>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs text-surface-600 mt-2">
-                                                    No has definido metas de ahorro específicas. Este dinero se acumulará como ahorro general o colchón de emergencia de manera indefinida.
-                                                </p>
-                                            )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
 
-                                        {/* Tarjeta Deseos */}
-                                        <div className="rounded-xl border border-surface-200 bg-white p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-3 h-3 rounded-full bg-[#eca523]" />
-                                                    <span className="text-sm font-bold text-[#0f2233]">4. Deseos ({distribution.wantsPct}%)</span>
-                                                </div>
-                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</span>
+                                        {/* Análisis de buckets */}
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+                                            <h3 className="text-xs font-semibold text-[#0f2233] mb-3">Análisis de distribución</h3>
+                                            <div className={`rounded-lg border px-3 py-2 text-[11px] mb-3 ${operationalCashShortfall > 0 ? "border-[#f5c2c7] bg-[#fdf2f3] text-negative-700" : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"
+                                                }`}>
+                                                {operationalCashShortfall > 0
+                                                    ? `Necesidades: ${currency} ${operationalBucketsAvailable.toFixed(2)} vs operativo ${currency} ${operationalCashRequired.toFixed(2)}. Faltan ${currency} ${operationalCashShortfall.toFixed(2)}.`
+                                                    : `Operativo cubierto. Margen: ${currency} ${operationalCashSurplus.toFixed(2)}.`}
                                             </div>
-                                            {operationalCashShortfall > 0 ? (
-                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    Tu flujo está ajustado. Antes de gastos discrecionales, necesitas cerrar una brecha operativa de {currency} {operationalCashShortfall.toFixed(2)}.
-                                                </p>
-                                            ) : (
-                                                <p className="text-xs text-surface-600 mt-2">
-                                                    Capital de libre disposición (ocio, compras, viajes) sin comprometer tus obligaciones operativas ni tus pagos de tarjeta.
-                                                </p>
-                                            )}
+                                            <div className="space-y-2">
+                                                {/* Necesidades */}
+                                                <div className={`rounded-lg border p-3 ${fixedNeedsShortfall > 0 ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-surface-50"}`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={`inline-block h-2.5 w-2.5 rounded-full ${fixedNeedsShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
+                                                            <span className="text-xs font-semibold text-[#0f2233]">Necesidades ({distribution.needsPct}%)</span>
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</span>
+                                                    </div>
+                                                    <p className="mt-1.5 text-[10px] text-surface-600">Cubre operativo por <b>{currency} {operationalCashRequired.toFixed(2)}</b>.</p>
+                                                    {fixedNeedsShortfall > 0
+                                                        ? <p className="mt-1 text-[10px] font-medium text-negative-700">Faltan {currency} {fixedNeedsShortfall.toFixed(2)}.</p>
+                                                        : <p className="mt-1 text-[10px] font-medium text-positive-700">Cubierto. Sobran {currency} {fixedNeedsSurplus.toFixed(2)}.</p>
+                                                    }
+                                                </div>
+                                                {/* Deuda */}
+                                                <div className={`rounded-lg border p-3 ${debtBucketShortfall > 0 || (totalCreditCardDebt > 0 && distribution.debtPct === 0) ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-surface-50"}`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={`inline-block h-2.5 w-2.5 rounded-full ${debtBucketShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
+                                                            <span className="text-xs font-semibold text-[#0f2233]">Deuda ({distribution.debtPct}%)</span>
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</span>
+                                                    </div>
+                                                    <p className="mt-1.5 text-[10px] text-surface-600">
+                                                        {totalCreditCardDebt > 0 ? `Revolvente: ${currency} ${totalCreditCardDebt.toFixed(2)}. Mínimo: ${currency} ${estimatedDebtPayment.toFixed(2)}.`
+                                                            : totalCreditCardBalance > 0 ? `Pago total en caja: ${currency} ${fullPaymentCardsCashOutflow.toFixed(2)}.`
+                                                                : "Sin deudas. Bucket para inversión libre."}
+                                                    </p>
+                                                    {totalCreditCardDebt > 0 && distribution.debtPct === 0
+                                                        ? <p className="mt-1 text-[10px] font-medium text-negative-700">Alerta: 0% a deuda con deuda activa.</p>
+                                                        : debtBucketShortfall > 0
+                                                            ? <p className="mt-1 text-[10px] font-medium text-negative-700">Faltan {currency} {debtBucketShortfall.toFixed(2)} para mínimos.</p>
+                                                            : totalCreditCardDebt > 0
+                                                                ? <p className="mt-1 text-[10px] font-medium text-positive-700">Cubierto + prepago de {currency} {debtBucketSurplus.toFixed(2)}.</p>
+                                                                : <p className="mt-1 text-[10px] text-surface-500">Inversión libre o prepago voluntario.</p>
+                                                    }
+                                                </div>
+                                                {/* Ahorro */}
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 p-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#117068]" />
+                                                            <span className="text-xs font-semibold text-[#0f2233]">Ahorro ({distribution.savingsPct}%)</span>
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</span>
+                                                    </div>
+                                                    {hasSavingsGoals && projectedGoalRows.length > 0 ? (
+                                                        <div className="mt-2 space-y-1">
+                                                            {projectedGoalRows.map((goal) => (
+                                                                <div key={goal.id} className="flex items-center justify-between text-[10px]">
+                                                                    <span className="text-surface-700">{goal.name || "Meta"}</span>
+                                                                    <span className="font-semibold text-[#0f2233]">+{currency} {goal.projectedContribution.toFixed(2)}/mes</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="mt-1.5 text-[10px] text-surface-600">Sin metas definidas. Ahorro general.</p>
+                                                    )}
+                                                </div>
+                                                {/* Deseos */}
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 p-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#eca523]" />
+                                                            <span className="text-xs font-semibold text-[#0f2233]">Deseos ({distribution.wantsPct}%)</span>
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</span>
+                                                    </div>
+                                                    {operationalCashShortfall > 0
+                                                        ? <p className="mt-1.5 text-[10px] font-medium text-negative-700">Brecha de {currency} {operationalCashShortfall.toFixed(2)} antes de gastos discrecionales.</p>
+                                                        : <p className="mt-1.5 text-[10px] text-surface-600">Libre disposición sin comprometer obligaciones.</p>
+                                                    }
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </div>{/* END COLUMN 3 */}
+                                </div>{/* END 3-COLUMN GRID */}
                             </div>
-                        </div>
-                    </div>
                         )}
 
                         {step === 8 && selected === "business" && (
@@ -2500,3 +2418,4 @@ export default function SelectProfilePage() {
         </div>
     );
 }
+
