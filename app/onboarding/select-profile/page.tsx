@@ -255,20 +255,30 @@ export default function SelectProfilePage() {
         return [...defaults, ...customExpenseNames];
     }, [selected, customCategories]);
 
+    const revolvingCreditCards = useMemo(() => {
+        return creditCards.filter(card => card.paymentStrategy !== "full");
+    }, [creditCards]);
+
     const totalCreditCardDebt = useMemo(
         () =>
             round2(
-                creditCards.reduce(
+                revolvingCreditCards.reduce(
                     (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
                     0
                 )
             ),
-        [creditCards]
+        [revolvingCreditCards]
     );
 
     const estimatedDebtPayment = useMemo(
-        () => round2(totalCreditCardDebt * 0.05),
-        [totalCreditCardDebt]
+        () => round2(
+            revolvingCreditCards.reduce((sum, card) => {
+                const statedMin = parseAmount(card.minimumPaymentAmount);
+                if (statedMin > 0) return sum + statedMin;
+                return sum + (Math.max(parseAmount(card.currentBalance), 0) * 0.05);
+            }, 0)
+        ),
+        [revolvingCreditCards]
     );
 
     const fixedExpensesBudget = useMemo(
@@ -396,11 +406,11 @@ export default function SelectProfilePage() {
                 currency,
                 consolidatedIncome,
                 fixedExpensesBudget,
-                creditCards: creditCards.map((c) => ({
+                creditCards: revolvingCreditCards.map((c) => ({
                     name: c.name || "Tarjeta",
                     currentBalance: parseAmount(c.currentBalance),
                     minimumPaymentAmount: parseAmount(c.minimumPaymentAmount),
-                    tea: c.paymentStrategy !== "full" ? parseAmount(c.tea) : undefined,
+                    tea: parseAmount(c.tea),
                 })),
                 savingsGoals: savingsGoals.map((g) => ({
                     name: g.name || "Meta",
