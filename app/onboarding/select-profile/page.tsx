@@ -113,6 +113,12 @@ function parseAmount(value: string) {
     return Math.max(parsed, 0);
 }
 
+function parseDayOfMonth(value: string, fallback: number) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(31, Math.max(1, parsed));
+}
+
 function round2(value: number) {
     return Math.round(value * 100) / 100;
 }
@@ -266,8 +272,19 @@ export default function SelectProfilePage() {
                     (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
                     0
                 )
-            ),
+        ),
         [revolvingCreditCards]
+    );
+
+    const totalCreditCardBalance = useMemo(
+        () =>
+            round2(
+                creditCards.reduce(
+                    (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
+                    0
+                )
+            ),
+        [creditCards]
     );
 
     const estimatedDebtPayment = useMemo(
@@ -281,18 +298,65 @@ export default function SelectProfilePage() {
         [revolvingCreditCards]
     );
 
+    const budgetBreakdownRows = useMemo(
+        () =>
+            Object.entries(budgets)
+                .map(([categoryName, rawAmount]) => {
+                    const amount = parseAmount(rawAmount);
+                    return {
+                        categoryName,
+                        amount,
+                        isFixed: isFixedExpenseCategory(categoryName),
+                    };
+                })
+                .filter((row) => row.amount > 0)
+                .sort((a, b) => b.amount - a.amount),
+        [budgets]
+    );
+
+    const variableExpensesBudget = useMemo(
+        () =>
+            round2(
+                budgetBreakdownRows
+                    .filter((row) => !row.isFixed)
+                    .reduce((sum, row) => sum + row.amount, 0)
+            ),
+        [budgetBreakdownRows]
+    );
+
     const fixedExpensesBudget = useMemo(
         () =>
             round2(
-                Object.entries(budgets).reduce((sum, [categoryName, amount]) => {
-                    const parsedAmount = parseAmount(amount);
-                    if (parsedAmount <= 0) return sum;
-                    return isFixedExpenseCategory(categoryName)
-                        ? sum + parsedAmount
+                budgetBreakdownRows.reduce((sum, row) => {
+                    return row.isFixed
+                        ? sum + row.amount
                         : sum;
                 }, 0)
             ),
-        [budgets]
+        [budgetBreakdownRows]
+    );
+
+    const creditCardBreakdownRows = useMemo(
+        () =>
+            creditCards.map((card) => {
+                const currentBalance = Math.max(parseAmount(card.currentBalance), 0);
+                const statedMinimum = parseAmount(card.minimumPaymentAmount);
+                const estimatedMinimum =
+                    card.paymentStrategy === "full"
+                        ? 0
+                        : statedMinimum > 0
+                            ? statedMinimum
+                            : round2(currentBalance * 0.05);
+
+                return {
+                    id: card.id,
+                    name: card.name || "Tarjeta",
+                    paymentStrategy: card.paymentStrategy,
+                    currentBalance,
+                    estimatedMinimum,
+                };
+            }),
+        [creditCards]
     );
 
     const priorityIndex = useMemo(
@@ -310,10 +374,22 @@ export default function SelectProfilePage() {
         [fixedExpensesBudget, distributionAmounts.needs]
     );
 
+    const fixedNeedsSurplus = useMemo(
+        () =>
+            round2(Math.max(distributionAmounts.needs - fixedExpensesBudget, 0)),
+        [distributionAmounts.needs, fixedExpensesBudget]
+    );
+
     const debtBucketShortfall = useMemo(
         () =>
             round2(Math.max(estimatedDebtPayment - distributionAmounts.debt, 0)),
         [estimatedDebtPayment, distributionAmounts.debt]
+    );
+
+    const debtBucketSurplus = useMemo(
+        () =>
+            round2(Math.max(distributionAmounts.debt - estimatedDebtPayment, 0)),
+        [distributionAmounts.debt, estimatedDebtPayment]
     );
 
     const dynamicSavingsPool = useMemo(() => {
@@ -406,10 +482,14 @@ export default function SelectProfilePage() {
                 currency,
                 consolidatedIncome,
                 fixedExpensesBudget,
-                creditCards: revolvingCreditCards.map((c) => ({
+                creditCards: creditCards.map((c) => ({
                     name: c.name || "Tarjeta",
                     currentBalance: parseAmount(c.currentBalance),
-                    minimumPaymentAmount: parseAmount(c.minimumPaymentAmount),
+                    minimumPaymentAmount:
+                        c.paymentStrategy === "full"
+                            ? 0
+                            : parseAmount(c.minimumPaymentAmount),
+                    paymentStrategy: c.paymentStrategy,
                     tea: parseAmount(c.tea),
                 })),
                 savingsGoals: savingsGoals.map((g) => ({
@@ -510,6 +590,19 @@ export default function SelectProfilePage() {
         setError("");
 
         try {
+            const baseIncome =
+                salaryFrequency === "monthly"
+                    ? parseAmount(monthlyIncomeNet)
+                    : round2(parseAmount(firstFortnightAmount) + parseAmount(secondFortnightAmount));
+            const additionalIncomeAmount = hasAdditionalIncome ? parseAmount(additionalIncome) : 0;
+            const partnerIncome = sharesFinances
+                ? (
+                    partnerSalaryFrequency === "monthly"
+                        ? parseAmount(partnerContribution)
+                        : round2(parseAmount(partnerFirstFortnightAmount) + parseAmount(partnerSecondFortnightAmount))
+                )
+                : 0;
+
             const shared = {
                 orgName: orgName.trim(),
                 country,
@@ -553,21 +646,19 @@ export default function SelectProfilePage() {
                 : undefined;
 
             const financialProfilePayload = {
-                monthlyIncomeNet: consolidatedIncome, // Let's simplify and send consolidated as the total, but wait we need original fields
+                monthlyIncomeNet: baseIncome,
                 salaryFrequency,
-                salaryPaymentDay1: parseAmount(salaryPaymentDay1),
-                salaryPaymentDay2: parseAmount(salaryPaymentDay2),
+                salaryPaymentDay1: parseDayOfMonth(salaryPaymentDay1, 30),
+                salaryPaymentDay2: parseDayOfMonth(salaryPaymentDay2, 15),
                 firstFortnightAmount: parseAmount(firstFortnightAmount),
                 secondFortnightAmount: parseAmount(secondFortnightAmount),
                 partnerSalaryFrequency,
-                partnerSalaryPaymentDay1: parseAmount(partnerSalaryPaymentDay1),
-                partnerSalaryPaymentDay2: parseAmount(partnerSalaryPaymentDay2),
+                partnerSalaryPaymentDay1: parseDayOfMonth(partnerSalaryPaymentDay1, 30),
+                partnerSalaryPaymentDay2: parseDayOfMonth(partnerSalaryPaymentDay2, 15),
                 partnerFirstFortnightAmount: parseAmount(partnerFirstFortnightAmount),
                 partnerSecondFortnightAmount: parseAmount(partnerSecondFortnightAmount),
-                additionalIncome: hasAdditionalIncome ? parseAmount(additionalIncome) : 0,
-                partnerContribution: sharesFinances
-                    ? (partnerSalaryFrequency === "monthly" ? parseAmount(partnerContribution) : parseAmount(partnerFirstFortnightAmount) + parseAmount(partnerSecondFortnightAmount))
-                    : 0,
+                additionalIncome: additionalIncomeAmount,
+                partnerContribution: partnerIncome,
                 distributionRule,
                 customDistribution:
                     distributionRule === "custom"
@@ -1093,6 +1184,7 @@ export default function SelectProfilePage() {
                                                                         previous.filter((item) => item.id !== card.id)
                                                                     )
                                                                 }
+                                                                aria-label={`Eliminar tarjeta ${index + 1}`}
                                                                 className="text-surface-400 hover:text-negative-600"
                                                             >
                                                                 <TrashIcon />
@@ -1343,6 +1435,7 @@ export default function SelectProfilePage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveCategory(index)}
+                                                        aria-label={`Eliminar categoría ${category.name}`}
                                                         className="text-surface-400 hover:text-negative-600"
                                                     >
                                                         <TrashIcon />
@@ -1485,6 +1578,7 @@ export default function SelectProfilePage() {
                                                                     previous.filter((item) => item.id !== goal.id)
                                                                 )
                                                             }
+                                                            aria-label={`Eliminar meta ${index + 1}`}
                                                             className="text-surface-400 hover:text-negative-600"
                                                         >
                                                             <TrashIcon />
@@ -1605,6 +1699,7 @@ export default function SelectProfilePage() {
                                                     type="button"
                                                     onClick={() => movePriority(index, "up")}
                                                     disabled={index === 0}
+                                                    aria-label={`Subir prioridad: ${PRIORITY_LABELS[priority]}`}
                                                     className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
                                                 >
                                                     <ArrowUpIcon />
@@ -1613,6 +1708,7 @@ export default function SelectProfilePage() {
                                                     type="button"
                                                     onClick={() => movePriority(index, "down")}
                                                     disabled={index === savingsPriorities.length - 1}
+                                                    aria-label={`Bajar prioridad: ${PRIORITY_LABELS[priority]}`}
                                                     className="rounded-md border border-surface-300 p-2 text-surface-700 disabled:opacity-40"
                                                 >
                                                     <ArrowDownIcon />
@@ -1629,7 +1725,7 @@ export default function SelectProfilePage() {
                                 <div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Distribución Inteligente</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Analizamos tu ingreso, tus gastos fijos y tus deudas para recomendarte la mejor estructura para tus finanzas.
+                                        Analizamos tu ingreso, presupuesto por categoría (vivienda, alimentación, salud y más) y tus tarjetas para recomendar una estructura realista.
                                     </p>
                                 </div>
 
@@ -1649,6 +1745,11 @@ export default function SelectProfilePage() {
                                         </div>
 
                                         <div className="flex items-center justify-between">
+                                            <span className="text-sm text-surface-600">Gastos Variables Planificados</span>
+                                            <span className="text-sm font-medium text-negative-600">-{currency} {variableExpensesBudget.toFixed(2)}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
                                             <span className="text-sm text-surface-600">Compromisos de Tarjetas (Mínimos obligatorios)</span>
                                             <span className="text-sm font-medium text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
                                         </div>
@@ -1659,8 +1760,69 @@ export default function SelectProfilePage() {
                                                 {currency} {Math.max(0, consolidatedIncome - fixedExpensesBudget - estimatedDebtPayment).toFixed(2)}
                                             </span>
                                         </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-[#0f2233]">Libre tras gastos variables</span>
+                                            <span className="text-base font-semibold text-[#0f2233]">
+                                                {currency} {Math.max(0, consolidatedIncome - fixedExpensesBudget - variableExpensesBudget - estimatedDebtPayment).toFixed(2)}
+                                            </span>
+                                        </div>
                                         <p className="text-xs text-surface-500 text-right mt-1">Este es el dinero real disponible para deseos, ahorro y prepago de deuda.</p>
                                     </div>
+
+                                    {budgetBreakdownRows.length > 0 && (
+                                        <div className="mt-4 rounded-xl border border-surface-200 bg-white p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                                                Detalle de presupuesto declarado
+                                            </p>
+                                            <div className="mt-3 space-y-2">
+                                                {budgetBreakdownRows.map((row) => (
+                                                    <div key={row.categoryName} className="flex items-center justify-between text-sm">
+                                                        <span className="text-surface-700">
+                                                            {row.categoryName}
+                                                            <span className="ml-2 text-xs text-surface-500">
+                                                                ({row.isFixed ? "fijo" : "variable"})
+                                                            </span>
+                                                        </span>
+                                                        <span className="font-medium text-[#0f2233]">
+                                                            {currency} {row.amount.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {creditCardBreakdownRows.length > 0 && (
+                                        <div className="mt-4 rounded-xl border border-surface-200 bg-white p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                                                Tarjetas de crédito registradas
+                                            </p>
+                                            <div className="mt-3 space-y-2">
+                                                {creditCardBreakdownRows.map((card) => (
+                                                    <div key={card.id} className="rounded-lg border border-surface-100 bg-surface-50 p-2 text-xs text-surface-700">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-semibold text-[#0f2233]">{card.name}</span>
+                                                            <span>
+                                                                Saldo: {currency} {card.currentBalance.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mt-1 flex items-center justify-between">
+                                                            <span>
+                                                                Estrategia: {card.paymentStrategy === "full" ? "Pago total" : card.paymentStrategy === "minimum" ? "Pago mínimo" : "Pago fijo"}
+                                                            </span>
+                                                            <span>
+                                                                Mínimo estimado: {currency} {card.estimatedMinimum.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <p className="pt-1 text-xs text-surface-500">
+                                                    Saldo total tarjetas: {currency} {totalCreditCardBalance.toFixed(2)}.
+                                                    Saldo revolvente (deuda real): {currency} {totalCreditCardDebt.toFixed(2)}.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Selección de Regla */}
@@ -1673,7 +1835,7 @@ export default function SelectProfilePage() {
                                             disabled={isAiLoading}
                                             className="text-xs font-semibold text-[#0d4c7a] hover:text-[#0a3a5e] underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA ✨"}
+                                            {isAiLoading ? "Analizando con IA..." : "Auto-completar con IA"}
                                         </button>
                                     </div>
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1706,7 +1868,6 @@ export default function SelectProfilePage() {
                                     {aiReasoning && distributionRule === "custom" && !isAiLoading && (
                                         <div className="mt-4 rounded-xl border border-[#0d4c7a] bg-[#f2f8fc] p-4 animate-fade-in shadow-sm">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-lg">✨</span>
                                                 <h4 className="text-sm font-semibold text-[#0d4c7a]">Recomendación de Gemini AI</h4>
                                             </div>
                                             <p className="text-sm text-[#0a3a5e] leading-relaxed">
@@ -1760,11 +1921,11 @@ export default function SelectProfilePage() {
                                             </p>
                                             {fixedNeedsShortfall > 0 ? (
                                                 <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    ⚠️ Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor a tus gastos fijos declarados. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Considera aumentar el % de necesidades.
+                                                    Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor a tus gastos fijos declarados. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Considera aumentar el % de necesidades.
                                                 </p>
                                             ) : (
                                                 <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
-                                                    ✅ Tus gastos fijos están cubiertos. Te sobran {currency} {Math.abs(fixedNeedsShortfall).toFixed(2)} para imprevistos u otras necesidades.
+                                                    Correcto: Tus gastos fijos están cubiertos. Te sobran {currency} {fixedNeedsSurplus.toFixed(2)} para imprevistos u otras necesidades.
                                                 </p>
                                             )}
                                         </div>
@@ -1781,24 +1942,26 @@ export default function SelectProfilePage() {
                                             <p className="text-xs text-surface-600 mt-2">
                                                 {totalCreditCardDebt > 0
                                                     ? `Tienes una deuda de ${currency} ${totalCreditCardDebt.toFixed(2)} que genera pagos mínimos aprox. de ${currency} ${estimatedDebtPayment.toFixed(2)}.`
+                                                    : totalCreditCardBalance > 0
+                                                        ? "Tienes tarjetas registradas con estrategia de pago total. No se consideran deuda revolvente si pagas el total cada mes."
                                                     : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
                                             </p>
 
                                             {totalCreditCardDebt > 0 && distribution.debtPct === 0 ? (
                                                 <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    ⚠️ Alerta Crítica: Eres una persona con deuda, pero has seleccionado una regla que destina 0% a salir de ella. Acumularás intereses severos. Asigna % a deudas urgentemente.
+                                                    Alerta crítica: Tienes deuda, pero has seleccionado una regla que destina 0% a reducirla. Asigna porcentaje a deudas para evitar intereses altos.
                                                 </p>
                                             ) : debtBucketShortfall > 0 ? (
                                                 <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
-                                                    ⚠️ Alerta: Estás destinando {currency} {distributionAmounts.debt.toFixed(2)}, pero tus pagos mínimos comprometen {currency} {estimatedDebtPayment.toFixed(2)}. Te faltan {currency} {debtBucketShortfall.toFixed(2)}.
+                                                    Alerta: Estás destinando {currency} {distributionAmounts.debt.toFixed(2)}, pero tus pagos mínimos comprometen {currency} {estimatedDebtPayment.toFixed(2)}. Te faltan {currency} {debtBucketShortfall.toFixed(2)}.
                                                 </p>
                                             ) : totalCreditCardDebt > 0 ? (
                                                 <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
-                                                    ✅ Cubres el mínimo obligatorio e incluso estás prepagando capital por un extra de {currency} {Math.abs(debtBucketShortfall).toFixed(2)}, lo que te ahorrará muchísimos intereses.
+                                                    Correcto: Cubres el mínimo obligatorio e incluso estás prepagando capital por un extra de {currency} {debtBucketSurplus.toFixed(2)}, lo que reduce intereses.
                                                 </p>
                                             ) : (
                                                 <p className="text-xs font-medium text-surface-500 mt-2 bg-surface-50 p-2 rounded-lg">
-                                                    Todo este bucket irá directamente a tu colchón de inversión.
+                                                    Todo este bucket puede ir a inversión libre o prepago voluntario de tarjeta.
                                                 </p>
                                             )}
                                         </div>
@@ -1822,11 +1985,6 @@ export default function SelectProfilePage() {
                                                             <span className="font-semibold text-[#0f2233]">+{currency} {goal.projectedContribution.toFixed(2)}/mes</span>
                                                         </div>
                                                     ))}
-                                                    {dynamicSavingsPool < 0 && (
-                                                        <p className="text-xs font-medium text-negative-700 mt-2">
-                                                            Nota: Debido al déficit en tus otras categorías, tu capacidad de ahorro real para metas se reduce provisionalmente.
-                                                        </p>
-                                                    )}
                                                 </div>
                                             ) : (
                                                 <p className="text-xs text-surface-600 mt-2">

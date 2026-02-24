@@ -1,21 +1,19 @@
 import { generateObject } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requireUserContext } from "@/lib/server/context";
 import { unstable_cache } from "next/cache";
 import { logError } from "@/lib/server/logger";
 import { rejectCrossOrigin } from "@/lib/server/http-security";
-
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
-});
+import { assertRateLimit } from "@/lib/server/rate-limit";
+import { requireGoogleAiProvider } from "@/lib/server/google-ai";
 
 // Cache responses for 3 weeks (21 days) to save AI credits
 const REVALIDATE_SECONDS = 60 * 60 * 24 * 21;
 
 const getCachedEstimate = unstable_cache(
     async (category: string, country: string, currency: string, context: string) => {
+        const google = requireGoogleAiProvider();
         const prompt = `Eres un asesor financiero experto en el costo de vida de ${country}.
 El usuario quiere estimar su presupuesto mensual para la categoría "${category}".
 Utiliza como moneda de resultado el código: ${currency}.
@@ -58,7 +56,12 @@ export async function POST(req: Request) {
         if (csrfResponse) return csrfResponse;
 
         // Ensure user is authenticated, even if they don't have an org yet (during onboarding)
-        await requireUserContext();
+        const { user } = await requireUserContext();
+        assertRateLimit({
+            key: `ai-budget-estimate:${user.id}`,
+            limit: 20,
+            windowMs: 60_000,
+        });
 
         const body = await req.json();
         const parsed = estimateBudgetPayloadSchema.safeParse(body);
@@ -74,6 +77,32 @@ export async function POST(req: Request) {
 
         return NextResponse.json(result);
     } catch (error) {
+        if (error instanceof Error) {
+            const normalizedMessage = error.message.toLowerCase();
+            if (
+                error.message.includes("GOOGLE_GENERATIVE_AI_API_KEY") ||
+                error.message.includes("GEMINI_API_KEY") ||
+                normalizedMessage.includes("api key") ||
+                normalizedMessage.includes("permission denied")
+            ) {
+                return NextResponse.json(
+                    { error: "La API de Google AI no está configurada en el servidor." },
+                    { status: 503 }
+                );
+            }
+            if (error.message === "No autorizado") {
+                return NextResponse.json(
+                    { error: "No autorizado" },
+                    { status: 401 }
+                );
+            }
+            if (error.message.startsWith("Demasiadas solicitudes")) {
+                return NextResponse.json(
+                    { error: error.message },
+                    { status: 429 }
+                );
+            }
+        }
         logError("Error estimating budget with AI", error);
         return NextResponse.json(
             { error: "No se pudo generar la estimación. Por favor, ingresa el monto manualmente." },
