@@ -66,6 +66,9 @@ const onboardingSetupSchema = z.object({
                 paymentDay: z.number().int().min(1).max(31).optional(),
                 paymentStrategy: z.enum(["full", "minimum", "fixed"]).optional(),
                 minimumPaymentAmount: z.number().finite().min(0).optional(),
+                tea: z.number().finite().min(0).optional(),
+                hasDesgravamen: z.boolean().optional(),
+                desgravamenAmount: z.number().finite().min(0).optional(),
             })
         )
         .optional(),
@@ -787,6 +790,9 @@ export async function createOrganizationWithOnboarding(
             payment_day: cc.paymentDay,
             card_payment_strategy: cc.paymentStrategy,
             minimum_payment_amount: cc.minimumPaymentAmount,
+            tea: cc.tea,
+            has_desgravamen: cc.hasDesgravamen,
+            desgravamen_amount: cc.desgravamenAmount,
             is_restricted_cash: false,
         }));
 

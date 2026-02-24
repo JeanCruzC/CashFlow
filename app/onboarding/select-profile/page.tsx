@@ -166,7 +166,7 @@ export default function SelectProfilePage() {
     const [legalName, setLegalName] = useState("");
 
     const [hasCreditCards, setHasCreditCards] = useState(false);
-    const [creditCards, setCreditCards] = useState<Array<{ id: string; name: string; creditLimit: string; currentBalance: string; paymentDay: string; paymentStrategy: "full" | "minimum" | "fixed"; minimumPaymentAmount: string; }>>([]);
+    const [creditCards, setCreditCards] = useState<Array<{ id: string; name: string; creditLimit: string; currentBalance: string; paymentDay: string; paymentStrategy: "full" | "minimum" | "fixed"; minimumPaymentAmount: string; tea: string; hasDesgravamen: boolean; desgravamenAmount: string; }>>([]);
 
     const [customCategories, setCustomCategories] = useState<Array<{ name: string; kind: CategoryKind }>>([]);
     const [showAddCategory, setShowAddCategory] = useState(false);
@@ -496,6 +496,9 @@ export default function SelectProfilePage() {
                         paymentDay: parseInt(card.paymentDay) || 30,
                         paymentStrategy: card.paymentStrategy,
                         minimumPaymentAmount: parseAmount(card.minimumPaymentAmount) || undefined,
+                        tea: card.paymentStrategy !== "full" && card.tea ? parseAmount(card.tea) : undefined,
+                        hasDesgravamen: card.paymentStrategy !== "full" ? card.hasDesgravamen : false,
+                        desgravamenAmount: card.paymentStrategy !== "full" && card.hasDesgravamen ? parseAmount(card.desgravamenAmount) : undefined,
                     }))
                     .filter((card) => card.creditLimit > 0)
                 : undefined;
@@ -1028,6 +1031,9 @@ export default function SelectProfilePage() {
                                                                 paymentDay: "30",
                                                                 paymentStrategy: "full",
                                                                 minimumPaymentAmount: "",
+                                                                tea: "",
+                                                                hasDesgravamen: false,
+                                                                desgravamenAmount: "",
                                                             },
                                                         ]);
                                                     }
@@ -1137,25 +1143,88 @@ export default function SelectProfilePage() {
                                                                 />
                                                             </div>
                                                             {card.paymentStrategy !== "full" && (
-                                                                <div className="sm:col-span-2">
-                                                                    <label className="label text-xs">Monto de pago (Mínimo o Fijo mensual)</label>
-                                                                    <div className="relative">
-                                                                        <span className="absolute left-3 top-2.5 text-surface-500 text-sm">{currency}</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="input-field bg-surface-50 pl-12"
-                                                                            value={card.minimumPaymentAmount}
-                                                                            onChange={(event) => {
-                                                                                setCreditCards((previous) => {
-                                                                                    const next = [...previous];
-                                                                                    next[index].minimumPaymentAmount = event.target.value;
-                                                                                    return next;
-                                                                                });
-                                                                            }}
-                                                                            placeholder="0"
-                                                                        />
+                                                                <>
+                                                                    <div className="sm:col-span-2">
+                                                                        <label className="label text-xs">Monto de pago (Mínimo o Fijo mensual)</label>
+                                                                        <div className="relative">
+                                                                            <span className="absolute left-3 top-2.5 text-surface-500 text-sm">{currency}</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="input-field bg-surface-50 pl-12"
+                                                                                value={card.minimumPaymentAmount}
+                                                                                onChange={(event) => {
+                                                                                    setCreditCards((previous) => {
+                                                                                        const next = [...previous];
+                                                                                        next[index].minimumPaymentAmount = event.target.value;
+                                                                                        return next;
+                                                                                    });
+                                                                                }}
+                                                                                placeholder="0"
+                                                                            />
+                                                                        </div>
                                                                     </div>
-                                                                </div>
+                                                                    <div>
+                                                                        <label className="label text-xs">TEA (%)</label>
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                step="0.01"
+                                                                                className="input-field bg-surface-50 pr-8"
+                                                                                value={card.tea}
+                                                                                onChange={(event) => {
+                                                                                    setCreditCards((previous) => {
+                                                                                        const next = [...previous];
+                                                                                        next[index].tea = event.target.value;
+                                                                                        return next;
+                                                                                    });
+                                                                                }}
+                                                                                placeholder="55.00"
+                                                                            />
+                                                                            <span className="absolute right-3 top-2.5 text-surface-500 text-sm">%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex flex-col justify-center">
+                                                                        <label className="flex items-center gap-2 cursor-pointer mt-6">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                className="h-4 w-4"
+                                                                                checked={card.hasDesgravamen}
+                                                                                onChange={(event) => {
+                                                                                    setCreditCards((previous) => {
+                                                                                        const next = [...previous];
+                                                                                        next[index].hasDesgravamen = event.target.checked;
+                                                                                        return next;
+                                                                                    });
+                                                                                }}
+                                                                            />
+                                                                            <span className="text-xs text-[#0f2233]">¿Cobra seguro desgravamen mensual?</span>
+                                                                        </label>
+                                                                    </div>
+                                                                    {card.hasDesgravamen && (
+                                                                        <div className="sm:col-span-2">
+                                                                            <label className="label text-xs">Monto de desgravamen o comisiones</label>
+                                                                            <div className="relative">
+                                                                                <span className="absolute left-3 top-2.5 text-surface-500 text-sm">{currency}</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    min="0"
+                                                                                    step="0.01"
+                                                                                    className="input-field bg-surface-50 pl-12"
+                                                                                    value={card.desgravamenAmount}
+                                                                                    onChange={(event) => {
+                                                                                        setCreditCards((previous) => {
+                                                                                            const next = [...previous];
+                                                                                            next[index].desgravamenAmount = event.target.value;
+                                                                                            return next;
+                                                                                        });
+                                                                                    }}
+                                                                                    placeholder="0"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                     </div>
@@ -1174,6 +1243,9 @@ export default function SelectProfilePage() {
                                                                 paymentDay: "30",
                                                                 paymentStrategy: "full",
                                                                 minimumPaymentAmount: "",
+                                                                tea: "",
+                                                                hasDesgravamen: false,
+                                                                desgravamenAmount: "",
                                                             },
                                                         ])
                                                     }
@@ -1512,163 +1584,210 @@ export default function SelectProfilePage() {
                         {step === 8 && selected === "personal" && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
-                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Regla de distribución y Resumen</h1>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Distribución Inteligente</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Elige cómo dividir tu bolsa mensual. Te mostraremos cómo se financiarán tus metas con esta regla.
+                                        Analizamos tu ingreso, tus gastos fijos y tus deudas para recomendarte la mejor estructura para tus finanzas.
                                     </p>
                                 </div>
 
-                                {totalCreditCardDebt > 0 && (
-                                    <div className={`rounded-2xl border px-4 py-3 text-sm ${distribution.debtPct === 0 ? "border-[#f5c2c7] bg-[#f8d7da] text-[#721c24]" : "border-[#f0d9a8] bg-[#fff9ee] text-[#7a4c00]"}`}>
-                                        <p className="font-semibold">{distribution.debtPct === 0 ? "⚠️ Cuidado: No estás destinando presupuesto a deudas" : "Tarjeta de crédito: se trata como deuda, no como ingreso"}</p>
-                                        <p className="mt-1">
-                                            Deuda detectada: {currency} {totalCreditCardDebt.toFixed(2)}.
-                                            {distribution.debtPct === 0 ? (
-                                                <span className="block mt-1">
-                                                    Has seleccionado una regla ({DISTRIBUTION_LABELS[distributionRule] || "Personalizada"}) que asigna <b>0%</b> a Deuda/Inversión. Considera usar 70/20/10 o una regla personalizada para no acumular intereses.
-                                                </span>
-                                            ) : (
-                                                <span> Esto impacta el bucket de <span className="font-semibold">Deuda / inversión</span> y la proyección de metas.</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
+                                {/* Cascada de Obligaciones (Resumen) */}
+                                <div className="rounded-2xl border border-surface-200 bg-[#f8fafc] p-5 shadow-sm">
+                                    <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-500 mb-4">El flujo de tu dinero</h3>
 
-                                <div className="space-y-3">
-                                    {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
-                                        <label key={rule} className="flex items-center gap-3 rounded-xl border border-surface-200 bg-white px-4 py-3 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="distribution-rule"
-                                                checked={distributionRule === rule}
-                                                onChange={() => setDistributionRule(rule)}
-                                            />
-                                            <span className="text-sm text-[#0f2233] font-medium">{DISTRIBUTION_LABELS[rule]}</span>
-                                        </label>
-                                    ))}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-[#0f2233]">Ingreso Consolidado</span>
+                                            <span className="text-base font-semibold text-positive-600">{currency} {consolidatedIncome.toFixed(2)}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-surface-200 pt-3">
+                                            <span className="text-sm text-surface-600">Gastos Fijos Presupuestados</span>
+                                            <span className="text-sm font-medium text-negative-600">-{currency} {fixedExpensesBudget.toFixed(2)}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-surface-600">Compromisos de Tarjetas (Mínimos obligatorios)</span>
+                                            <span className="text-sm font-medium text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-surface-200 pt-3 mt-3">
+                                            <span className="text-sm font-medium text-[#0f2233]">Teórico Libre Restante</span>
+                                            <span className="text-base font-semibold text-[#0f2233]">
+                                                {currency} {Math.max(0, consolidatedIncome - fixedExpensesBudget - estimatedDebtPayment).toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-surface-500 text-right mt-1">Este es el dinero real disponible para deseos, ahorro y prepago de deuda.</p>
+                                    </div>
                                 </div>
 
-                                {selected === "personal" && (
-                                    <div className="flex flex-wrap items-center gap-2">
+                                {/* Selección de Regla */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-semibold text-[#0f2233]">Selecciona tu modelo de distribución</h3>
                                         <button
                                             type="button"
                                             onClick={applySmartDebtDistribution}
-                                            className="rounded-lg border border-[#0d4c7a] bg-[#f2f8fc] px-3 py-2 text-sm font-medium text-[#0d4c7a] hover:bg-[#e7f2fb]"
+                                            className="text-xs font-semibold text-[#0d4c7a] hover:text-[#0a3a5e] underline underline-offset-2"
                                         >
-                                            Aplicar distribución inteligente
+                                            Auto-completar inteligente ✨
                                         </button>
-                                        <p className="text-xs text-surface-500">
-                                            Ajusta porcentajes según tu ratio de deuda de tarjeta e ingreso consolidado.
-                                        </p>
                                     </div>
-                                )}
-
-                                {distributionRule === "custom" && (
-                                    <div className="grid gap-4 sm:grid-cols-2 rounded-2xl border border-surface-200 bg-surface-50 p-4">
-                                        <div>
-                                            <label className="label text-xs">Necesidades (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Deseos (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Ahorro (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="label text-xs">Deuda/Inversión (%)</label>
-                                            <input type="number" className="input-field bg-white" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
-                                        </div>
-                                        <p className={`sm:col-span-2 text-sm ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-700" : "text-negative-700"}`}>
-                                            Total actual: {distributionTotal.toFixed(2)}%
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="rounded-2xl border border-surface-200 bg-surface-50 p-5 space-y-5">
-                                    <div>
-                                        <p className="text-xs uppercase tracking-[0.14em] text-surface-500">Bolsa consolidada</p>
-                                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
-                                        <p className="mt-1 text-xs text-surface-500">
-                                            Ingreso neto {currency} {parseAmount(monthlyIncomeNet).toFixed(2)} ·
-                                            Ingreso adicional {currency} {(hasAdditionalIncome ? parseAmount(additionalIncome) : 0).toFixed(2)} ·
-                                            Aporte compartido {currency} {(sharesFinances ? parseAmount(partnerContribution) : 0).toFixed(2)}
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Necesidades</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Deseos</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Ahorro</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</p>
-                                        </div>
-                                        <div className="rounded-lg bg-white px-3 py-2 border border-surface-200">
-                                            <p className="text-surface-500">Deuda / inversión</p>
-                                            <p className="font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-xl border border-surface-200 bg-white p-4 text-sm space-y-2">
-                                        <p className="font-semibold text-[#0f2233]">Desglose operativo de la bolsa</p>
-                                        <div className="flex items-center justify-between text-surface-600">
-                                            <span>Gastos fijos presupuestados</span>
-                                            <span className="font-semibold text-surface-800">{currency} {fixedExpensesBudget.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-surface-600">
-                                            <span>Faltante de gastos fijos (sobre necesidades)</span>
-                                            <span className={`font-semibold ${fixedNeedsShortfall > 0 ? "text-negative-700" : "text-positive-700"}`}>
-                                                {currency} {fixedNeedsShortfall.toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-surface-600">
-                                            <span>Pago mínimo estimado de tarjetas (5%)</span>
-                                            <span className="font-semibold text-surface-800">{currency} {estimatedDebtPayment.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-surface-600">
-                                            <span>Faltante de deuda (sobre bucket deuda/inversión)</span>
-                                            <span className={`font-semibold ${debtBucketShortfall > 0 ? "text-negative-700" : "text-positive-700"}`}>
-                                                {currency} {debtBucketShortfall.toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between border-t border-surface-200 pt-2 text-surface-700">
-                                            <span>Ahorro neto disponible para metas</span>
-                                            <span className="font-semibold text-[#0f2233]">{currency} {dynamicSavingsPool.toFixed(2)}</span>
-                                        </div>
-                                        <p className="text-xs text-surface-500">
-                                            Orden activo: {savingsPriorities.map((priority) => PRIORITY_LABELS[priority]).join(" → ")}.
-                                        </p>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                        {(["50_30_20", "70_20_10", "80_20", "custom"] as DistributionRule[]).map((rule) => (
+                                            <label
+                                                key={rule}
+                                                className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-4 cursor-pointer transition-all ${distributionRule === rule ? "border-[#0d4c7a] bg-[#f2f8fc] shadow-sm" : "border-surface-200 bg-white hover:border-surface-300"}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="distribution-rule"
+                                                    className="sr-only"
+                                                    checked={distributionRule === rule}
+                                                    onChange={() => setDistributionRule(rule)}
+                                                />
+                                                <span className={`text-sm font-bold ${distributionRule === rule ? "text-[#0d4c7a]" : "text-[#0f2233]"}`}>
+                                                    {DISTRIBUTION_LABELS[rule] === "Personalizada" ? "A medida" : DISTRIBUTION_LABELS[rule]}
+                                                </span>
+                                            </label>
+                                        ))}
                                     </div>
                                 </div>
 
-                                {hasSavingsGoals && projectedGoalRows.length > 0 && (
-                                    <div className="rounded-2xl border border-surface-200 bg-white p-5">
-                                        <h3 className="text-sm font-semibold text-[#0f2233] mb-3">Proyección inicial</h3>
-                                        <p className="mb-3 text-xs text-surface-500">
-                                            Proyección dinámica según distribución, prioridad de bolsa y cobertura de deuda/fijos.
-                                        </p>
-                                        <div className="space-y-3">
-                                            {projectedGoalRows.map((goal) => (
-                                                <div key={goal.id} className="rounded-lg border border-surface-200 bg-surface-50 p-3 text-sm">
-                                                    <p className="font-semibold text-[#0f2233]">{goal.name || "Meta"}</p>
-                                                    <p className="text-surface-600">Aporte mensual proyectado: {currency} {goal.projectedContribution.toFixed(2)}</p>
-                                                    <p className="text-surface-600">
-                                                        Llegada estimada: {goal.monthsToGoal ? `${goal.monthsToGoal} meses` : "Sin proyección"}
-                                                    </p>
-                                                    <p className="text-surface-600">% del ingreso destinado: {goal.percentOfIncome.toFixed(1)}%</p>
-                                                </div>
-                                            ))}
+                                {/* Inputs Custom */}
+                                {distributionRule === "custom" && (
+                                    <div className="grid gap-4 sm:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
+                                        <div>
+                                            <label className="label text-xs">Necesidades (%)</label>
+                                            <input type="number" className="input-field bg-surface-50" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
                                         </div>
+                                        <div>
+                                            <label className="label text-xs">Deseos (%)</label>
+                                            <input type="number" className="input-field bg-surface-50" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="label text-xs">Ahorro (%)</label>
+                                            <input type="number" className="input-field bg-surface-50" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="label text-xs">Deuda (%)</label>
+                                            <input type="number" className="input-field bg-surface-50" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
+                                        </div>
+                                        <p className={`sm:col-span-4 text-xs font-medium text-right ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-600" : "text-negative-600"}`}>
+                                            El total suma: {distributionTotal.toFixed(2)}%
+                                        </p>
                                     </div>
                                 )}
+
+                                {/* Análisis Dinámico de Buckets */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Análisis de tu distribución</h3>
+                                    <div className="grid sm:grid-cols-2 gap-4">
+
+                                        {/* Tarjeta Necesidades */}
+                                        <div className={`rounded-xl border p-4 ${fixedNeedsShortfall > 0 ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-white"}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-3 h-3 rounded-full ${fixedNeedsShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
+                                                    <span className="text-sm font-bold text-[#0f2233]">1. Necesidades ({distribution.needsPct}%)</span>
+                                                </div>
+                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.needs.toFixed(2)}</span>
+                                            </div>
+                                            <p className="text-xs text-surface-600 mt-2">
+                                                Este bucket está asignado para cubrir tus Gastos Fijos de <b>{currency} {fixedExpensesBudget.toFixed(2)}</b>.
+                                            </p>
+                                            {fixedNeedsShortfall > 0 ? (
+                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
+                                                    ⚠️ Alerta: El monto asignado a necesidades ({currency} {distributionAmounts.needs.toFixed(2)}) es menor a tus gastos fijos declarados. Te faltan {currency} {fixedNeedsShortfall.toFixed(2)}. Considera aumentar el % de necesidades.
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
+                                                    ✅ Tus gastos fijos están cubiertos. Te sobran {currency} {Math.abs(fixedNeedsShortfall).toFixed(2)} para imprevistos u otras necesidades.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Tarjeta Deuda */}
+                                        <div className={`rounded-xl border p-4 ${debtBucketShortfall > 0 || (totalCreditCardDebt > 0 && distribution.debtPct === 0) ? "border-[#f5c2c7] bg-[#fdf2f3]" : "border-surface-200 bg-white"}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-3 h-3 rounded-full ${debtBucketShortfall > 0 ? "bg-negative-500" : "bg-positive-500"}`} />
+                                                    <span className="text-sm font-bold text-[#0f2233]">2. Deuda / Inversión ({distribution.debtPct}%)</span>
+                                                </div>
+                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.debt.toFixed(2)}</span>
+                                            </div>
+                                            <p className="text-xs text-surface-600 mt-2">
+                                                {totalCreditCardDebt > 0
+                                                    ? `Tienes una deuda de ${currency} ${totalCreditCardDebt.toFixed(2)} que genera pagos mínimos aprox. de ${currency} ${estimatedDebtPayment.toFixed(2)}.`
+                                                    : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
+                                            </p>
+
+                                            {totalCreditCardDebt > 0 && distribution.debtPct === 0 ? (
+                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
+                                                    ⚠️ Alerta Crítica: Eres una persona con deuda, pero has seleccionado una regla que destina 0% a salir de ella. Acumularás intereses severos. Asigna % a deudas urgentemente.
+                                                </p>
+                                            ) : debtBucketShortfall > 0 ? (
+                                                <p className="text-xs font-medium text-negative-700 mt-2 bg-negative-50 p-2 rounded-lg">
+                                                    ⚠️ Alerta: Estás destinando {currency} {distributionAmounts.debt.toFixed(2)}, pero tus pagos mínimos comprometen {currency} {estimatedDebtPayment.toFixed(2)}. Te faltan {currency} {debtBucketShortfall.toFixed(2)}.
+                                                </p>
+                                            ) : totalCreditCardDebt > 0 ? (
+                                                <p className="text-xs font-medium text-positive-700 mt-2 bg-positive-50 p-2 rounded-lg">
+                                                    ✅ Cubres el mínimo obligatorio e incluso estás prepagando capital por un extra de {currency} {Math.abs(debtBucketShortfall).toFixed(2)}, lo que te ahorrará muchísimos intereses.
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs font-medium text-surface-500 mt-2 bg-surface-50 p-2 rounded-lg">
+                                                    Todo este bucket irá directamente a tu colchón de inversión.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Tarjeta Ahorro */}
+                                        <div className="rounded-xl border border-surface-200 bg-white p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full bg-[#117068]" />
+                                                    <span className="text-sm font-bold text-[#0f2233]">3. Ahorro ({distribution.savingsPct}%)</span>
+                                                </div>
+                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.savings.toFixed(2)}</span>
+                                            </div>
+
+                                            {hasSavingsGoals && projectedGoalRows.length > 0 ? (
+                                                <div className="mt-3 space-y-2">
+                                                    <p className="text-xs text-surface-600">Este dinero se distribuye directamente (en cascada) hacia tus metas:</p>
+                                                    {projectedGoalRows.map((goal) => (
+                                                        <div key={goal.id} className="flex items-center justify-between text-xs bg-surface-50 p-1.5 rounded">
+                                                            <span className="text-surface-700">{goal.name || "Meta"}</span>
+                                                            <span className="font-semibold text-[#0f2233]">+{currency} {goal.projectedContribution.toFixed(2)}/mes</span>
+                                                        </div>
+                                                    ))}
+                                                    {dynamicSavingsPool < 0 && (
+                                                        <p className="text-xs font-medium text-negative-700 mt-2">
+                                                            Nota: Debido al déficit en tus otras categorías, tu capacidad de ahorro real para metas se reduce provisionalmente.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-surface-600 mt-2">
+                                                    No has definido metas de ahorro específicas. Este dinero se acumulará como ahorro general o colchón de emergencia de manera indefinida.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Tarjeta Deseos */}
+                                        <div className="rounded-xl border border-surface-200 bg-white p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full bg-[#eca523]" />
+                                                    <span className="text-sm font-bold text-[#0f2233]">4. Deseos ({distribution.wantsPct}%)</span>
+                                                </div>
+                                                <span className="text-lg font-semibold text-[#0f2233]">{currency} {distributionAmounts.wants.toFixed(2)}</span>
+                                            </div>
+                                            <p className="text-xs text-surface-600 mt-2">
+                                                Capital 100% de libre disposición (Cine, restaurantes, compras, viajes impulsivos). Este es el fondo para disfrutar tu esfuerzo mensual sin comprometer tu futuro financiero ni endeudarte.
+                                            </p>
+                                        </div>
+
+                                    </div>
+                                </div>
                             </div>
                         )}
 
