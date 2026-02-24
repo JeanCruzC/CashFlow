@@ -265,6 +265,10 @@ export default function SelectProfilePage() {
         return creditCards.filter(card => card.paymentStrategy !== "full");
     }, [creditCards]);
 
+    const fullPaymentCreditCards = useMemo(() => {
+        return creditCards.filter(card => card.paymentStrategy === "full");
+    }, [creditCards]);
+
     const totalCreditCardDebt = useMemo(
         () =>
             round2(
@@ -285,6 +289,17 @@ export default function SelectProfilePage() {
                 )
             ),
         [creditCards]
+    );
+
+    const fullPaymentCardsCashOutflow = useMemo(
+        () =>
+            round2(
+                fullPaymentCreditCards.reduce(
+                    (sum, card) => sum + Math.max(parseAmount(card.currentBalance), 0),
+                    0
+                )
+            ),
+        [fullPaymentCreditCards]
     );
 
     const estimatedDebtPayment = useMemo(
@@ -347,6 +362,8 @@ export default function SelectProfilePage() {
                         : statedMinimum > 0
                             ? statedMinimum
                             : round2(currentBalance * 0.05);
+                const expectedCashOutflow =
+                    card.paymentStrategy === "full" ? currentBalance : estimatedMinimum;
 
                 return {
                     id: card.id,
@@ -354,6 +371,7 @@ export default function SelectProfilePage() {
                     paymentStrategy: card.paymentStrategy,
                     currentBalance,
                     estimatedMinimum,
+                    expectedCashOutflow,
                 };
             }),
         [creditCards]
@@ -1750,9 +1768,18 @@ export default function SelectProfilePage() {
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-surface-600">Compromisos de Tarjetas (Mínimos obligatorios)</span>
+                                            <span className="text-sm text-surface-600">Compromisos de Tarjetas (deuda revolvente)</span>
                                             <span className="text-sm font-medium text-negative-600">-{currency} {estimatedDebtPayment.toFixed(2)}</span>
                                         </div>
+
+                                        {fullPaymentCardsCashOutflow > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-surface-600">Pago total de tarjetas (flujo transaccional)</span>
+                                                <span className="text-sm font-medium text-[#0f2233]">
+                                                    {currency} {fullPaymentCardsCashOutflow.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        )}
 
                                         <div className="flex items-center justify-between border-t border-surface-200 pt-3 mt-3">
                                             <span className="text-sm font-medium text-[#0f2233]">Teórico Libre Restante</span>
@@ -1767,6 +1794,11 @@ export default function SelectProfilePage() {
                                             </span>
                                         </div>
                                         <p className="text-xs text-surface-500 text-right mt-1">Este es el dinero real disponible para deseos, ahorro y prepago de deuda.</p>
+                                        {fullPaymentCardsCashOutflow > 0 && (
+                                            <p className="text-xs text-surface-500 text-right">
+                                                El pago total de tarjeta se cubre con tus buckets de necesidades/deseos y no se cuenta como deuda revolvente.
+                                            </p>
+                                        )}
                                     </div>
 
                                     {budgetBreakdownRows.length > 0 && (
@@ -1811,7 +1843,7 @@ export default function SelectProfilePage() {
                                                                 Estrategia: {card.paymentStrategy === "full" ? "Pago total" : card.paymentStrategy === "minimum" ? "Pago mínimo" : "Pago fijo"}
                                                             </span>
                                                             <span>
-                                                                Mínimo estimado: {currency} {card.estimatedMinimum.toFixed(2)}
+                                                                {card.paymentStrategy === "full" ? "Pago esperado" : "Mínimo estimado"}: {currency} {card.expectedCashOutflow.toFixed(2)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1943,7 +1975,7 @@ export default function SelectProfilePage() {
                                                 {totalCreditCardDebt > 0
                                                     ? `Tienes una deuda de ${currency} ${totalCreditCardDebt.toFixed(2)} que genera pagos mínimos aprox. de ${currency} ${estimatedDebtPayment.toFixed(2)}.`
                                                     : totalCreditCardBalance > 0
-                                                        ? "Tienes tarjetas registradas con estrategia de pago total. No se consideran deuda revolvente si pagas el total cada mes."
+                                                        ? `Tienes tarjetas registradas con estrategia de pago total. Salen ${currency} ${fullPaymentCardsCashOutflow.toFixed(2)} de caja mensual desde necesidades/deseos, sin generar deuda revolvente.`
                                                     : "Actualmente no has registrado deudas. Este bucket puede usarse íntegramente para inversión libre o pagos extra."}
                                             </p>
 
