@@ -1,9 +1,26 @@
 -- Migration 009: Add savings_goal_id to transactions and trigger to auto-update current_amount
 
 ALTER TABLE transactions 
-ADD COLUMN savings_goal_id UUID REFERENCES savings_goals(id) ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS savings_goal_id UUID;
 
-CREATE INDEX idx_transactions_savings_goal_id ON transactions(savings_goal_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'transactions_savings_goal_id_fkey'
+          AND conrelid = 'transactions'::regclass
+    ) THEN
+        ALTER TABLE transactions
+        ADD CONSTRAINT transactions_savings_goal_id_fkey
+        FOREIGN KEY (savings_goal_id)
+        REFERENCES savings_goals(id)
+        ON DELETE SET NULL;
+    END IF;
+END;
+$$;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_savings_goal_id ON transactions(savings_goal_id);
 
 CREATE OR REPLACE FUNCTION update_savings_goal_amount()
 RETURNS trigger AS $$
@@ -44,6 +61,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_update_savings_goal_amount ON transactions;
 CREATE TRIGGER trg_update_savings_goal_amount
 AFTER INSERT OR UPDATE OR DELETE ON transactions
 FOR EACH ROW EXECUTE FUNCTION update_savings_goal_amount();

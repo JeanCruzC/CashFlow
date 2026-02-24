@@ -13,9 +13,19 @@ CREATE TABLE IF NOT EXISTS public.savings_goals (
 
 CREATE INDEX IF NOT EXISTS idx_savings_goals_org_id ON public.savings_goals(org_id);
 
+-- Generic modtime trigger helper (idempotent)
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Trigger to update 'updated_at'
-CREATE OR REPLACE TRIGGER update_savings_goals_modtime 
-BEFORE UPDATE ON public.savings_goals 
+DROP TRIGGER IF EXISTS update_savings_goals_modtime ON public.savings_goals;
+CREATE TRIGGER update_savings_goals_modtime
+BEFORE UPDATE ON public.savings_goals
 FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
 -- RLS

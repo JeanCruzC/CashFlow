@@ -64,8 +64,34 @@ export interface SavingsGoal {
     name: string;
     target_amount: number;
     current_amount: number;
+    goal_weight: number;
+    monthly_contribution: number;
+    estimated_completion_date: string | null;
     deadline_date: string | null;
     color_code: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type SavingsPriority =
+    | "fixed_expenses"
+    | "debt_payments"
+    | "savings_goals";
+
+export type DistributionRule = "50_30_20" | "70_20_10" | "80_20" | "custom";
+
+export interface OrgFinancialProfile {
+    org_id: string;
+    monthly_income_net: number;
+    additional_income: number;
+    partner_contribution: number;
+    consolidated_income: number;
+    distribution_rule: DistributionRule;
+    needs_pct: number;
+    wants_pct: number;
+    savings_pct: number;
+    debt_pct: number;
+    savings_priorities: SavingsPriority[];
     created_at: string;
     updated_at: string;
 }

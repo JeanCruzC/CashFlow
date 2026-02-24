@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     ]);
 
     const savingsGoals = kpiBundle.savingsGoals || [];
+    const savingsPlan = kpiBundle.personalSavingsPlan;
     const format = formatter(kpiBundle.locale, kpiBundle.currency);
     const personal = kpiBundle.personal;
     const hasEmergencyFundBaseData =
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
     const emergencyFundTooltip = !hasEmergencyFundBaseData
         ? "Necesitamos al menos dos meses de gastos reales para estimar tu cobertura con precisión."
         : "Indica cuántos meses puedes pagar tus gastos mensuales con tu efectivo actual si te quedas sin ingresos.";
+    const consolidatedIncome = savingsPlan?.consolidatedIncome || 0;
 
     const cards =
         kpiBundle.orgType === "business" && kpiBundle.business
@@ -159,9 +161,17 @@ export default async function DashboardPage() {
                 <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <div>
-                            <h3 className="text-lg font-semibold text-[#10283b]">Mis Metas 🎯</h3>
+                            <h3 className="text-lg font-semibold text-[#10283b]">Mis metas de ahorro</h3>
                             <p className="text-sm text-surface-500">Progreso de tus objetivos de ahorro</p>
                         </div>
+                        {savingsPlan && (
+                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-right">
+                                <p className="text-xs text-surface-500">Ahorro mensual planificado</p>
+                                <p className="text-sm font-semibold text-[#0f2233]">
+                                    {format.money.format(savingsPlan.monthlySavingsPool)}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -169,6 +179,11 @@ export default async function DashboardPage() {
                             const current = Number(goal.current_amount) || 0;
                             const target = Number(goal.target_amount) || 1;
                             const percent = Math.min((current / target) * 100, 100);
+                            const monthlyContribution = Number(goal.monthly_contribution) || 0;
+                            const percentOfIncome =
+                                consolidatedIncome > 0
+                                    ? (monthlyContribution / consolidatedIncome) * 100
+                                    : 0;
 
                             return (
                                 <article key={goal.id} className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4 shadow-sm relative overflow-hidden group">
@@ -189,6 +204,31 @@ export default async function DashboardPage() {
                                     <div className="flex items-center justify-between text-xs text-surface-600 font-medium">
                                         <span>{format.money.format(current)}</span>
                                         <span>Meta: {format.money.format(target)}</span>
+                                    </div>
+
+                                    <div className="mt-3 pt-3 border-t border-surface-200/60 text-xs text-surface-500 space-y-1">
+                                        <div className="flex items-center justify-between">
+                                            <span>Aporte mensual proyectado</span>
+                                            <span className="font-semibold text-surface-700">
+                                                {format.money.format(monthlyContribution)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>% de ingreso asignado</span>
+                                            <span className="font-semibold text-surface-700">
+                                                {format.percent.format(percentOfIncome)}%
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span>Fecha estimada</span>
+                                            <span className="font-semibold text-surface-700 text-right">
+                                                {goal.estimated_completion_date
+                                                    ? format.date.format(
+                                                          new Date(goal.estimated_completion_date)
+                                                      )
+                                                    : "Sin proyección"}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {goal.deadline_date && (

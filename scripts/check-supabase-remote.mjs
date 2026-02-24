@@ -44,10 +44,18 @@ const requiredTables = unique([
     "orgs",
     "org_members",
     "onboarding_state",
+    "org_financial_profile",
     "accounts",
     "categories_gl",
+    "cost_centers",
+    "counterparties",
     "transactions",
     "budgets",
+    "forecast_assumptions",
+    "import_batches",
+    "import_rows",
+    "audit_log",
+    "savings_goals",
 ]);
 
 async function checkTable(table) {

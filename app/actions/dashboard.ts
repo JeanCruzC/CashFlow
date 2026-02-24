@@ -3,7 +3,15 @@
 import { getOrgContextOrNull, requireOrgContext } from "@/lib/server/context";
 import { logError } from "@/lib/server/logger";
 import { calculateBusinessKPIs, calculatePersonalKPIs } from "@/lib/utils/kpi";
-import { Account, Budget, CategoryGL, Transaction, SavingsGoal } from "@/lib/types/finance";
+import {
+    Account,
+    Budget,
+    CategoryGL,
+    Transaction,
+    SavingsGoal,
+    OrgFinancialProfile,
+    SavingsPriority,
+} from "@/lib/types/finance";
 import { computeBusinessForecast } from "@/lib/server/forecast-engine";
 
 export interface PersonalDashboardKPIs {
@@ -34,6 +42,13 @@ export interface DashboardKPIs {
     currency: string;
     locale: "es" | "en";
     savingsGoals?: SavingsGoal[];
+    financialProfile?: OrgFinancialProfile | null;
+    personalSavingsPlan?: {
+        consolidatedIncome: number;
+        monthlySavingsPool: number;
+        savingsPct: number;
+        savingsPriorities: SavingsPriority[];
+    } | null;
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
 }
@@ -129,6 +144,60 @@ function mapBudgets(raw: Array<Record<string, unknown>>): Budget[] {
     }));
 }
 
+const DEFAULT_SAVINGS_PRIORITIES: SavingsPriority[] = [
+    "fixed_expenses",
+    "debt_payments",
+    "savings_goals",
+];
+
+function mapFinancialProfile(
+    raw: Record<string, unknown> | null
+): OrgFinancialProfile | null {
+    if (!raw) return null;
+
+    const prioritiesRaw = Array.isArray(raw.savings_priorities)
+        ? raw.savings_priorities
+        : [];
+    const normalizedPriorities = prioritiesRaw
+        .filter(
+            (value): value is SavingsPriority =>
+                value === "fixed_expenses" ||
+                value === "debt_payments" ||
+                value === "savings_goals"
+        )
+        .slice(0, 3);
+    for (const priority of DEFAULT_SAVINGS_PRIORITIES) {
+        if (!normalizedPriorities.includes(priority)) {
+            normalizedPriorities.push(priority);
+        }
+    }
+
+    return {
+        org_id: String(raw.org_id),
+        monthly_income_net: toNumber(raw.monthly_income_net),
+        additional_income: toNumber(raw.additional_income),
+        partner_contribution: toNumber(raw.partner_contribution),
+        consolidated_income: toNumber(raw.consolidated_income),
+        distribution_rule: (raw.distribution_rule as OrgFinancialProfile["distribution_rule"]) ?? "50_30_20",
+        needs_pct: toNumber(raw.needs_pct),
+        wants_pct: toNumber(raw.wants_pct),
+        savings_pct: toNumber(raw.savings_pct),
+        debt_pct: toNumber(raw.debt_pct),
+        savings_priorities: normalizedPriorities,
+        created_at: String(raw.created_at ?? new Date().toISOString()),
+        updated_at: String(raw.updated_at ?? new Date().toISOString()),
+    };
+}
+
+function isMissingTableError(error: unknown) {
+    if (typeof error !== "object" || error === null) return false;
+    const value = error as { code?: unknown; message?: unknown; details?: unknown };
+    const code = typeof value.code === "string" ? value.code : "";
+    const message = typeof value.message === "string" ? value.message.toLowerCase() : "";
+    const details = typeof value.details === "string" ? value.details.toLowerCase() : "";
+    return code === "42P01" || message.includes("does not exist") || details.includes("does not exist");
+}
+
 export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     const context = await getOrgContextOrNull();
     if (!context) {
@@ -161,6 +230,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         transactionsResult,
         forecastResult,
         savingsGoalsResult,
+        financialProfileResult,
     ] = await Promise.all([
         supabase
             .from("orgs")
@@ -182,6 +252,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             .eq("month", month)
             .maybeSingle(),
         supabase.from("savings_goals").select("*").eq("org_id", orgId),
+        supabase.from("org_financial_profile").select("*").eq("org_id", orgId).maybeSingle(),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -212,12 +283,27 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         logError("Error fetching savings goals", savingsGoalsResult.error, { orgId });
         // Don't throw for savings goals specifically to avoid breaking the whole dashboard
     }
+    if (financialProfileResult.error && !isMissingTableError(financialProfileResult.error)) {
+        logError("Error fetching org financial profile", financialProfileResult.error, { orgId });
+    }
 
     const accounts = mapAccounts((accountsResult.data || []) as Array<Record<string, unknown>>);
     const categories = mapCategories((categoriesResult.data || []) as Array<Record<string, unknown>>);
     const budgets = mapBudgets((budgetsResult.data || []) as Array<Record<string, unknown>>);
     const transactions = mapTransactions((transactionsResult.data || []) as Array<Record<string, unknown>>);
     const savingsGoals = (savingsGoalsResult.data || []) as SavingsGoal[];
+    const financialProfile = mapFinancialProfile(
+        (financialProfileResult.data || null) as Record<string, unknown> | null
+    );
+    const personalSavingsPlan = financialProfile
+        ? {
+              consolidatedIncome: financialProfile.consolidated_income,
+              monthlySavingsPool:
+                  (financialProfile.consolidated_income * financialProfile.savings_pct) / 100,
+              savingsPct: financialProfile.savings_pct,
+              savingsPriorities: financialProfile.savings_priorities,
+          }
+        : null;
 
     const orgType = orgResult.data.type;
     const currency = orgResult.data.currency || "USD";
@@ -251,6 +337,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             currency,
             locale,
             savingsGoals,
+            financialProfile,
+            personalSavingsPlan,
             business: {
                 revenue: business.revenue,
                 cogs: business.cogs,
@@ -273,6 +361,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         currency,
         locale,
         savingsGoals,
+        financialProfile,
+        personalSavingsPlan,
         personal: {
             netCashFlow: personal.netCashFlow,
             savingsRatePct: personal.savingsRate * 100,

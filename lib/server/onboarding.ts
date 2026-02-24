@@ -1,5 +1,5 @@
 import { requireUserContext } from "@/lib/server/context";
-import { AccountType, CategoryKind, OrgType } from "@/lib/types/finance";
+import { AccountType, CategoryKind, OrgType, SavingsPriority } from "@/lib/types/finance";
 import { logError } from "@/lib/server/logger";
 import { z } from "zod";
 
@@ -8,6 +8,25 @@ function defaultOrgName(profileType: OrgType) {
 }
 
 const accountTypeSchema = z.enum(["cash", "bank", "credit_card", "loan", "investment"]);
+const savingsPrioritySchema = z.enum(["fixed_expenses", "debt_payments", "savings_goals"]);
+const distributionRuleSchema = z.enum(["50_30_20", "70_20_10", "80_20", "custom"]);
+
+const financialProfileSchema = z.object({
+    monthlyIncomeNet: z.number().finite().min(0),
+    additionalIncome: z.number().finite().min(0).optional(),
+    partnerContribution: z.number().finite().min(0).optional(),
+    distributionRule: distributionRuleSchema,
+    customDistribution: z
+        .object({
+            needsPct: z.number().finite().min(0).max(100),
+            wantsPct: z.number().finite().min(0).max(100),
+            savingsPct: z.number().finite().min(0).max(100),
+            debtPct: z.number().finite().min(0).max(100),
+        })
+        .optional(),
+    savingsPriorities: z.array(savingsPrioritySchema).min(1).max(3).optional(),
+});
+
 const onboardingSetupSchema = z.object({
     orgName: z.string().trim().min(2).max(120).optional(),
     country: z.string().trim().min(2).max(2).optional(),
@@ -42,6 +61,7 @@ const onboardingSetupSchema = z.object({
             z.object({
                 name: z.string().trim().min(1).max(120),
                 targetAmount: z.number().finite().positive(),
+                goalWeight: z.number().finite().positive().optional(),
                 deadlineDate: z.string().nullable().optional(),
             })
         )
@@ -72,6 +92,7 @@ const onboardingSetupSchema = z.object({
             })
         )
         .optional(),
+    financialProfile: financialProfileSchema.optional(),
 });
 
 type SeedCategory = {
@@ -134,6 +155,144 @@ const BUSINESS_CATEGORY_SEED: SeedCategory[] = [
 const BUSINESS_COST_CENTER_SEED = ["Operations", "Commercial", "Administration"];
 
 export type OnboardingSetupInput = z.infer<typeof onboardingSetupSchema>;
+
+const DEFAULT_SAVINGS_PRIORITIES: SavingsPriority[] = [
+    "fixed_expenses",
+    "debt_payments",
+    "savings_goals",
+];
+
+const DISTRIBUTION_PRESETS: Record<
+    z.infer<typeof distributionRuleSchema>,
+    { needsPct: number; wantsPct: number; savingsPct: number; debtPct: number }
+> = {
+    "50_30_20": { needsPct: 50, wantsPct: 30, savingsPct: 20, debtPct: 0 },
+    "70_20_10": { needsPct: 70, wantsPct: 0, savingsPct: 20, debtPct: 10 },
+    "80_20": { needsPct: 80, wantsPct: 0, savingsPct: 20, debtPct: 0 },
+    custom: { needsPct: 50, wantsPct: 30, savingsPct: 20, debtPct: 0 },
+};
+
+function round2(value: number) {
+    return Math.round(value * 100) / 100;
+}
+
+function normalizePriorities(input?: SavingsPriority[]): SavingsPriority[] {
+    if (!input || input.length === 0) return DEFAULT_SAVINGS_PRIORITIES;
+    const unique = Array.from(new Set(input)) as SavingsPriority[];
+    for (const item of DEFAULT_SAVINGS_PRIORITIES) {
+        if (!unique.includes(item)) unique.push(item);
+    }
+    return unique.slice(0, 3);
+}
+
+function resolveFinancialDistribution(
+    financialProfile: OnboardingSetupInput["financialProfile"]
+) {
+    const rule = financialProfile?.distributionRule ?? "50_30_20";
+    if (rule !== "custom") return { rule, ...DISTRIBUTION_PRESETS[rule] };
+
+    const custom = financialProfile?.customDistribution ?? DISTRIBUTION_PRESETS.custom;
+    const total =
+        custom.needsPct + custom.wantsPct + custom.savingsPct + custom.debtPct;
+
+    if (Math.abs(total - 100) > 0.01) {
+        throw new Error("La distribución personalizada debe sumar 100%");
+    }
+
+    return {
+        rule,
+        needsPct: custom.needsPct,
+        wantsPct: custom.wantsPct,
+        savingsPct: custom.savingsPct,
+        debtPct: custom.debtPct,
+    };
+}
+
+function resolveMonthlySavingsPool(
+    financialProfile: OnboardingSetupInput["financialProfile"]
+) {
+    if (!financialProfile) return 0;
+    const distribution = resolveFinancialDistribution(financialProfile);
+    const consolidatedIncome =
+        financialProfile.monthlyIncomeNet +
+        (financialProfile.additionalIncome ?? 0) +
+        (financialProfile.partnerContribution ?? 0);
+    return round2((consolidatedIncome * distribution.savingsPct) / 100);
+}
+
+function addMonthsIso(baseDate: Date, months: number) {
+    const result = new Date(baseDate);
+    result.setMonth(result.getMonth() + months);
+    return result.toISOString().slice(0, 10);
+}
+
+function isMissingRelationError(error: unknown, relationName: string) {
+    const normalized = normalizeSupabaseError(error);
+    const details = normalized.message.toLowerCase();
+    return (
+        details.includes("42p01") &&
+        details.includes(relationName.toLowerCase())
+    );
+}
+
+function computeGoalRowsFromOnboarding(
+    orgId: string,
+    setup: OnboardingSetupInput
+) {
+    const goals = setup.savingsGoals || [];
+    if (goals.length === 0) return [];
+
+    const today = new Date();
+    const projectionBaseDate = setup.startDate
+        ? new Date(`${setup.startDate}T00:00:00`)
+        : today;
+    const safeProjectionBaseDate =
+        Number.isNaN(projectionBaseDate.getTime()) ? today : projectionBaseDate;
+
+    const totalGoalWeights = goals.reduce(
+        (sum, goal) => sum + (goal.goalWeight ?? 1),
+        0
+    );
+    const totalTargets = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+    const profileSavingsPool = resolveMonthlySavingsPool(setup.financialProfile);
+    const fallbackSavingsPool = totalTargets > 0 ? round2(totalTargets / 12) : 0;
+    const monthlySavingsPool =
+        profileSavingsPool > 0 ? profileSavingsPool : fallbackSavingsPool;
+
+    let allocatedSavings = 0;
+    return goals.map((goal, index) => {
+        const goalWeight = goal.goalWeight ?? 1;
+        const contributionRaw =
+            totalGoalWeights > 0
+                ? (monthlySavingsPool * goalWeight) / totalGoalWeights
+                : 0;
+        const monthlyContribution =
+            index === goals.length - 1
+                ? round2(Math.max(monthlySavingsPool - allocatedSavings, 0))
+                : round2(contributionRaw);
+        allocatedSavings = round2(allocatedSavings + monthlyContribution);
+
+        const monthsToGoal =
+            monthlyContribution > 0
+                ? Math.ceil(goal.targetAmount / monthlyContribution)
+                : null;
+        const estimatedCompletionDate =
+            monthsToGoal && Number.isFinite(monthsToGoal)
+                ? addMonthsIso(safeProjectionBaseDate, monthsToGoal)
+                : null;
+
+        return {
+            org_id: orgId,
+            name: goal.name,
+            target_amount: goal.targetAmount,
+            current_amount: 0,
+            goal_weight: goalWeight,
+            monthly_contribution: monthlyContribution,
+            estimated_completion_date: estimatedCompletionDate,
+            deadline_date: goal.deadlineDate || null,
+        };
+    });
+}
 
 function normalizeCurrency(value: string | undefined): string | undefined {
     if (!value) return undefined;
@@ -450,6 +609,41 @@ export async function createOrganizationWithOnboarding(
         throw new Error("No se pudo guardar la configuración de la organización");
     }
 
+    if (profileType === "personal" && safeSetup.financialProfile) {
+        const distribution = resolveFinancialDistribution(safeSetup.financialProfile);
+        const savingsPriorities = normalizePriorities(
+            safeSetup.financialProfile.savingsPriorities
+        );
+        const { error: profileError } = await supabase
+            .from("org_financial_profile")
+            .upsert(
+                {
+                    org_id: orgId,
+                    monthly_income_net: safeSetup.financialProfile.monthlyIncomeNet,
+                    additional_income: safeSetup.financialProfile.additionalIncome ?? 0,
+                    partner_contribution:
+                        safeSetup.financialProfile.partnerContribution ?? 0,
+                    distribution_rule: distribution.rule,
+                    needs_pct: distribution.needsPct,
+                    wants_pct: distribution.wantsPct,
+                    savings_pct: distribution.savingsPct,
+                    debt_pct: distribution.debtPct,
+                    savings_priorities: savingsPriorities,
+                },
+                { onConflict: "org_id" }
+            );
+
+        if (profileError) {
+            logError("Error creating org financial profile", profileError, { orgId });
+            if (isMissingRelationError(profileError, "org_financial_profile")) {
+                throw new Error(
+                    "No se pudo guardar el perfil financiero porque falta migrar ese módulo en Supabase. Ejecuta: npm run supabase:migrate:remote"
+                );
+            }
+            throw new Error("No se pudo guardar el perfil financiero inicial");
+        }
+    }
+
     const { count: accountCount, error: accountCountError } = await supabase
         .from("accounts")
         .select("id", { count: "exact", head: true })
@@ -497,17 +691,29 @@ export async function createOrganizationWithOnboarding(
     }
 
     if (safeSetup.savingsGoals && safeSetup.savingsGoals.length > 0) {
-        const goalRows = safeSetup.savingsGoals.map((g) => ({
-            org_id: orgId,
-            name: g.name,
-            target_amount: g.targetAmount,
-            current_amount: 0,
-            deadline_date: g.deadlineDate || null,
-        }));
+        const goalRows = computeGoalRowsFromOnboarding(orgId, safeSetup);
 
         const { error: goalsError } = await supabase.from("savings_goals").insert(goalRows);
         if (goalsError) {
             logError("Error creating savings goals", goalsError, { orgId });
+            if (
+                isMissingRelationError(goalsError, "savings_goals")
+            ) {
+                throw new Error(
+                    "No se pudieron crear las metas de ahorro porque falta migrar ese módulo en Supabase. Ejecuta: npm run supabase:migrate:remote"
+                );
+            }
+            const normalized = normalizeSupabaseError(goalsError);
+            const details = normalized.message.toLowerCase();
+            if (
+                details.includes("monthly_contribution") ||
+                details.includes("goal_weight") ||
+                details.includes("estimated_completion_date")
+            ) {
+                throw new Error(
+                    "No se pudieron crear las metas de ahorro porque faltan columnas de proyección en Supabase. Ejecuta: npm run supabase:migrate:remote"
+                );
+            }
             throw new Error("No se pudieron crear las metas de ahorro");
         }
 
@@ -527,9 +733,17 @@ export async function createOrganizationWithOnboarding(
             .single();
 
         if (!savCatError && savingsCategory) {
-            // Calculate monthly savings contribution: sum of targets ÷ 12
-            const totalTargets = safeSetup.savingsGoals.reduce((sum, g) => sum + g.targetAmount, 0);
-            const monthlyContribution = Math.round(totalTargets / 12);
+            const totalTargets = safeSetup.savingsGoals.reduce(
+                (sum, goal) => sum + goal.targetAmount,
+                0
+            );
+            const profileSavingsPool = resolveMonthlySavingsPool(
+                safeSetup.financialProfile
+            );
+            const monthlyContribution =
+                profileSavingsPool > 0
+                    ? profileSavingsPool
+                    : round2(totalTargets / 12);
 
             if (monthlyContribution > 0) {
                 const currentMonth = new Date().toISOString().slice(0, 7);
@@ -653,7 +867,7 @@ export async function createOrganizationWithOnboarding(
             org_id: orgId,
             user_id: user.id,
             profile_type: profileType,
-            step: 6,
+            step: 8,
             answers,
             completed_at: new Date().toISOString(),
         },
