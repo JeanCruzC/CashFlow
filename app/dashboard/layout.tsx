@@ -1,20 +1,28 @@
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { getOrgContextOrNull } from "@/lib/server/context";
-import { hasAnyTransaction } from "@/app/actions/dashboard";
+import { getUserWorkspaces } from "@/app/actions/workspaces";
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const context = await getOrgContextOrNull();
+    const [context, workspaces] = await Promise.all([
+        getOrgContextOrNull(),
+        getUserWorkspaces(),
+    ]);
 
     if (!context) {
         redirect("/onboarding/select-profile");
     }
 
-    const hasTransactions = await hasAnyTransaction();
-
-    return <DashboardShell hasTransactions={hasTransactions}>{children}</DashboardShell>;
+    return (
+        <DashboardShell
+            activeOrgId={context.orgId}
+            workspaces={workspaces}
+        >
+            {children}
+        </DashboardShell>
+    );
 }

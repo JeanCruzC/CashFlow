@@ -26,15 +26,28 @@ export function calculatePersonalKPIs(
     const netCashFlow = totalIncome - totalExpenses;
     const savingsRate = totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0;
 
+    const transactionDeltaByAccount = transactions.reduce<Map<string, number>>((map, transaction) => {
+        const previous = map.get(transaction.account_id) || 0;
+        map.set(transaction.account_id, previous + Number(transaction.amount || 0));
+        return map;
+    }, new Map());
+
+    const accountCurrentBalance = (account: Account) =>
+        Number(account.opening_balance || 0) +
+        Number(transactionDeltaByAccount.get(account.id) || 0);
+
     // Net Worth
     const assetTypes = new Set(["cash", "bank", "investment"]);
     const liabilityTypes = new Set(["credit_card", "loan"]);
     const assets = accounts
         .filter((a) => assetTypes.has(a.account_type))
-        .reduce((sum, a) => sum + a.opening_balance, 0);
+        .reduce((sum, a) => sum + accountCurrentBalance(a), 0);
     const liabilities = accounts
         .filter((a) => liabilityTypes.has(a.account_type))
-        .reduce((sum, a) => sum + Math.abs(a.opening_balance), 0);
+        .reduce((sum, a) => {
+            const balance = accountCurrentBalance(a);
+            return sum + (balance < 0 ? Math.abs(balance) : 0);
+        }, 0);
     const netWorth = assets - liabilities;
 
     // Emergency Fund
@@ -48,7 +61,7 @@ export function calculatePersonalKPIs(
             : 0;
     const liquidCash = accounts
         .filter((a) => a.account_type === "cash" || a.account_type === "bank")
-        .reduce((sum, a) => sum + a.opening_balance, 0);
+        .reduce((sum, a) => sum + accountCurrentBalance(a), 0);
     const emergencyFundMonths = avgMonthlyExpenses > 0 ? liquidCash / avgMonthlyExpenses : 0;
 
     // Budget vs Actual
@@ -72,6 +85,8 @@ export function calculatePersonalKPIs(
         netCashFlow,
         totalIncome,
         totalExpenses,
+        assets,
+        liabilities,
         savingsRate,
         netWorth,
         emergencyFundMonths,

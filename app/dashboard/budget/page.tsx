@@ -1,7 +1,7 @@
+import Link from "next/link";
 import { getBudgetOverview } from "@/app/actions/budgets";
 import { getCategories } from "@/app/actions/categories";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
-import Link from "next/link";
 
 function getRecentMonths(count = 6) {
     const current = new Date();
@@ -25,9 +25,9 @@ function monthLabel(month: string) {
 function friendlyCategoryName(name: string) {
     const map: Record<string, string> = {
         Salary: "Salario",
-        Freelance: "Trabajo freelance",
+        Freelance: "Freelance",
         Investments: "Inversiones",
-        "Rental Income": "Ingresos por alquiler",
+        "Rental Income": "Ingreso por alquiler",
         "Other Income": "Otros ingresos",
         Housing: "Vivienda",
         Utilities: "Servicios",
@@ -38,7 +38,7 @@ function friendlyCategoryName(name: string) {
         Entertainment: "Entretenimiento",
         Education: "Educación",
         Shopping: "Compras",
-        "Debt Payments": "Pago de deudas",
+        "Debt Payments": "Pago de deuda",
         Taxes: "Impuestos",
         "Savings & Investments": "Ahorro e inversión",
         "Other Expenses": "Otros gastos",
@@ -55,7 +55,6 @@ function friendlyCategoryName(name: string) {
         Technology: "Tecnología",
         "Income Tax": "Impuesto a la renta",
     };
-
     return map[name] ?? name;
 }
 
@@ -80,52 +79,28 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
         .filter((category) => !["income", "revenue", "other_income"].includes(category.kind))
         .map((category) => ({ id: category.id, name: friendlyCategoryName(category.name) }));
 
-    const currencyFormatter = new Intl.NumberFormat("es-PE", { style: "currency", currency: overview.currency || "USD" });
+    const currencyFormatter = new Intl.NumberFormat("es-PE", {
+        style: "currency",
+        currency: overview.currency || "USD",
+    });
     const variance = overview.totalActual - overview.totalBudget;
-    const budgetConfigured = overview.totalBudget > 0;
-    const statusLabel = !budgetConfigured
-        ? "Aún no configurado"
-        : variance <= 0
-            ? "Vas dentro del plan"
-            : "Te pasaste del plan";
-    const statusColor = !budgetConfigured
-        ? "text-[#6a6f88] bg-[#f3f4fb] border-[#d9dcec]"
-        : variance <= 0
-            ? "text-[#117068] bg-[#edf9f6] border-[#bedfd8]"
-            : "text-[#a3462a] bg-[#fff4eb] border-[#f4d5bf]";
     const profileLabel = overview.orgType === "business" ? "empresa" : "personal";
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-7 animate-fade-in">
+            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-7 shadow-card">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">
-                            Planificación
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
+                            Control mensual
                         </p>
-                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Budget vs Actual</h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-500">
-                            En simple: define cuánto puedes gastar este mes y compara contra lo que ya gastaste.
+                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Presupuesto operativo</h2>
+                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
+                            Define topes por categoría y compáralos contra la ejecución real.
                         </p>
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusColor}`}>
-                                {statusLabel}
-                            </span>
-                            <span className="text-xs text-surface-500">
-                                Perfil {profileLabel} · {monthLabel(overview.month)}
-                            </span>
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <Link href="/dashboard/categories" className="btn-secondary text-sm no-underline">
-                                1) Revisar clasificación
-                            </Link>
-                            <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                                2) Registrar gasto/ingreso
-                            </Link>
-                        </div>
                     </div>
                     <form className="flex items-center gap-2" method="get">
-                        <select className="input-field w-52 text-sm" name="month" defaultValue={month}>
+                        <select className="input-field w-56 text-sm" name="month" defaultValue={month}>
                             {monthOptions.map((option) => (
                                 <option key={option} value={option}>
                                     {monthLabel(option)}
@@ -139,89 +114,117 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                 </div>
             </section>
 
-            <section className="grid gap-4 sm:grid-cols-3">
-                <article className="rounded-2xl border border-[#b8d8f0] bg-[#edf6fd] p-4 shadow-card">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0d4c7a]">Tu meta del mes</p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{currencyFormatter.format(overview.totalBudget)}</p>
-                    <p className="mt-1 text-xs text-surface-600">Es el tope que te propusiste gastar.</p>
-                </article>
-                <article className="rounded-2xl border border-[#bedfd8] bg-[#edf9f6] p-4 shadow-card">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#117068]">Ya gastaste</p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{currencyFormatter.format(overview.totalActual)}</p>
-                    <p className="mt-1 text-xs text-surface-600">Se actualiza con tus movimientos registrados.</p>
-                </article>
-                <article className={`rounded-2xl border p-4 shadow-card ${variance <= 0 ? "border-[#bedfd8] bg-[#edf9f6]" : "border-[#f4d5bf] bg-[#fff4eb]"}`}>
-                    <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${variance <= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}>
-                        {variance <= 0 ? "Te sobra" : "Te pasaste"}
+            <section className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
+                <article className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Definir tope por categoría</h3>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Perfil {profileLabel}. Mes activo: {monthLabel(overview.month)}.
                     </p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{currencyFormatter.format(Math.abs(variance))}</p>
-                    <p className="mt-1 text-xs text-surface-600">
-                        {variance <= 0
-                            ? "Mantienes margen dentro de tu plan."
-                            : "Gasto por encima del presupuesto del mes."}
-                    </p>
+                    <div className="mt-4">
+                        <BudgetSetForm month={month} categories={budgetCategories} />
+                    </div>
+                </article>
+
+                <article className="rounded-3xl border border-[#d9e2f0] bg-[#f5f9ff] p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Semáforo del mes</h3>
+                    <div className="mt-4 space-y-3">
+                        <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
+                            <p className="text-xs text-surface-500">Tope total planificado</p>
+                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">
+                                {currencyFormatter.format(overview.totalBudget)}
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
+                            <p className="text-xs text-surface-500">Ejecución registrada</p>
+                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">
+                                {currencyFormatter.format(overview.totalActual)}
+                            </p>
+                        </div>
+                        <div
+                            className={`rounded-xl border px-4 py-3 ${
+                                variance <= 0
+                                    ? "border-[#bfe1d8] bg-[#eef9f5]"
+                                    : "border-[#f3dec1] bg-[#fff6ea]"
+                            }`}
+                        >
+                            <p className="text-xs text-surface-500">
+                                {variance <= 0 ? "Margen disponible" : "Exceso sobre plan"}
+                            </p>
+                            <p
+                                className={`mt-1 text-xl font-semibold ${
+                                    variance <= 0 ? "text-[#117068]" : "text-[#a3462a]"
+                                }`}
+                            >
+                                {currencyFormatter.format(Math.abs(variance))}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 rounded-xl border border-[#d9e2f0] bg-white p-4">
+                        <p className="text-sm font-semibold text-[#0f2233]">Orden recomendado</p>
+                        <ol className="mt-2 space-y-1.5 text-sm text-surface-600">
+                            <li>1. Define topes para categorías fijas.</li>
+                            <li>2. Registra movimientos reales en el mes.</li>
+                            <li>3. Revisa desviaciones por categoría y corrige.</li>
+                        </ol>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                                Registrar movimiento
+                            </Link>
+                            <Link href="/dashboard/categories" className="btn-secondary text-sm no-underline">
+                                Revisar clasificación
+                            </Link>
+                        </div>
+                    </div>
                 </article>
             </section>
 
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Definir tope por categoría</h3>
+            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <h3 className="text-lg font-semibold text-[#10283b]">Detalle por categoría</h3>
                 <p className="mt-1 text-sm text-surface-500">
-                    Paso simple: elige una categoría y define el máximo que quieres gastar este mes.
-                </p>
-                <div className="mt-4">
-                    <BudgetSetForm month={month} categories={budgetCategories} />
-                </div>
-            </section>
-
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Cómo vas por categoría</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Comparación de tu plan vs lo realmente gastado para {monthLabel(overview.month)}.
+                    Comparación de presupuesto vs ejecución para {monthLabel(overview.month)}.
                 </p>
 
                 {overview.rows.length === 0 ? (
-                    <div className="mt-4 rounded-2xl border border-surface-200 bg-surface-50 px-4 py-6 text-sm text-surface-500">
-                        No tienes topes configurados para este mes. Empieza arriba en “Definir tope por categoría”.
+                    <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
+                        No tienes topes configurados para este mes.
                     </div>
                 ) : (
-                    <div className="mt-4 overflow-x-auto rounded-2xl border border-surface-200">
-                        <table className="w-full min-w-[720px] text-sm">
-                            <thead className="bg-surface-50">
-                                <tr className="border-b border-surface-200">
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-surface-500">Categoría / rubro</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-500">Tope mensual</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-500">Gastado</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-500">Diferencia</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-surface-500">Nivel de uso</th>
+                    <div className="mt-4 overflow-x-auto rounded-xl border border-[#d9e2f0]">
+                        <table className="w-full min-w-[760px] text-sm">
+                            <thead className="bg-[#f5f9ff]">
+                                <tr className="text-left text-surface-500">
+                                    <th className="px-4 py-3 font-semibold">Categoría</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Tope</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Ejecución</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Desviación</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Uso</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-surface-200">
+                            <tbody className="divide-y divide-surface-200 bg-white">
                                 {overview.rows.map((row, index) => {
-                                    const variance = row.actual - row.budget;
+                                    const rowVariance = row.actual - row.budget;
                                     return (
-                                        <tr key={`${row.category}-${index}`} className={variance > 0 ? "bg-[#fffaf5]" : "bg-white"}>
-                                            <td className="px-4 py-3 font-medium text-[#0f2233]">{friendlyCategoryName(row.category)}</td>
+                                        <tr key={`${row.category}-${index}`}>
+                                            <td className="px-4 py-3 font-medium text-[#0f2233]">
+                                                {friendlyCategoryName(row.category)}
+                                            </td>
                                             <td className="px-4 py-3 text-right text-surface-600">
                                                 {currencyFormatter.format(row.budget)}
                                             </td>
-                                            <td className="px-4 py-3 text-right font-medium text-[#0f2233]">
+                                            <td className="px-4 py-3 text-right text-surface-600">
                                                 {currencyFormatter.format(row.actual)}
                                             </td>
-                                            <td className={`px-4 py-3 text-right font-semibold ${variance <= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                                {variance <= 0 ? "+" : "-"}{currencyFormatter.format(Math.abs(variance))}
+                                            <td
+                                                className={`px-4 py-3 text-right font-semibold ${
+                                                    rowVariance <= 0 ? "text-positive-600" : "text-warning-600"
+                                                }`}
+                                            >
+                                                {rowVariance <= 0 ? "+" : "-"}
+                                                {currencyFormatter.format(Math.abs(rowVariance))}
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-200">
-                                                        <div
-                                                            className={`h-full rounded-full ${row.progress > 100 ? "bg-negative-500" : row.progress > 90 ? "bg-warning-500" : "bg-positive-500"}`}
-                                                            style={{ width: `${Math.min(row.progress, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="w-10 text-right text-xs text-surface-500">
-                                                        {Math.round(row.progress)}%
-                                                    </span>
-                                                </div>
+                                            <td className="px-4 py-3 text-right text-surface-600">
+                                                {Math.round(row.progress)}%
                                             </td>
                                         </tr>
                                     );

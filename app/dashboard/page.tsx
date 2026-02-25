@@ -1,24 +1,32 @@
 import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
-import { KPICard } from "@/components/ui/KPICard";
-import { ArrowRightIcon } from "@/components/ui/icons";
 
 function formatter(locale: "es" | "en", currency: string) {
     const language = locale === "en" ? "en-US" : "es-PE";
     return {
         money: new Intl.NumberFormat(language, { style: "currency", currency }),
-        percent: new Intl.NumberFormat(language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
-        number: new Intl.NumberFormat(language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
-        date: new Intl.DateTimeFormat(language, { year: "numeric", month: "short", day: "numeric" }),
+        percent: new Intl.NumberFormat(language, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+        }),
+        number: new Intl.NumberFormat(language, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+        }),
+        date: new Intl.DateTimeFormat(language, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        }),
     };
 }
 
 function formatDayList(days: number[]) {
-    const uniqueSortedDays = Array.from(new Set(days))
+    const normalized = Array.from(new Set(days))
         .filter((day) => Number.isFinite(day) && day >= 1 && day <= 31)
         .sort((a, b) => a - b);
-    if (uniqueSortedDays.length === 0) return "No definido";
-    return uniqueSortedDays.map((day) => `día ${day}`).join(" · ");
+    if (normalized.length === 0) return "No definido";
+    return normalized.map((day) => `día ${day}`).join(" · ");
 }
 
 export default async function DashboardPage() {
@@ -27,317 +35,448 @@ export default async function DashboardPage() {
         getRecentTransactions(),
     ]);
 
-    const savingsGoals = kpiBundle.savingsGoals || [];
-    const savingsPlan = kpiBundle.personalSavingsPlan;
     const format = formatter(kpiBundle.locale, kpiBundle.currency);
-    const personal = kpiBundle.personal;
-    const hasEmergencyFundBaseData =
-        (personal?.expenseMonthsObserved || 0) >= 2 && (personal?.avgMonthlyExpenses || 0) > 0;
-    const emergencyFundMonths = personal?.emergencyFundMonths || 0;
-    const emergencyFundDisplay = !hasEmergencyFundBaseData
-        ? "Datos insuficientes"
-        : emergencyFundMonths >= 60
-            ? "60+ meses"
-            : `${format.number.format(emergencyFundMonths)} meses`;
-    const emergencyFundTooltip = !hasEmergencyFundBaseData
-        ? "Necesitamos al menos dos meses de gastos reales para estimar tu cobertura con precisión."
-        : "Indica cuántos meses puedes pagar tus gastos mensuales con tu efectivo actual si te quedas sin ingresos.";
-    const consolidatedIncome = savingsPlan?.consolidatedIncome || 0;
     const summary = kpiBundle.summary || {
         accounts: 0,
         categories: 0,
         budgetsMonth: 0,
         transactions12m: 0,
     };
+    const isBusiness = kpiBundle.orgType === "business" && Boolean(kpiBundle.business);
+    const personal = kpiBundle.personal;
+    const business = kpiBundle.business;
+    const savingsGoals = kpiBundle.savingsGoals || [];
+    const savingsPlan = kpiBundle.personalSavingsPlan;
     const cycle = kpiBundle.personalCycle || null;
     const hasRealMovements = summary.transactions12m > 0;
+    const personalBudgetVariance = personal?.budgetVariance || 0;
+    const budgetSignalLabel =
+        personalBudgetVariance <= 0 ? "Margen presupuesto" : "Exceso presupuesto";
+    const budgetSignalValue = Math.abs(personalBudgetVariance);
+    const setupChecklist = [
+        {
+            label: "Estructura base",
+            detail: "Cuentas y categorías iniciales",
+            done: summary.accounts > 0 && summary.categories > 0,
+            href: "/dashboard/settings#estructura-financiera",
+        },
+        {
+            label: "Plan mensual",
+            detail: "Topes de presupuesto activos",
+            done: summary.budgetsMonth > 0,
+            href: "/dashboard/budget",
+        },
+        {
+            label: "Ejecución real",
+            detail: "Movimientos registrados",
+            done: summary.transactions12m > 0,
+            href: "/dashboard/transactions/new",
+        },
+    ];
+    const completedChecklist = setupChecklist.filter((item) => item.done).length;
 
-    const cards =
-        kpiBundle.orgType === "business" && kpiBundle.business
-            ? [
-                {
-                    label: "Revenue",
-                    value: format.money.format(kpiBundle.business.revenue),
-                    tooltip: "Suma de ingresos operativos del período.",
-                    formula: "Revenue = Σ GL.kind = revenue",
-                    variant: "default" as const,
-                },
-                {
-                    label: "Operating Income (EBIT)",
-                    value: format.money.format(kpiBundle.business.operatingIncome),
-                    tooltip: "Resultado operativo antes de intereses e impuestos.",
-                    formula: "EBIT = Revenue - COGS - OPEX",
-                    variant: kpiBundle.business.operatingIncome >= 0 ? "positive" as const : "negative" as const,
-                },
-                {
-                    label: "Operating Margin",
-                    value: `${format.percent.format(kpiBundle.business.operatingMarginPct)}%`,
-                    tooltip: "Porcentaje de rentabilidad operativa del período.",
-                    formula: "Operating Margin = EBIT / Revenue",
-                    variant: kpiBundle.business.operatingMarginPct >= 10 ? "positive" as const : "warning" as const,
-                },
-                {
-                    label: "Forecast EBIT",
-                    value: format.money.format(kpiBundle.business.forecastEbit),
-                    tooltip: "Proyección de utilidad operativa según supuestos actuales.",
-                    formula: "Forecast EBIT = Forecast Revenue - Forecast COGS - Forecast OPEX",
-                    variant: kpiBundle.business.forecastEbit >= 0 ? "default" as const : "negative" as const,
-                },
-                {
-                    label: "Budget Variance",
-                    value: format.money.format(kpiBundle.business.budgetVariance),
-                    tooltip: "Diferencia agregada entre presupuesto y ejecución mensual.",
-                    formula: "Variance = Actual - Budget",
-                    variant: kpiBundle.business.budgetVariance <= 0 ? "positive" as const : "warning" as const,
-                },
-                {
-                    label: "Restricted Cash",
-                    value: format.money.format(kpiBundle.business.restrictedCash),
-                    tooltip: "Saldo reservado para fines específicos (ej. detracciones).",
-                    variant: "default" as const,
-                },
-            ]
-            : [
-                {
-                    label: "Flujo de caja neto",
-                    value: format.money.format(kpiBundle.personal?.netCashFlow || 0),
-                    tooltip: "Ingresos menos egresos del mes corriente.",
-                    formula: "Net Cash Flow = Σ ingresos - Σ gastos",
-                    variant: (kpiBundle.personal?.netCashFlow || 0) >= 0 ? "positive" as const : "negative" as const,
-                },
-                {
-                    label: "Tasa de ahorro",
-                    value: `${format.percent.format(kpiBundle.personal?.savingsRatePct || 0)}%`,
-                    tooltip: "Porcentaje de ingresos que permanece como ahorro.",
-                    formula: "Savings Rate = (Income - Expenses) / Income",
-                    variant: (kpiBundle.personal?.savingsRatePct || 0) >= 20 ? "positive" as const : "warning" as const,
-                },
-                {
-                    label: "Patrimonio neto",
-                    value: format.money.format(kpiBundle.personal?.netWorth || 0),
-                    tooltip: "Activos menos pasivos de todas tus cuentas.",
-                    formula: "Net Worth = Assets - Liabilities",
-                    variant: "default" as const,
-                },
-                {
-                    label: "Meses de cobertura (fondo de emergencia)",
-                    value: emergencyFundDisplay,
-                    tooltip: emergencyFundTooltip,
-                    formula: "Meses de cobertura = efectivo líquido / gasto mensual promedio",
-                    variant: !hasEmergencyFundBaseData
-                        ? "warning" as const
-                        : (kpiBundle.personal?.emergencyFundMonths || 0) >= 6
-                            ? "positive" as const
-                            : "warning" as const,
-                },
-                {
-                    label: "Desviación presupuesto",
-                    value: format.money.format(kpiBundle.personal?.budgetVariance || 0),
-                    tooltip: "Diferencia entre gasto real y presupuesto del mes.",
-                    formula: "Variance = Actual - Budget",
-                    variant: (kpiBundle.personal?.budgetVariance || 0) <= 0 ? "positive" as const : "warning" as const,
-                },
-            ];
+    const hasEmergencyFundBaseData =
+        (personal?.expenseMonthsObserved || 0) >= 2 &&
+        (personal?.avgMonthlyExpenses || 0) > 0;
+    const emergencyFundMonths = personal?.emergencyFundMonths || 0;
+    const emergencyFundDisplay = !hasEmergencyFundBaseData
+        ? "Datos insuficientes"
+        : emergencyFundMonths >= 60
+          ? "60+ meses"
+          : `${format.number.format(emergencyFundMonths)} meses`;
+
+    const cycleEvents = cycle
+        ? [
+              ...cycle.incomePaymentDays.map((day) => ({
+                  day,
+                  label: "Abono ingreso principal",
+                  detail: "Entrada de ingresos del titular",
+              })),
+              ...cycle.partnerIncomePaymentDays.map((day) => ({
+                  day,
+                  label: "Abono ingreso compartido",
+                  detail: "Aporte de pareja/familiar",
+              })),
+              ...cycle.cardSchedules.map((card) => ({
+                  day: card.paymentDay,
+                  label: `Pago tarjeta: ${card.name}`,
+                  detail:
+                      card.strategy === "full"
+                          ? "Estrategia: pago total"
+                          : card.strategy === "minimum"
+                            ? "Estrategia: pago mínimo"
+                            : "Estrategia: pago fijo",
+              })),
+          ].sort((a, b) => a.day - b.day)
+        : [];
+
+    const metricCards: Array<{
+        label: string;
+        value: string;
+        status: string;
+        note?: string;
+    }> = isBusiness && business
+        ? [
+              {
+                  label: "Revenue",
+                  value: format.money.format(business.revenue),
+                  status:
+                      business.revenue > 0
+                          ? "text-[#0f2233]"
+                          : "text-surface-500",
+              },
+              {
+                  label: "Operating Income (EBIT)",
+                  value: format.money.format(business.operatingIncome),
+                  status:
+                      business.operatingIncome >= 0
+                          ? "text-positive-600"
+                          : "text-negative-600",
+              },
+              {
+                  label: "Operating Margin",
+                  value: `${format.percent.format(business.operatingMarginPct)}%`,
+                  status:
+                      business.operatingMarginPct >= 10
+                          ? "text-positive-600"
+                          : "text-warning-600",
+              },
+              {
+                  label: "Budget Variance",
+                  value: format.money.format(business.budgetVariance),
+                  status:
+                      business.budgetVariance <= 0
+                          ? "text-positive-600"
+                          : "text-warning-600",
+              },
+              {
+                  label: "Forecast EBIT",
+                  value: format.money.format(business.forecastEbit),
+                  status:
+                      business.forecastEbit >= 0
+                          ? "text-[#0f2233]"
+                          : "text-negative-600",
+              },
+          ]
+        : [
+              {
+                  label: "Flujo de caja neto",
+                  value: format.money.format(personal?.netCashFlow || 0),
+                  status:
+                      (personal?.netCashFlow || 0) >= 0
+                          ? "text-positive-600"
+                          : "text-negative-600",
+              },
+              {
+                  label: "Tasa de ahorro",
+                  value: `${format.percent.format(personal?.savingsRatePct || 0)}%`,
+                  status:
+                      (personal?.savingsRatePct || 0) >= 20
+                          ? "text-positive-600"
+                          : "text-warning-600",
+              },
+              {
+                  label: "Patrimonio neto",
+                  value: format.money.format(personal?.netWorth || 0),
+                  status:
+                      (personal?.netWorth || 0) >= 0
+                          ? "text-[#0f2233]"
+                          : "text-negative-600",
+                  note: `Activos ${format.money.format(personal?.assets || 0)} · Pasivos ${format.money.format(personal?.liabilities || 0)}`,
+              },
+              {
+                  label: "Cobertura de emergencia",
+                  value: emergencyFundDisplay,
+                  status:
+                      !hasEmergencyFundBaseData
+                          ? "text-warning-600"
+                          : "text-[#0f2233]",
+              },
+              {
+                  label: budgetSignalLabel,
+                  value: format.money.format(budgetSignalValue),
+                  status: personalBudgetVariance <= 0 ? "text-positive-600" : "text-warning-600",
+                  note:
+                      personalBudgetVariance <= 0
+                          ? "Monto que aún tienes disponible este mes."
+                          : "Monto por encima de tu plan mensual.",
+              },
+          ];
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-5 shadow-card">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-7 animate-fade-in">
+            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-7 shadow-card">
+                <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
                     <div>
-                        <h2 className="text-xl font-semibold text-[#0f2233]">
-                            {kpiBundle.orgType === "business" ? "Resumen del negocio" : "Tu resumen financiero"}
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
+                            Flujo mensual
+                        </p>
+                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">
+                            {isBusiness ? "Centro financiero del negocio" : "Centro financiero personal"}
                         </h2>
-                        <p className="mt-1 text-sm text-surface-500">
-                            Panel operativo con tus datos reales de cuentas, movimientos y planificación.
+                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
+                            Un solo ciclo: configuras estructura, registras movimientos, controlas presupuesto y ajustas proyección.
                         </p>
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <Link
+                                href="/dashboard/transactions/new"
+                                className="btn-primary text-sm no-underline hover:text-white"
+                            >
+                                Registrar movimiento
+                            </Link>
+                            <Link
+                                href="/dashboard/budget"
+                                className="btn-secondary text-sm no-underline"
+                            >
+                                Control mensual
+                            </Link>
+                            <Link
+                                href="/dashboard/settings#estructura-financiera"
+                                className="btn-secondary text-sm no-underline"
+                            >
+                                Ajustar configuración base
+                            </Link>
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                            Registrar movimiento
-                        </Link>
-                        <Link href="/dashboard/budget" className="btn-secondary text-sm no-underline">
-                            Presupuesto
-                        </Link>
-                    </div>
-                </div>
-            </section>
 
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Circuito de trabajo</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Flujo recomendado para mantener el sistema ordenado y actualizado.
-                </p>
-                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">1. Estructura</p>
-                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">
-                            {summary.accounts} cuentas · {summary.categories} categorías
+                    <article className="rounded-2xl border border-[#d9e2f0] bg-[#f5f9ff] p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                            Estado actual del flujo
                         </p>
-                        <p className="mt-1 text-xs text-surface-500">Base contable para operar sin ruido.</p>
-                        <Link href="/dashboard/settings#estructura-financiera" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
-                            Ir a configuración
-                        </Link>
-                    </article>
-
-                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">2. Registro diario</p>
-                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">{summary.transactions12m} movimientos (12m)</p>
-                        <p className="mt-1 text-xs text-surface-500">Cada movimiento alimenta KPIs, presupuesto y pronóstico.</p>
-                        <Link href="/dashboard/transactions/new" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
-                            Registrar movimiento
-                        </Link>
-                    </article>
-
-                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">3. Control mensual</p>
-                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">{summary.budgetsMonth} categorías con tope</p>
-                        <p className="mt-1 text-xs text-surface-500">Compara tope planificado contra ejecución real.</p>
-                        <Link href="/dashboard/budget" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
-                            Revisar presupuesto
-                        </Link>
-                    </article>
-
-                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">4. Decisión</p>
-                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">Asistente y pronóstico</p>
-                        <p className="mt-1 text-xs text-surface-500">Usa escenarios para decidir ajustes de ingreso y ahorro.</p>
-                        <Link href="/dashboard/assistant" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
-                            Ver recomendaciones
-                        </Link>
+                        <div className="mt-4 space-y-2.5 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Cuentas activas</span>
+                                <span className="font-semibold text-[#0f2233]">{summary.accounts}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Categorías activas</span>
+                                <span className="font-semibold text-[#0f2233]">{summary.categories}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Topes en presupuesto (mes)</span>
+                                <span className="font-semibold text-[#0f2233]">{summary.budgetsMonth}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Movimientos reales (12m)</span>
+                                <span className="font-semibold text-[#0f2233]">{summary.transactions12m}</span>
+                            </div>
+                        </div>
                     </article>
                 </div>
             </section>
 
-            <section className={`grid gap-4 ${cards.length >= 6 ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"}`}>
-                {cards.map((card) => (
-                    <KPICard
-                        key={card.label}
-                        label={card.label}
-                        value={card.value}
-                        tooltip={card.tooltip}
-                        formula={card.formula}
-                        variant={card.variant}
-                    />
+            <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                Checklist de arranque
+                            </p>
+                            <p className="mt-1 text-sm text-surface-600">
+                                {completedChecklist} de {setupChecklist.length} bloques operativos listos.
+                            </p>
+                        </div>
+                        <span className="rounded-full border border-[#d9e2f0] bg-[#f5f9ff] px-3 py-1 text-xs font-semibold text-[#0f2233]">
+                            {Math.round((completedChecklist / setupChecklist.length) * 100)}% completado
+                        </span>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        {setupChecklist.map((item) => (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className={`rounded-xl border px-4 py-3 no-underline transition-colors ${
+                                    item.done
+                                        ? "border-[#bfe1d8] bg-[#eef9f5]"
+                                        : "border-[#f3dec1] bg-[#fff6ea]"
+                                }`}
+                            >
+                                <p className="text-sm font-semibold text-[#0f2233]">{item.label}</p>
+                                <p className="mt-1 text-xs text-surface-600">{item.detail}</p>
+                                <p className="mt-2 text-xs font-semibold">
+                                    {item.done ? "Configurado" : "Pendiente"}
+                                </p>
+                            </Link>
+                        ))}
+                    </div>
+                </article>
+                {!isBusiness && (
+                    <article className="rounded-2xl border border-[#d9e2f0] bg-[#f5f9ff] p-5 shadow-card">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                            Datos del onboarding
+                        </p>
+                        <div className="mt-3 space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Ingreso consolidado</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {format.money.format(savingsPlan?.consolidatedIncome || 0)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Ahorro mensual planificado</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {format.money.format(savingsPlan?.monthlySavingsPool || 0)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-600">Registros de metas</span>
+                                <span className="font-semibold text-[#0f2233]">{savingsGoals.length}</span>
+                            </div>
+                        </div>
+                    </article>
+                )}
+            </section>
+
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                {metricCards.map((metric) => (
+                    <article
+                        key={metric.label}
+                        className="rounded-2xl border border-[#d9e2f0] bg-white p-4 shadow-card"
+                    >
+                        <p className="text-xs font-semibold uppercase tracking-[0.11em] text-surface-500">
+                            {metric.label}
+                        </p>
+                        <p className={`mt-2 text-2xl font-semibold ${metric.status}`}>
+                            {metric.value}
+                        </p>
+                        {metric.note ? (
+                            <p className="mt-1 text-xs text-surface-500">{metric.note}</p>
+                        ) : null}
+                    </article>
                 ))}
             </section>
 
-            {!hasRealMovements && kpiBundle.orgType === "personal" && (
-                <section className="rounded-2xl border border-[#d6e3f0] bg-[#f3f8fd] px-5 py-4 shadow-card">
-                    <p className="text-sm font-semibold text-[#0f2233]">Cómo interpretar estos valores ahora</p>
+            {!hasRealMovements && (
+                <section className="rounded-2xl border border-[#b8d8f0] bg-[#edf6fd] px-5 py-4 shadow-sm">
+                    <h3 className="text-sm font-semibold text-[#0f2233]">
+                        Aún no hay ejecución real del ciclo
+                    </h3>
                     <p className="mt-1 text-sm text-surface-600">
-                        Aún no tienes movimientos registrados. Por eso flujo de caja y tasa de ahorro están en cero, y la desviación de presupuesto refleja
-                        presupuesto planificado sin gasto ejecutado.
+                        Los indicadores en cero o “datos insuficientes” son normales hasta registrar movimientos reales.
                     </p>
                 </section>
             )}
 
-            {kpiBundle.orgType === "personal" && cycle && (
-                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Calendario y flujo del ciclo mensual</h3>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Esta vista traduce lo que configuraste en onboarding a una secuencia operativa mensual.
-                    </p>
-
-                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Inicio de ciclo</p>
-                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">
-                                {cycle.startDate ? `Día ${cycle.cycleDay}` : "Día 1 (por defecto)"}
+            {!isBusiness && cycle && (
+                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-lg font-semibold text-[#10283b]">
+                                Ciclo mensual explicado
+                            </h3>
+                            <p className="mt-1 text-sm text-surface-500">
+                                Este bloque convierte tu onboarding en flujo operativo entendible.
                             </p>
-                            <p className="mt-1 text-xs text-surface-500">
-                                {cycle.startDate ? `Ancla configurada: ${format.date.format(new Date(cycle.startDate))}` : "Sin fecha ancla guardada."}
+                        </div>
+                        <div className="rounded-xl border border-[#d9e2f0] bg-[#f5f9ff] px-3 py-2 text-right">
+                            <p className="text-xs text-surface-500">Inicio de ciclo</p>
+                            <p className="text-sm font-semibold text-[#0f2233]">
+                                {cycle.startDate
+                                    ? `Día ${cycle.cycleDay} (${format.date.format(new Date(cycle.startDate))})`
+                                    : `Día ${cycle.cycleDay}`}
                             </p>
-                        </article>
-
-                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Abonos de ingreso</p>
-                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">{formatDayList(cycle.incomePaymentDays)}</p>
-                            {cycle.partnerIncomePaymentDays.length > 0 && (
-                                <p className="mt-1 text-xs text-surface-500">
-                                    Aporte compartido: {formatDayList(cycle.partnerIncomePaymentDays)}
-                                </p>
-                            )}
-                        </article>
-
-                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Pagos de tarjeta</p>
-                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">
-                                {cycle.cardSchedules.length === 0
-                                    ? "Sin tarjetas registradas"
-                                    : cycle.cardSchedules
-                                          .map((card) => `${card.name}: día ${card.paymentDay}`)
-                                          .join(" · ")}
-                            </p>
-                        </article>
-
-                        <article className="rounded-2xl border border-[#bedfd8] bg-[#edf9f6] p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#117068]">Saldo proyectado del ciclo</p>
-                            <p className="mt-2 text-sm font-semibold text-[#117068]">{format.money.format(cycle.projectedFreeCash)}</p>
-                            <p className="mt-1 text-xs text-surface-600">Ingreso - compromisos operativos - ahorro planificado.</p>
-                        </article>
+                        </div>
                     </div>
 
-                    <div className="mt-4 overflow-x-auto rounded-2xl border border-surface-200">
-                        <table className="w-full min-w-[720px] text-sm">
-                            <tbody className="divide-y divide-surface-200">
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Ingreso consolidado mensual</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-[#0f2233]">
-                                        {format.money.format(savingsPlan?.consolidatedIncome || 0)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Gastos fijos planificados</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
-                                        -{format.money.format(cycle.fixedPlanned)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Gastos variables planificados</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
-                                        -{format.money.format(cycle.variablePlanned)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Pago total de tarjetas</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
-                                        -{format.money.format(cycle.fullCardPayments)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Pago mínimo de deuda revolvente</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
-                                        -{format.money.format(cycle.revolvingMinimumPayments)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-white">
-                                    <td className="px-4 py-3 text-surface-600">Ahorro mensual planificado</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-[#0f2233]">
-                                        -{format.money.format(cycle.plannedSavings)}
-                                    </td>
-                                </tr>
-                                <tr className="bg-[#edf9f6]">
-                                    <td className="px-4 py-3 font-semibold text-[#117068]">Saldo estimado libre del ciclo</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-[#117068]">
-                                        {format.money.format(cycle.projectedFreeCash)}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.95fr]">
+                        <article className="rounded-2xl border border-[#d9e2f0] bg-white p-4">
+                            <table className="w-full text-sm">
+                                <tbody className="divide-y divide-surface-200">
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Ingreso consolidado mensual</td>
+                                        <td className="py-2 text-right font-semibold text-[#0f2233]">
+                                            {format.money.format(savingsPlan?.consolidatedIncome || 0)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Gastos fijos planificados</td>
+                                        <td className="py-2 text-right font-semibold text-negative-600">
+                                            -{format.money.format(cycle.fixedPlanned)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Gastos variables planificados</td>
+                                        <td className="py-2 text-right font-semibold text-negative-600">
+                                            -{format.money.format(cycle.variablePlanned)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Pago total tarjetas</td>
+                                        <td className="py-2 text-right font-semibold text-negative-600">
+                                            -{format.money.format(cycle.fullCardPayments)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Pago mínimo revolvente</td>
+                                        <td className="py-2 text-right font-semibold text-negative-600">
+                                            -{format.money.format(cycle.revolvingMinimumPayments)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-surface-600">Ahorro mensual planificado</td>
+                                        <td className="py-2 text-right font-semibold text-[#0f2233]">
+                                            -{format.money.format(cycle.plannedSavings)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 font-semibold text-[#117068]">Saldo libre proyectado</td>
+                                        <td className="py-2 text-right font-semibold text-[#117068]">
+                                            {format.money.format(cycle.projectedFreeCash)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </article>
+
+                        <article className="rounded-2xl border border-[#d9e2f0] bg-[#f5f9ff] p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.11em] text-surface-500">
+                                Agenda del ciclo
+                            </p>
+                            <div className="mt-3 space-y-2.5 text-sm">
+                                <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
+                                    <p className="font-semibold text-[#0f2233]">Abono de ingresos</p>
+                                    <p className="text-surface-600">
+                                        Principal: {formatDayList(cycle.incomePaymentDays)}
+                                    </p>
+                                    {cycle.partnerIncomePaymentDays.length > 0 && (
+                                        <p className="text-surface-600">
+                                            Compartido: {formatDayList(cycle.partnerIncomePaymentDays)}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {cycleEvents.length === 0 ? (
+                                    <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2 text-surface-600">
+                                        Sin eventos configurados todavía.
+                                    </div>
+                                ) : (
+                                    cycleEvents.map((event, index) => (
+                                        <div
+                                            key={`${event.label}-${event.day}-${index}`}
+                                            className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2"
+                                        >
+                                            <p className="font-semibold text-[#0f2233]">
+                                                Día {event.day} · {event.label}
+                                            </p>
+                                            <p className="text-xs text-surface-500">{event.detail}</p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </article>
                     </div>
                 </section>
             )}
 
-            {/* ================= SAVINGS GOALS (MIS METAS) ================= */}
             {savingsGoals.length > 0 && (
-                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <div>
-                            <h3 className="text-lg font-semibold text-[#10283b]">Mis metas de ahorro</h3>
-                            <p className="text-sm text-surface-500">Progreso de tus objetivos de ahorro</p>
+                            <h3 className="text-lg font-semibold text-[#10283b]">Metas de ahorro</h3>
+                            <p className="text-sm text-surface-500">Progreso y ritmo mensual asignado.</p>
                         </div>
                         {savingsPlan && (
-                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-right">
+                            <div className="rounded-xl border border-[#d9e2f0] bg-[#f5f9ff] px-3 py-2 text-right">
                                 <p className="text-xs text-surface-500">Ahorro mensual planificado</p>
                                 <p className="text-sm font-semibold text-[#0f2233]">
                                     {format.money.format(savingsPlan.monthlySavingsPool)}
@@ -346,107 +485,123 @@ export default async function DashboardPage() {
                         )}
                     </div>
 
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {savingsGoals.map((goal) => {
                             const current = Number(goal.current_amount) || 0;
                             const target = Number(goal.target_amount) || 1;
                             const percent = Math.min((current / target) * 100, 100);
                             const monthlyContribution = Number(goal.monthly_contribution) || 0;
+                            const consolidatedIncome = savingsPlan?.consolidatedIncome || 0;
                             const percentOfIncome =
                                 consolidatedIncome > 0
                                     ? (monthlyContribution / consolidatedIncome) * 100
                                     : 0;
 
                             return (
-                                <article key={goal.id} className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4 shadow-sm relative overflow-hidden group">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-bold text-[#0f2233] truncate pr-2">{goal.name}</p>
-                                        <span className="text-xs font-semibold px-2 py-1 bg-white border border-surface-200 rounded-full text-primary-700 whitespace-nowrap">
+                                <article
+                                    key={goal.id}
+                                    className="rounded-2xl border border-[#d9e2f0] bg-[#f8fbff] p-4"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-sm font-semibold text-[#0f2233]">{goal.name}</p>
+                                        <span className="text-xs font-semibold text-[#0d4c7a]">
                                             {format.percent.format(percent)}%
                                         </span>
                                     </div>
 
-                                    <div className="h-2.5 w-full bg-surface-200 rounded-full overflow-hidden mb-3">
+                                    <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-surface-200">
                                         <div
-                                            className="h-full bg-[linear-gradient(90deg,#0d4c7a_0%,#117068_100%)] transition-all duration-500"
+                                            className="h-full rounded-full bg-[linear-gradient(90deg,#0d4c7a,#117068)]"
                                             style={{ width: `${percent}%` }}
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between text-xs text-surface-600 font-medium">
-                                        <span>{format.money.format(current)}</span>
-                                        <span>Meta: {format.money.format(target)}</span>
+                                    <div className="mt-3 space-y-1 text-xs text-surface-600">
+                                        <p>
+                                            Actual: <span className="font-semibold text-[#0f2233]">{format.money.format(current)}</span>
+                                        </p>
+                                        <p>
+                                            Meta: <span className="font-semibold text-[#0f2233]">{format.money.format(target)}</span>
+                                        </p>
+                                        <p>
+                                            Aporte mensual: <span className="font-semibold text-[#0f2233]">{format.money.format(monthlyContribution)}</span>
+                                        </p>
+                                        <p>
+                                            % de ingreso: <span className="font-semibold text-[#0f2233]">{format.percent.format(percentOfIncome)}%</span>
+                                        </p>
                                     </div>
-
-                                    <div className="mt-3 pt-3 border-t border-surface-200/60 text-xs text-surface-500 space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <span>Aporte mensual proyectado</span>
-                                            <span className="font-semibold text-surface-700">
-                                                {format.money.format(monthlyContribution)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span>% de ingreso asignado</span>
-                                            <span className="font-semibold text-surface-700">
-                                                {format.percent.format(percentOfIncome)}%
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span>Fecha estimada</span>
-                                            <span className="font-semibold text-surface-700 text-right">
-                                                {goal.estimated_completion_date
-                                                    ? format.date.format(
-                                                          new Date(goal.estimated_completion_date)
-                                                      )
-                                                    : "Sin proyección"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {goal.deadline_date && (
-                                        <div className="mt-3 pt-3 border-t border-surface-200/60 text-[11px] text-surface-400 flex items-center justify-between">
-                                            <span>Fecha límite:</span>
-                                            <span className="font-semibold text-surface-500 text-right">{format.date.format(new Date(goal.deadline_date))}</span>
-                                        </div>
-                                    )}
                                 </article>
-                            )
+                            );
                         })}
                     </div>
                 </section>
             )}
 
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-lg font-semibold text-[#10283b]">Movimientos recientes</h3>
-                    <Link href="/dashboard/transactions" className="inline-flex items-center gap-1 text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                    <Link
+                        href="/dashboard/transactions"
+                        className="text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]"
+                    >
                         Ver libro completo
-                        <ArrowRightIcon size={13} />
                     </Link>
                 </div>
 
                 {recentTransactions.length === 0 ? (
-                    <div className="rounded-2xl border border-surface-200 bg-surface-50 px-4 py-6 text-sm text-surface-500">
+                    <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
                         Todavía no existen transacciones en esta organización.
                     </div>
                 ) : (
-                    <div className="divide-y rounded-2xl border border-surface-200 bg-white">
-                        {recentTransactions.map((item: { id: string; description: string; date: string; amount: number; categories_gl: { name: string } | null; accounts: { name: string } | null }) => (
-                            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                                <div>
-                                    <p className="text-sm font-semibold text-[#0f2233]">{item.description}</p>
-                                    <p className="text-xs text-surface-500">
-                                        {item.categories_gl?.name || "Sin categoría"} ·{" "}
-                                        {item.accounts?.name || "Cuenta no definida"} ·{" "}
-                                        {format.date.format(new Date(item.date))}
-                                    </p>
-                                </div>
-                                <span className={`text-sm font-semibold ${item.amount >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                    {item.amount >= 0 ? "+" : "-"}
-                                    {format.money.format(Math.abs(item.amount))}
-                                </span>
-                            </div>
-                        ))}
+                    <div className="overflow-x-auto rounded-xl border border-[#d9e2f0]">
+                        <table className="w-full min-w-[760px] text-sm">
+                            <thead className="bg-[#f5f9ff]">
+                                <tr className="text-left text-surface-500">
+                                    <th className="px-4 py-3 font-semibold">Descripción</th>
+                                    <th className="px-4 py-3 font-semibold">Categoría</th>
+                                    <th className="px-4 py-3 font-semibold">Cuenta</th>
+                                    <th className="px-4 py-3 font-semibold">Fecha</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-surface-200 bg-white">
+                                {recentTransactions.map(
+                                    (item: {
+                                        id: string;
+                                        description: string;
+                                        date: string;
+                                        amount: number;
+                                        categories_gl: { name: string } | null;
+                                        accounts: { name: string } | null;
+                                    }) => (
+                                        <tr key={item.id}>
+                                            <td className="px-4 py-3 font-medium text-[#0f2233]">
+                                                {item.description}
+                                            </td>
+                                            <td className="px-4 py-3 text-surface-600">
+                                                {item.categories_gl?.name || "Sin categoría"}
+                                            </td>
+                                            <td className="px-4 py-3 text-surface-600">
+                                                {item.accounts?.name || "Sin cuenta"}
+                                            </td>
+                                            <td className="px-4 py-3 text-surface-600">
+                                                {format.date.format(new Date(item.date))}
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-semibold ${
+                                                    item.amount >= 0
+                                                        ? "text-positive-600"
+                                                        : "text-negative-600"
+                                                }`}
+                                            >
+                                                {item.amount >= 0 ? "+" : "-"}
+                                                {format.money.format(Math.abs(item.amount))}
+                                            </td>
+                                        </tr>
+                                    )
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </section>

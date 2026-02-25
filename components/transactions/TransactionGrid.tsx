@@ -68,6 +68,14 @@ export function TransactionGrid({
     const hasData = data.length > 0;
     const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
     const showingTo = totalCount === 0 ? 0 : Math.min(page * pageSize, totalCount);
+    const activeFilterCount = [
+        search,
+        accountId,
+        categoryId,
+        direction !== "all" ? direction : "",
+        dateFrom,
+        dateTo,
+    ].filter(Boolean).length;
 
     const exportHref = useMemo(() => {
         const params = new URLSearchParams(searchParams.toString());
@@ -204,40 +212,65 @@ export function TransactionGrid({
     return (
         <div className="space-y-6 animate-fade-in">
             <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Libro financiero</p>
-                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Transacciones</h1>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Paso 2 · Ejecución</p>
+                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Libro de transacciones</h1>
                         <p className="mt-2 text-sm text-surface-500">
-                            Registro operativo de movimientos con filtros por cuenta, categoría y periodo.
+                            Aquí registras ingresos y egresos reales. Este módulo alimenta resumen, presupuesto y pronóstico.
                         </p>
+
+                        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
+                                <p className="text-xs text-surface-500">Movimientos encontrados</p>
+                                <p className="mt-1 font-semibold text-[#0f2233]">{totalCount}</p>
+                            </div>
+                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
+                                <p className="text-xs text-surface-500">Filtros activos</p>
+                                <p className="mt-1 font-semibold text-[#0f2233]">{activeFilterCount}</p>
+                            </div>
+                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
+                                <p className="text-xs text-surface-500">Rango visible</p>
+                                <p className="mt-1 font-semibold text-[#0f2233]">
+                                    {showingFrom}-{showingTo}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".csv,text/csv"
-                            className="hidden"
-                            onChange={handleImportChange}
-                        />
-                        <button
-                            onClick={handleImportClick}
-                            className="btn-ghost text-sm"
-                            disabled={importing}
-                            type="button"
-                        >
-                            {importing ? "Importando..." : "Importar CSV"}
-                        </button>
-                        <a href={exportHref} className="btn-ghost text-sm">
-                            Exportar CSV
-                        </a>
-                        <Link
-                            href="/dashboard/transactions/new"
-                            className="btn-primary text-sm no-underline hover:text-white"
-                        >
-                            Nueva transacción
-                        </Link>
+                    <div className="rounded-2xl border border-surface-200 bg-surface-50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                            Acciones rápidas
+                        </p>
+                        <p className="mt-1 text-sm text-surface-600">
+                            Carga masiva, exportación y registro manual del periodo.
+                        </p>
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".csv,text/csv"
+                                className="hidden"
+                                onChange={handleImportChange}
+                            />
+                            <button
+                                onClick={handleImportClick}
+                                className="btn-ghost text-sm"
+                                disabled={importing}
+                                type="button"
+                            >
+                                {importing ? "Importando..." : "Importar CSV"}
+                            </button>
+                            <a href={exportHref} className="btn-ghost text-sm">
+                                Exportar CSV
+                            </a>
+                            <Link
+                                href="/dashboard/transactions/new"
+                                className="btn-primary text-sm no-underline hover:text-white"
+                            >
+                                Nueva transacción
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -254,6 +287,9 @@ export function TransactionGrid({
             )}
 
             <section className="space-y-3 rounded-3xl border border-surface-200 bg-white p-4 shadow-card">
+                <p className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                    Filtros del libro
+                </p>
                 <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleSearchSubmit}>
                     <input
                         type="text"
@@ -360,8 +396,14 @@ export function TransactionGrid({
                         <tbody className="divide-y">
                             {!hasData ? (
                                 <tr>
-                                    <td colSpan={6} className="py-8 text-center text-muted">
-                                        No hay transacciones para los filtros seleccionados.
+                                    <td colSpan={6} className="py-8 px-4 text-center text-muted">
+                                        <p>No hay transacciones para los filtros seleccionados.</p>
+                                        <Link
+                                            href="/dashboard/transactions/new"
+                                            className="mt-3 inline-flex text-sm font-semibold text-brand-600 no-underline hover:text-brand-700"
+                                        >
+                                            Registrar primer movimiento
+                                        </Link>
                                     </td>
                                 </tr>
                             ) : (

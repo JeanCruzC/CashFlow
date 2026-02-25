@@ -141,8 +141,8 @@ export function TransactionForm({
                     <p className="text-muted mt-2">
                         Para registrar transacciones primero debes crear al menos una cuenta.
                     </p>
-                    <Link href="/dashboard/accounts" className="btn-primary inline-flex mt-4 text-sm no-underline hover:text-white">
-                        Ir a cuentas
+                    <Link href="/dashboard/settings#estructura-financiera" className="btn-primary inline-flex mt-4 text-sm no-underline hover:text-white">
+                        Configurar cuentas
                     </Link>
                 </div>
             </div>

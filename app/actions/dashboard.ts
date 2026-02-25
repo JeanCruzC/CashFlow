@@ -17,6 +17,8 @@ import { computeBusinessForecast } from "@/lib/server/forecast-engine";
 export interface PersonalDashboardKPIs {
     netCashFlow: number;
     savingsRatePct: number;
+    assets: number;
+    liabilities: number;
     netWorth: number;
     emergencyFundMonths: number;
     avgMonthlyExpenses: number;
@@ -332,6 +334,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             personal: {
                 netCashFlow: 0,
                 savingsRatePct: 0,
+                assets: 0,
+                liabilities: 0,
                 netWorth: 0,
                 emergencyFundMonths: 0,
                 avgMonthlyExpenses: 0,
@@ -618,6 +622,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         personal: {
             netCashFlow: personal.netCashFlow,
             savingsRatePct: personal.savingsRate * 100,
+            assets: personal.assets,
+            liabilities: personal.liabilities,
             netWorth: personal.netWorth,
             emergencyFundMonths: personal.emergencyFundMonths,
             avgMonthlyExpenses: personal.avgMonthlyExpenses,

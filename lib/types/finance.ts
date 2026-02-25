@@ -198,6 +198,8 @@ export interface PersonalKPIs {
     netCashFlow: number;
     totalIncome: number;
     totalExpenses: number;
+    assets: number;
+    liabilities: number;
     savingsRate: number;
     netWorth: number;
     emergencyFundMonths: number;

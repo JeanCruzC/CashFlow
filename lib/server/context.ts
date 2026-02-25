@@ -96,10 +96,34 @@ const getOrgContextOrNullUncached = async (): Promise<OrgContext | null> => {
                 throw preferredError;
             }
         } else if (preferredMember?.org_id) {
-            return {
-                supabase,
-                orgId: preferredMember.org_id,
-            };
+            const { data: preferredOnboarding, error: preferredOnboardingError } = await supabase
+                .from("onboarding_state")
+                .select("step, completed_at")
+                .eq("org_id", preferredMember.org_id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (preferredOnboardingError) {
+                if (!isAuthSessionMissingError(preferredOnboardingError)) {
+                    throw preferredOnboardingError;
+                }
+                return {
+                    supabase,
+                    orgId: preferredMember.org_id,
+                };
+            }
+
+            const preferredIsCompleted =
+                Boolean(preferredOnboarding?.completed_at) ||
+                Number(preferredOnboarding?.step || 0) >= 8;
+
+            if (preferredIsCompleted) {
+                return {
+                    supabase,
+                    orgId: preferredMember.org_id,
+                };
+            }
         }
     }
 
