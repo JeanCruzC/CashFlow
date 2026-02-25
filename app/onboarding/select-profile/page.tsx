@@ -216,6 +216,16 @@ function suggestGoalHorizonMonths(targetAmount: number, consolidatedIncome: numb
     return 60;
 }
 
+function formatHorizonLabel(months: number) {
+    const safeMonths = Math.max(1, Math.round(months));
+    if (safeMonths < 12) return `${safeMonths} meses`;
+    const years = Math.floor(safeMonths / 12);
+    const remainingMonths = safeMonths % 12;
+    const yearLabel = years === 1 ? "año" : "años";
+    if (remainingMonths === 0) return `${years} ${yearLabel}`;
+    return `${years} ${yearLabel} ${remainingMonths} meses`;
+}
+
 function normalizeCategoryLabel(value: string) {
     return value
         .normalize("NFD")
@@ -294,6 +304,7 @@ export default function SelectProfilePage() {
     const [goalTargetMonthsById, setGoalTargetMonthsById] = useState<Record<string, string>>({});
     const [incomeGapRecommendation, setIncomeGapRecommendation] =
         useState<IncomeGapRecommendationResult | null>(null);
+    const [achievableAdditionalIncome, setAchievableAdditionalIncome] = useState("");
     const [isIncomeGapLoading, setIsIncomeGapLoading] = useState(false);
     const [incomeGapError, setIncomeGapError] = useState("");
 
@@ -719,6 +730,61 @@ export default function SelectProfilePage() {
         consolidatedIncome,
     ]);
 
+    const achievableScenario = useMemo(() => {
+        if (!incomeGapRecommendation) return null;
+
+        const additionalIncomeReachable = round2(Math.max(parseAmount(achievableAdditionalIncome), 0));
+        const scenarioIncome = round2(consolidatedIncome + additionalIncomeReachable);
+        const wantsPct = incomeGapRecommendation.healthy_plan_pct.wants_pct;
+        const wantsReserve = round2((scenarioIncome * wantsPct) / 100);
+        const baseCommitment = round2(operationalCashRequired + estimatedDebtPayment);
+        const scenarioSavingsPool = round2(Math.max(scenarioIncome - baseCommitment - wantsReserve, 0));
+        const incomeGapToTarget = round2(Math.max(incomeGapRecommendation.recommended_income - scenarioIncome, 0));
+
+        const goalWeightById = new Map(
+            savingsGoals.map((goal) => [goal.id, parseAmount(goal.goalWeight) || 1] as const)
+        );
+        const totalWeight = goalRecommendationRows.reduce(
+            (sum, goal) => sum + (goalWeightById.get(goal.id) ?? 1),
+            0
+        );
+
+        const goals = goalRecommendationRows.map((goal) => {
+            const weight = goalWeightById.get(goal.id) ?? 1;
+            const scenarioContribution =
+                scenarioSavingsPool > 0 && totalWeight > 0
+                    ? round2((scenarioSavingsPool * weight) / totalWeight)
+                    : 0;
+            const remaining = round2(Math.max(goal.targetAmount - goal.currentAmount, 0));
+            const scenarioEtaMonths =
+                scenarioContribution > 0 ? Math.ceil(remaining / scenarioContribution) : null;
+
+            return {
+                ...goal,
+                scenarioContribution,
+                scenarioEtaMonths,
+                meetsTarget:
+                    scenarioEtaMonths !== null && scenarioEtaMonths <= goal.targetMonths,
+            };
+        });
+
+        return {
+            additionalIncomeReachable,
+            scenarioIncome,
+            scenarioSavingsPool,
+            incomeGapToTarget,
+            goals,
+        };
+    }, [
+        incomeGapRecommendation,
+        achievableAdditionalIncome,
+        consolidatedIncome,
+        operationalCashRequired,
+        estimatedDebtPayment,
+        savingsGoals,
+        goalRecommendationRows,
+    ]);
+
     function handleCountryChange(value: string) {
         setCountry(value);
         const selectedCountry = COUNTRIES.find((item) => item.code === value);
@@ -840,6 +906,15 @@ export default function SelectProfilePage() {
 
             if (response.success && response.data) {
                 setIncomeGapRecommendation(response.data);
+                setAchievableAdditionalIncome((previous) => {
+                    if (previous.trim().length > 0) return previous;
+                    if (response.data.additional_income_needed <= 0) return "0";
+                    const baseReachable = Math.max(round2(consolidatedIncome * 0.3), 300);
+                    const suggested = round2(
+                        Math.min(response.data.additional_income_needed, baseReachable)
+                    );
+                    return String(suggested);
+                });
             } else {
                 setIncomeGapRecommendation(null);
                 setIncomeGapError(
@@ -2660,6 +2735,27 @@ export default function SelectProfilePage() {
                                                         {currency} {incomeGapRecommendation.additional_income_needed.toFixed(2)}
                                                     </p>
                                                 </article>
+                                                <article className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                                    <label className="label text-[11px] text-surface-500">
+                                                        Ingreso adicional alcanzable (tu escenario)
+                                                    </label>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <span className="text-sm text-surface-500">{currency}</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="input-field h-9 bg-surface-50 text-sm"
+                                                            value={achievableAdditionalIncome}
+                                                            onChange={(event) =>
+                                                                setAchievableAdditionalIncome(event.target.value)
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <p className="mt-1 text-[10px] text-surface-500">
+                                                        Úsalo para simular un segundo ingreso realista sin alterar la operación de la app.
+                                                    </p>
+                                                </article>
                                                 <div className="grid gap-2 sm:grid-cols-2">
                                                     <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
                                                         <p className="text-surface-500">Compromiso operativo</p>
@@ -2691,6 +2787,30 @@ export default function SelectProfilePage() {
                                                         </div>
                                                     </div>
                                                 </article>
+                                                {achievableScenario && (
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[11px] text-surface-500">
+                                                            Escenario con ingreso alcanzable
+                                                        </p>
+                                                        <div className="mt-1 grid gap-2 sm:grid-cols-2 text-xs">
+                                                            <div className="rounded-md border border-surface-200 bg-white px-2 py-1.5">
+                                                                Ingreso total: <span className="font-semibold text-[#0f2233]">{currency} {achievableScenario.scenarioIncome.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="rounded-md border border-surface-200 bg-white px-2 py-1.5">
+                                                                Ahorro a metas: <span className="font-semibold text-[#0f2233]">{currency} {achievableScenario.scenarioSavingsPool.toFixed(2)}/mes</span>
+                                                            </div>
+                                                        </div>
+                                                        {achievableScenario.incomeGapToTarget > 0 ? (
+                                                            <p className="mt-2 text-[11px] text-[#b42318]">
+                                                                Aún faltarían {currency} {achievableScenario.incomeGapToTarget.toFixed(2)} para cumplir el plan objetivo sin extender plazos.
+                                                            </p>
+                                                        ) : (
+                                                            <p className="mt-2 text-[11px] text-[#117068]">
+                                                                Este escenario ya cubre el plan objetivo de ingresos.
+                                                            </p>
+                                                        )}
+                                                    </article>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="mt-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-3 text-sm text-surface-600">
@@ -2719,6 +2839,7 @@ export default function SelectProfilePage() {
                                                         <th className="px-3 py-2 font-semibold">Aporte actual</th>
                                                         <th className="px-3 py-2 font-semibold">Aporte requerido</th>
                                                         <th className="px-3 py-2 font-semibold">Brecha</th>
+                                                        <th className="px-3 py-2 font-semibold">ETA con escenario</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-surface-200 bg-white">
@@ -2734,7 +2855,7 @@ export default function SelectProfilePage() {
                                                                 >
                                                                     {GOAL_HORIZON_OPTIONS.map((option) => (
                                                                         <option key={`${goal.id}-horizon-${option}`} value={option}>
-                                                                            {option} meses
+                                                                            {formatHorizonLabel(option)}
                                                                         </option>
                                                                     ))}
                                                                 </select>
@@ -2742,6 +2863,14 @@ export default function SelectProfilePage() {
                                                             <td className="px-3 py-2 text-surface-600">{currency} {goal.projectedMonthlyContribution.toFixed(2)}</td>
                                                             <td className="px-3 py-2 text-surface-600">{currency} {goal.requiredMonthlyContribution.toFixed(2)}</td>
                                                             <td className="px-3 py-2 font-semibold text-[#117068]">{currency} {goal.gapMonthlyContribution.toFixed(2)}</td>
+                                                            <td className="px-3 py-2 text-surface-600">
+                                                                {(() => {
+                                                                    const scenarioGoal = achievableScenario?.goals.find((item) => item.id === goal.id);
+                                                                    if (!scenarioGoal || scenarioGoal.scenarioEtaMonths === null) return "Sin avance";
+                                                                    const label = formatHorizonLabel(scenarioGoal.scenarioEtaMonths);
+                                                                    return scenarioGoal.meetsTarget ? label : `${label} (extendido)`;
+                                                                })()}
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>

@@ -88,51 +88,12 @@ function percentOf(amount: number, total: number) {
     return round2((Math.max(amount, 0) / total) * 100);
 }
 
-function rebalancePlan(
-    plan: { needs: number; wants: number; savings: number; debt: number },
-    key: "needs" | "savings" | "debt",
-    requiredValue: number
-) {
-    if (plan[key] >= requiredValue) return plan;
-
-    let missing = round2(requiredValue - plan[key]);
-    plan[key] = requiredValue;
-
-    const donors: Array<"wants" | "savings" | "debt" | "needs"> =
-        key === "needs"
-            ? ["wants", "savings", "debt"]
-            : key === "debt"
-                ? ["wants", "savings", "needs"]
-                : ["wants", "needs", "debt"];
-
-    for (const donorKey of donors) {
-        if (missing <= 0) break;
-        const removable = Math.min(plan[donorKey], missing);
-        plan[donorKey] = round2(plan[donorKey] - removable);
-        missing = round2(missing - removable);
-    }
-
-    const total = round2(plan.needs + plan.wants + plan.savings + plan.debt);
-    const correction = round2(100 - total);
-    plan.wants = round2(Math.max(plan.wants + correction, 0));
-    return plan;
+function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
 }
 
 function buildDeterministicRecommendation(input: IncomeGapInput): IncomeGapRecommendationResult {
     const hasDebt = input.estimatedDebtPayment > 0;
-    const plan = hasDebt
-        ? { needs: 50, wants: 20, savings: 20, debt: 10 }
-        : { needs: 55, wants: 25, savings: 20, debt: 0 };
-
-    const requiredNeedsPct = percentOf(input.operationalCashRequired, input.consolidatedIncome);
-    const requiredDebtPct = percentOf(input.estimatedDebtPayment, input.consolidatedIncome);
-    const minimumNeedsTarget = Math.min(Math.max(requiredNeedsPct + 2, plan.needs), 90);
-    rebalancePlan(plan, "needs", minimumNeedsTarget);
-
-    if (hasDebt) {
-        const minimumDebtTarget = Math.min(Math.max(requiredDebtPct + 1, plan.debt), 35);
-        rebalancePlan(plan, "debt", minimumDebtTarget);
-    }
 
     const goalResults: IncomeGapGoalResult[] = input.goals.map((goal) => {
         const remaining = round2(Math.max(goal.targetAmount - goal.currentAmount, 0));
@@ -158,44 +119,111 @@ function buildDeterministicRecommendation(input: IncomeGapInput): IncomeGapRecom
         goalResults.reduce((sum, goal) => sum + goal.required_monthly_contribution, 0)
     );
 
-    const needsPct = Math.max(plan.needs, 0.01);
-    const savingsPct = Math.max(plan.savings, 0.01);
-    const debtPct = hasDebt ? Math.max(plan.debt, 0.01) : 0;
+    const wantsPct = clamp(
+        Math.max(input.currentDistribution.wantsPct, hasDebt ? 8 : 12),
+        8,
+        25
+    );
+    const minSavingsPct = clamp(
+        Math.max(input.currentDistribution.savingsPct, hasDebt ? 12 : 15),
+        10,
+        35
+    );
+    const debtPctTarget = hasDebt
+        ? clamp(Math.max(input.currentDistribution.debtPct, 5), 5, 20)
+        : 0;
 
-    const requiredIncomeForNeeds = round2(input.operationalCashRequired / (needsPct / 100));
-    const requiredIncomeForSavings = round2(requiredSavingsForGoals / (savingsPct / 100));
-    const requiredIncomeForDebt = debtPct > 0
-        ? round2(input.estimatedDebtPayment / (debtPct / 100))
-        : input.consolidatedIncome;
+    const commitmentBase = round2(
+        input.operationalCashRequired + input.estimatedDebtPayment
+    );
 
-    const recommendedIncome = round2(
+    const denominatorAbsoluteSavings = 1 - wantsPct / 100;
+    const incomeToCoverAbsoluteSavings =
+        denominatorAbsoluteSavings > 0
+            ? round2(
+                (commitmentBase + requiredSavingsForGoals) /
+                denominatorAbsoluteSavings
+            )
+            : Number.POSITIVE_INFINITY;
+
+    const denominatorHealthyMix = 1 - (wantsPct + minSavingsPct) / 100;
+    const incomeToRespectHealthyMix =
+        denominatorHealthyMix > 0
+            ? round2(commitmentBase / denominatorHealthyMix)
+            : Number.POSITIVE_INFINITY;
+
+    const incomeToCoverDebtMix =
+        hasDebt && debtPctTarget > 0
+            ? round2(input.estimatedDebtPayment / (debtPctTarget / 100))
+            : input.consolidatedIncome;
+
+    let recommendedIncome = round2(
         Math.max(
             input.consolidatedIncome,
-            requiredIncomeForNeeds,
-            requiredIncomeForSavings,
-            requiredIncomeForDebt
+            incomeToCoverAbsoluteSavings,
+            incomeToRespectHealthyMix,
+            incomeToCoverDebtMix
         )
     );
+
+    const needsAmount = round2(input.operationalCashRequired);
+    const debtAmount = round2(input.estimatedDebtPayment);
+    let wantsAmount = round2((recommendedIncome * wantsPct) / 100);
+    let savingsAmount = round2(
+        recommendedIncome - needsAmount - debtAmount - wantsAmount
+    );
+
+    const minimumSavingsAmount = round2(
+        Math.max(requiredSavingsForGoals, (recommendedIncome * minSavingsPct) / 100)
+    );
+
+    if (savingsAmount < minimumSavingsAmount) {
+        const shortfall = round2(minimumSavingsAmount - savingsAmount);
+        recommendedIncome = round2(recommendedIncome + shortfall);
+        wantsAmount = round2((recommendedIncome * wantsPct) / 100);
+        savingsAmount = round2(
+            recommendedIncome - needsAmount - debtAmount - wantsAmount
+        );
+    }
+
+    if (savingsAmount < 0) {
+        recommendedIncome = round2(recommendedIncome + Math.abs(savingsAmount));
+        wantsAmount = round2((recommendedIncome * wantsPct) / 100);
+        savingsAmount = round2(
+            recommendedIncome - needsAmount - debtAmount - wantsAmount
+        );
+    }
+
+    const healthyPlanAmounts = {
+        needs_amount: needsAmount,
+        wants_amount: round2(Math.max(wantsAmount, 0)),
+        savings_amount: round2(Math.max(savingsAmount, 0)),
+        debt_amount: round2(Math.max(debtAmount, 0)),
+    };
+
+    const healthyPlanPct = {
+        needs_pct: percentOf(healthyPlanAmounts.needs_amount, recommendedIncome),
+        wants_pct: percentOf(healthyPlanAmounts.wants_amount, recommendedIncome),
+        savings_pct: percentOf(healthyPlanAmounts.savings_amount, recommendedIncome),
+        debt_pct: percentOf(healthyPlanAmounts.debt_amount, recommendedIncome),
+    };
+
     const additionalIncomeNeeded = round2(
         Math.max(recommendedIncome - input.consolidatedIncome, 0)
     );
-
-    const healthyPlanAmounts = {
-        needs_amount: round2((recommendedIncome * plan.needs) / 100),
-        wants_amount: round2((recommendedIncome * plan.wants) / 100),
-        savings_amount: round2((recommendedIncome * plan.savings) / 100),
-        debt_amount: round2((recommendedIncome * plan.debt) / 100),
-    };
+    const highGap = additionalIncomeNeeded > input.consolidatedIncome * 0.6;
 
     const summary = additionalIncomeNeeded > 0
-        ? `Para sostener una distribución saludable y cumplir tus metas en el plazo elegido, necesitas elevar tu ingreso mensual en ${input.currency} ${additionalIncomeNeeded.toFixed(2)}.`
+        ? highGap
+            ? `La brecha para cumplir el plazo elegido es alta: necesitas ${input.currency} ${additionalIncomeNeeded.toFixed(2)} adicionales al mes. Te recomendamos un plan escalonado: definir un ingreso adicional alcanzable e ir extendiendo el horizonte de metas.`
+            : `Para sostener una distribución saludable y cumplir tus metas en el plazo elegido, necesitas elevar tu ingreso mensual en ${input.currency} ${additionalIncomeNeeded.toFixed(2)}.`
         : `Con tu ingreso actual puedes sostener una distribución saludable y cumplir tus metas en el plazo elegido sin ingreso adicional.`;
 
     const actionItems = additionalIncomeNeeded > 0
         ? [
-            "Define una meta de incremento de ingresos con fecha: freelancing, comisiones o ajuste salarial.",
-            "Protege el bucket de necesidades para cubrir compromisos operativos antes de gastos discrecionales.",
-            "Mantén el aporte mensual requerido por meta para cumplir el horizonte seleccionado.",
+            "Define un ingreso adicional alcanzable y úsalo como escenario base antes de comprometer un objetivo agresivo.",
+            "Mantén cubiertos compromisos operativos y de deuda antes de aumentar gastos discrecionales.",
+            "Si el ingreso adicional es limitado, prioriza metas y amplía el horizonte para evitar sobreendeudamiento.",
         ]
         : [
             "Mantén la consistencia de tu aporte mensual a metas y evita retiros del bucket de ahorro.",
@@ -214,12 +242,7 @@ function buildDeterministicRecommendation(input: IncomeGapInput): IncomeGapRecom
         operational_commitment: input.operationalCashRequired,
         required_debt_payment: input.estimatedDebtPayment,
         required_savings_for_goals: requiredSavingsForGoals,
-        healthy_plan_pct: {
-            needs_pct: round2(plan.needs),
-            wants_pct: round2(plan.wants),
-            savings_pct: round2(plan.savings),
-            debt_pct: round2(plan.debt),
-        },
+        healthy_plan_pct: healthyPlanPct,
         healthy_plan_amounts: healthyPlanAmounts,
         goals: goalResults,
         summary,
@@ -259,7 +282,7 @@ export async function generateIncomeGapRecommendation(rawInput: IncomeGapInput) 
                 const aiResult = await generateObject({
                     model: google(modelName),
                     schema: aiNarrativeSchema,
-                    system: `Eres un asesor financiero de CashFlow. Debes explicar de forma clara cuánto ingreso adicional mensual se requiere para mantener una estructura saludable (necesidades/deseos/ahorro/deuda) y cumplir metas de ahorro en el horizonte definido.`,
+                    system: `Eres un asesor financiero de CashFlow. Debes explicar de forma clara cuánto ingreso adicional mensual se requiere para mantener una estructura saludable (necesidades/deseos/ahorro/deuda) y cumplir metas de ahorro en el horizonte definido. Si una meta supera 12 meses, expresa el plazo en años y meses.`,
                     prompt: `
 Moneda: ${input.currency}
 Ingreso actual: ${deterministic.consolidated_income}
@@ -272,7 +295,7 @@ Plan saludable (%): Needs ${deterministic.healthy_plan_pct.needs_pct}, Wants ${d
 Detalle metas: ${JSON.stringify(deterministic.goals)}
 
 Genera:
-1) summary en español (1 párrafo claro, sin relleno).
+1) summary en español (1 párrafo claro, sin relleno). Si la brecha es alta, sugiere explícitamente estrategia escalonada con ingreso adicional alcanzable.
 2) action_items con 3 a 5 acciones concretas y accionables.
                     `,
                 });

@@ -17,6 +17,16 @@ function formatDate(value: string) {
     }).format(new Date(value));
 }
 
+function formatHorizonLabel(months: number) {
+    const safeMonths = Math.max(1, Math.round(months));
+    if (safeMonths < 12) return `${safeMonths} meses`;
+    const years = Math.floor(safeMonths / 12);
+    const remainingMonths = safeMonths % 12;
+    const yearLabel = years === 1 ? "año" : "años";
+    if (remainingMonths === 0) return `${years} ${yearLabel}`;
+    return `${years} ${yearLabel} ${remainingMonths} meses`;
+}
+
 export default async function AssistantPage() {
     const insights = await getAssistantInsights(12);
 
@@ -156,7 +166,7 @@ export default async function AssistantPage() {
                                                 {recommendation.goals.map((goal) => (
                                                     <tr key={`${insight.id}-goal-${goal.id}`}>
                                                         <td className="px-3 py-2 font-medium text-[#0f2233]">{goal.name}</td>
-                                                        <td className="px-3 py-2 text-surface-600">{goal.target_months} meses</td>
+                                                        <td className="px-3 py-2 text-surface-600">{formatHorizonLabel(goal.target_months)}</td>
                                                         <td className="px-3 py-2 text-surface-600">
                                                             {formatMoney(goal.projected_monthly_contribution, currency)}
                                                         </td>
