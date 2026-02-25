@@ -1,9 +1,13 @@
 "use client";
 
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createProfileOrganization } from "@/app/actions/onboarding";
 import { generateSmartDistribution } from "@/lib/server/ai-distribution";
+import {
+    generateIncomeGapRecommendation,
+    type IncomeGapRecommendationResult,
+} from "@/lib/server/ai-income-gap";
 import {
     ArrowRightIcon,
     BuildingIcon,
@@ -11,14 +15,14 @@ import {
     UserCircleIcon,
 } from "@/components/ui/icons";
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 type ProfileType = "personal" | "business";
 type CategoryKind = "income" | "expense" | "cost_of_goods_sold";
 type DistributionRule = "50_30_20" | "70_20_10" | "80_20" | "custom";
 type SavingsPriority = "fixed_expenses" | "debt_payments" | "savings_goals";
 type RulePillTone = "needs" | "wants" | "savings" | "debt";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 
 const CURRENCIES = ["PEN", "USD", "EUR", "MXN", "COP", "CLP", "ARS"];
 const COUNTRIES = [
@@ -78,6 +82,8 @@ const RULE_CARD_CONFIG: Record<
         ],
     },
 };
+
+const GOAL_HORIZON_OPTIONS = [12, 18, 24, 36, 48, 60, 84, 120];
 
 const FIXED_EXPENSE_KEYWORDS = [
     "alquiler",
@@ -197,6 +203,19 @@ function round2(value: number) {
     return Math.round(value * 100) / 100;
 }
 
+function suggestGoalHorizonMonths(targetAmount: number, consolidatedIncome: number) {
+    const safeTarget = Math.max(targetAmount, 0);
+    const annualIncome = Math.max(consolidatedIncome, 0) * 12;
+    if (annualIncome <= 0) return 36;
+
+    const ratio = safeTarget / annualIncome;
+    if (ratio <= 0.5) return 12;
+    if (ratio <= 1) return 24;
+    if (ratio <= 2) return 36;
+    if (ratio <= 3) return 48;
+    return 60;
+}
+
 function normalizeCategoryLabel(value: string) {
     return value
         .normalize("NFD")
@@ -272,6 +291,11 @@ export default function SelectProfilePage() {
     const [aiReasoning, setAiReasoning] = useState("");
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiError, setAiError] = useState("");
+    const [goalTargetMonthsById, setGoalTargetMonthsById] = useState<Record<string, string>>({});
+    const [incomeGapRecommendation, setIncomeGapRecommendation] =
+        useState<IncomeGapRecommendationResult | null>(null);
+    const [isIncomeGapLoading, setIsIncomeGapLoading] = useState(false);
+    const [incomeGapError, setIncomeGapError] = useState("");
 
     const [savingsPriorities, setSavingsPriorities] = useState<SavingsPriority[]>([
         "fixed_expenses",
@@ -641,6 +665,60 @@ export default function SelectProfilePage() {
         });
     }, [savingsGoals, dynamicSavingsPool, consolidatedIncome]);
 
+    const projectedContributionByGoalId = useMemo(
+        () =>
+            new Map(
+                projectedGoalRows.map((goal) => [goal.id, goal.projectedContribution] as const)
+            ),
+        [projectedGoalRows]
+    );
+
+    const goalRecommendationRows = useMemo(() => {
+        return savingsGoals
+            .map((goal) => {
+                const targetAmount = parseAmount(goal.targetAmount);
+                const currentAmount = 0;
+                const projectedMonthlyContribution = round2(
+                    projectedContributionByGoalId.get(goal.id) ?? 0
+                );
+                const suggestedMonths = suggestGoalHorizonMonths(
+                    targetAmount,
+                    consolidatedIncome
+                );
+                const selectedMonthsRaw = goalTargetMonthsById[goal.id];
+                const selectedMonthsParsed = Number.parseInt(selectedMonthsRaw ?? "", 10);
+                const targetMonths = Number.isFinite(selectedMonthsParsed) && selectedMonthsParsed > 0
+                    ? selectedMonthsParsed
+                    : suggestedMonths;
+                const requiredMonthlyContribution = round2(
+                    targetMonths > 0
+                        ? Math.max((targetAmount - currentAmount) / targetMonths, 0)
+                        : 0
+                );
+                const gapMonthlyContribution = round2(
+                    Math.max(requiredMonthlyContribution - projectedMonthlyContribution, 0)
+                );
+
+                return {
+                    id: goal.id,
+                    name: goal.name.trim() || "Meta de ahorro",
+                    targetAmount,
+                    currentAmount,
+                    projectedMonthlyContribution,
+                    targetMonths,
+                    suggestedMonths,
+                    requiredMonthlyContribution,
+                    gapMonthlyContribution,
+                };
+            })
+            .filter((goal) => goal.targetAmount > 0);
+    }, [
+        savingsGoals,
+        projectedContributionByGoalId,
+        goalTargetMonthsById,
+        consolidatedIncome,
+    ]);
+
     function handleCountryChange(value: string) {
         setCountry(value);
         const selectedCountry = COUNTRIES.find((item) => item.code === value);
@@ -724,6 +802,73 @@ export default function SelectProfilePage() {
             setIsAiLoading(false);
         }
     }
+
+    function handleGoalHorizonChange(goalId: string, months: number) {
+        setGoalTargetMonthsById((previous) => ({
+            ...previous,
+            [goalId]: String(months),
+        }));
+    }
+
+    const applyIncomeGapRecommendation = useCallback(async () => {
+        setIsIncomeGapLoading(true);
+        setIncomeGapError("");
+
+        try {
+            const response = await generateIncomeGapRecommendation({
+                country,
+                currency,
+                consolidatedIncome,
+                operationalCashRequired,
+                estimatedDebtPayment,
+                currentDistribution: {
+                    needsPct: distribution.needsPct,
+                    wantsPct: distribution.wantsPct,
+                    savingsPct: distribution.savingsPct,
+                    debtPct: distribution.debtPct,
+                },
+                goals: goalRecommendationRows.map((goal) => ({
+                    id: goal.id,
+                    name: goal.name,
+                    targetAmount: goal.targetAmount,
+                    currentAmount: goal.currentAmount,
+                    projectedMonthlyContribution: goal.projectedMonthlyContribution,
+                    targetMonths: goal.targetMonths,
+                    suggestedMonths: goal.suggestedMonths,
+                })),
+            });
+
+            if (response.success && response.data) {
+                setIncomeGapRecommendation(response.data);
+            } else {
+                setIncomeGapRecommendation(null);
+                setIncomeGapError(
+                    response.error || "No se pudo generar la recomendación de ingresos."
+                );
+            }
+        } catch {
+            setIncomeGapRecommendation(null);
+            setIncomeGapError("No se pudo generar la recomendación de ingresos.");
+        } finally {
+            setIsIncomeGapLoading(false);
+        }
+    }, [
+        country,
+        currency,
+        consolidatedIncome,
+        operationalCashRequired,
+        estimatedDebtPayment,
+        distribution.needsPct,
+        distribution.wantsPct,
+        distribution.savingsPct,
+        distribution.debtPct,
+        goalRecommendationRows,
+    ]);
+
+    useEffect(() => {
+        if (step !== 9 || selected !== "personal") return;
+        void applyIncomeGapRecommendation();
+    }, [step, selected, applyIncomeGapRecommendation]);
 
     function handleAddCategory() {
         if (!newCatName.trim()) return;
@@ -869,6 +1014,19 @@ export default function SelectProfilePage() {
                 savingsPriorities,
             };
 
+            const assistantRecommendationPayload =
+                selected === "personal" && incomeGapRecommendation
+                    ? {
+                        ...incomeGapRecommendation,
+                        goals: incomeGapRecommendation.goals.map((goal) => ({
+                            ...goal,
+                            target_months:
+                                Number.parseInt(goalTargetMonthsById[goal.id] ?? "", 10) ||
+                                goal.target_months,
+                        })),
+                    }
+                    : undefined;
+
             const payload =
                 selected === "personal"
                     ? {
@@ -885,6 +1043,7 @@ export default function SelectProfilePage() {
                         customCategories,
                         initialBudgets: initialBudgetsPayload,
                         financialProfile: financialProfilePayload,
+                        assistantRecommendation: assistantRecommendationPayload,
                     }
                     : {
                         ...shared,
@@ -930,7 +1089,10 @@ export default function SelectProfilePage() {
             }`}
         >
             <div className={`w-full animate-fade-in relative ${isPersonalDistributionCanvas ? "max-w-[1360px]" : "max-w-3xl"}`}>
-                <div className="mb-8 grid grid-cols-8 gap-2">
+                <div
+                    className="mb-8 grid gap-2"
+                    style={{ gridTemplateColumns: `repeat(${TOTAL_STEPS}, minmax(0, 1fr))` }}
+                >
                     {Array.from({ length: TOTAL_STEPS }, (_, index) => {
                         const currentStep = index + 1;
                         return (
@@ -2370,8 +2532,201 @@ export default function SelectProfilePage() {
                             <div className="space-y-6 animate-fade-in">
                                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Configuración empresarial</h1>
                                 <p className="text-base text-surface-600 leading-relaxed">
-                                    Para perfil empresa no aplicamos regla de ahorro personal. Continuaremos con prioridad operativa y metas.
+                                    Para perfil empresa no aplicamos la recomendación de bolsa personal. En el siguiente paso verás un resumen final antes de crear la organización.
                                 </p>
+                            </div>
+                        )}
+
+                        {step === 9 && selected === "personal" && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">
+                                        Recomendación IA de ingreso adicional
+                                    </h1>
+                                    <p className="mt-3 text-base text-surface-600 leading-relaxed">
+                                        Calculamos cuánto ingreso extra mensual necesitas para sostener una distribución saludable (necesidades, deseos, ahorro y deuda) y cumplir tus metas en el horizonte que elijas.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-5 xl:grid-cols-12">
+                                    <section className="xl:col-span-7 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                    Diagnóstico de recomendación
+                                                </p>
+                                                <p className="mt-1 text-sm text-surface-600">
+                                                    Esta recomendación no modifica tus cálculos operativos ni tu dashboard.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={applyIncomeGapRecommendation}
+                                                disabled={isIncomeGapLoading}
+                                                className="rounded-lg border border-[#bfdbec] bg-[#f2f8fc] px-3 py-2 text-xs font-semibold text-[#0d4c7a] hover:bg-[#e8f3fb] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isIncomeGapLoading ? "Calculando..." : "Regenerar recomendación IA"}
+                                            </button>
+                                        </div>
+
+                                        {incomeGapRecommendation ? (
+                                            <div className="mt-4 space-y-4">
+                                                <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+                                                    <p className="text-sm font-medium text-[#0f2233]">
+                                                        {incomeGapRecommendation.summary}
+                                                    </p>
+                                                </div>
+                                                {incomeGapRecommendation.action_items.length > 0 && (
+                                                    <div className="space-y-2">
+                                                        {incomeGapRecommendation.action_items.map((item, index) => (
+                                                            <div
+                                                                key={`income-gap-action-${index}`}
+                                                                className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm text-surface-600"
+                                                            >
+                                                                {item}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${incomeGapError ? "border-negative-200 bg-negative-50 text-negative-700" : "border-surface-200 bg-surface-50 text-surface-600"}`}>
+                                                {incomeGapError || "Genera la recomendación para obtener una propuesta de ingreso adicional."}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    <section className="xl:col-span-5 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                            Resultado de referencia
+                                        </p>
+                                        {incomeGapRecommendation ? (
+                                            <div className="mt-3 space-y-3">
+                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[11px] text-surface-500">Ingreso actual</p>
+                                                        <p className="mt-1 text-base font-semibold text-[#0f2233]">
+                                                            {currency} {incomeGapRecommendation.consolidated_income.toFixed(2)}
+                                                        </p>
+                                                    </article>
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                        <p className="text-[11px] text-surface-500">Ingreso recomendado</p>
+                                                        <p className="mt-1 text-base font-semibold text-[#0f2233]">
+                                                            {currency} {incomeGapRecommendation.recommended_income.toFixed(2)}
+                                                        </p>
+                                                    </article>
+                                                </div>
+                                                <article className="rounded-lg border border-[#bfe1d8] bg-[#eef9f5] px-3 py-2">
+                                                    <p className="text-[11px] text-[#117068]">Ingreso adicional sugerido</p>
+                                                    <p className="mt-1 text-lg font-semibold text-[#117068]">
+                                                        {currency} {incomeGapRecommendation.additional_income_needed.toFixed(2)}
+                                                    </p>
+                                                </article>
+                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                                        <p className="text-surface-500">Compromiso operativo</p>
+                                                        <p className="mt-1 font-semibold text-[#0f2233]">
+                                                            {currency} {incomeGapRecommendation.operational_commitment.toFixed(2)}
+                                                        </p>
+                                                    </article>
+                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                                        <p className="text-surface-500">Ahorro mensual requerido</p>
+                                                        <p className="mt-1 font-semibold text-[#0f2233]">
+                                                            {currency} {incomeGapRecommendation.required_savings_for_goals.toFixed(2)}
+                                                        </p>
+                                                    </article>
+                                                </div>
+                                                <article className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                                    <p className="text-[11px] text-surface-500 mb-2">Distribución saludable sugerida</p>
+                                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
+                                                            Necesidades: {incomeGapRecommendation.healthy_plan_pct.needs_pct.toFixed(2)}%
+                                                        </div>
+                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
+                                                            Deseos: {incomeGapRecommendation.healthy_plan_pct.wants_pct.toFixed(2)}%
+                                                        </div>
+                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
+                                                            Ahorro: {incomeGapRecommendation.healthy_plan_pct.savings_pct.toFixed(2)}%
+                                                        </div>
+                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
+                                                            Deuda: {incomeGapRecommendation.healthy_plan_pct.debt_pct.toFixed(2)}%
+                                                        </div>
+                                                    </div>
+                                                </article>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-3 text-sm text-surface-600">
+                                                El resultado aparecerá aquí cuando la IA termine de calcular.
+                                            </div>
+                                        )}
+                                    </section>
+                                </div>
+
+                                {goalRecommendationRows.length > 0 && (
+                                    <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                        <h3 className="text-sm font-semibold text-[#0f2233]">
+                                            Ajuste de plazo por meta de ahorro
+                                        </h3>
+                                        <p className="mt-1 text-xs text-surface-500">
+                                            Edita el horizonte de cada meta para recalcular la recomendación final de ingreso.
+                                        </p>
+
+                                        <div className="mt-4 overflow-x-auto rounded-xl border border-surface-200">
+                                            <table className="w-full min-w-[760px] text-sm">
+                                                <thead className="bg-surface-50 text-left text-surface-500">
+                                                    <tr>
+                                                        <th className="px-3 py-2 font-semibold">Meta</th>
+                                                        <th className="px-3 py-2 font-semibold">Monto objetivo</th>
+                                                        <th className="px-3 py-2 font-semibold">Plazo</th>
+                                                        <th className="px-3 py-2 font-semibold">Aporte actual</th>
+                                                        <th className="px-3 py-2 font-semibold">Aporte requerido</th>
+                                                        <th className="px-3 py-2 font-semibold">Brecha</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-surface-200 bg-white">
+                                                    {goalRecommendationRows.map((goal) => (
+                                                        <tr key={`goal-reco-${goal.id}`}>
+                                                            <td className="px-3 py-2 font-medium text-[#0f2233]">{goal.name}</td>
+                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.targetAmount.toFixed(2)}</td>
+                                                            <td className="px-3 py-2">
+                                                                <select
+                                                                    className="input-field h-9 min-w-[120px] bg-surface-50 text-sm"
+                                                                    value={goalTargetMonthsById[goal.id] ?? String(goal.suggestedMonths)}
+                                                                    onChange={(event) => handleGoalHorizonChange(goal.id, Number(event.target.value))}
+                                                                >
+                                                                    {GOAL_HORIZON_OPTIONS.map((option) => (
+                                                                        <option key={`${goal.id}-horizon-${option}`} value={option}>
+                                                                            {option} meses
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.projectedMonthlyContribution.toFixed(2)}</td>
+                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.requiredMonthlyContribution.toFixed(2)}</td>
+                                                            <td className="px-3 py-2 font-semibold text-[#117068]">{currency} {goal.gapMonthlyContribution.toFixed(2)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                )}
+
+                                <div className="rounded-xl border border-[#c8d9ea] bg-[#f2f8fd] px-4 py-3 text-sm text-surface-600">
+                                    Esta recomendación se guarda en <b>Asistente financiero</b> como referencia y no altera presupuestos, transacciones ni reglas activas de la organización.
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 9 && selected === "business" && (
+                            <div className="space-y-6 animate-fade-in">
+                                <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Revisión final</h1>
+                                <p className="text-base text-surface-600 leading-relaxed">
+                                    El módulo de recomendación de ingreso adicional aplica solo al perfil personal. Tu configuración empresarial ya está lista para crear la organización y continuar al dashboard.
+                                </p>
+                                <div className="rounded-xl border border-[#c8d9ea] bg-[#f2f8fd] px-4 py-3 text-sm text-surface-600">
+                                    Podrás usar el Asistente financiero para registrar recomendaciones de negocio en próximas iteraciones.
+                                </div>
                             </div>
                         )}
 

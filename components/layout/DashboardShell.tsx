@@ -20,6 +20,7 @@ const NAV_GROUPS = [
         items: [
             { href: "/dashboard/budget", label: "Presupuesto", description: "Plan vs ejecución real" },
             { href: "/dashboard/forecast", label: "Pronóstico", description: "Supuestos y proyección" },
+            { href: "/dashboard/assistant", label: "Asistente financiero", description: "Recomendaciones y respuestas guardadas" },
             { href: "/dashboard/settings", label: "Configuración", description: "Parámetros de la organización" },
         ],
     },

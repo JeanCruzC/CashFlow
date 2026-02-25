@@ -43,6 +43,7 @@ export async function createProfileOrganization(profileType: OrgType, setup?: On
         revalidatePath("/dashboard/budget");
         revalidatePath("/dashboard/forecast");
         revalidatePath("/dashboard/transactions");
+        revalidatePath("/dashboard/assistant");
         return { success: true, orgId };
     } catch (error) {
         logError("Error creating profile organization", error);

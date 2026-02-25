@@ -25,12 +25,14 @@ test.describe("Auth + onboarding + transactions (optional)", () => {
             await page.getByRole("button", { name: /Perfil personal/i }).click();
             await page.getByRole("button", { name: /^Continuar$/i }).click();
             await page.getByLabel(/Ingreso mensual neto/i).fill("4000");
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
-            await page.getByRole("button", { name: /^Continuar$/i }).click();
+            for (let index = 0; index < 8; index += 1) {
+                const createButtonVisible = await page
+                    .getByRole("button", { name: /Crear organización y continuar/i })
+                    .isVisible()
+                    .catch(() => false);
+                if (createButtonVisible) break;
+                await page.getByRole("button", { name: /^Continuar$/i }).click();
+            }
             await page.getByRole("button", { name: /Crear organización y continuar/i }).click();
             await page.waitForURL(/\/dashboard/, { timeout: 45_000 });
         }

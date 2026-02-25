@@ -37,6 +37,48 @@ const financialProfileSchema = z.object({
     savingsPriorities: z.array(savingsPrioritySchema).min(1).max(3).optional(),
 });
 
+const assistantRecommendationSchema = z.object({
+    generated_at: z.string().optional(),
+    source_model: z.enum(["gemini", "deterministic"]).optional(),
+    country: z.string().trim().min(2).max(2),
+    currency: z.string().trim().length(3),
+    consolidated_income: z.number().finite().min(0),
+    recommended_income: z.number().finite().min(0),
+    additional_income_needed: z.number().finite().min(0),
+    operational_commitment: z.number().finite().min(0),
+    required_debt_payment: z.number().finite().min(0),
+    required_savings_for_goals: z.number().finite().min(0),
+    healthy_plan_pct: z.object({
+        needs_pct: z.number().finite().min(0).max(100),
+        wants_pct: z.number().finite().min(0).max(100),
+        savings_pct: z.number().finite().min(0).max(100),
+        debt_pct: z.number().finite().min(0).max(100),
+    }),
+    healthy_plan_amounts: z.object({
+        needs_amount: z.number().finite().min(0),
+        wants_amount: z.number().finite().min(0),
+        savings_amount: z.number().finite().min(0),
+        debt_amount: z.number().finite().min(0),
+    }),
+    goals: z
+        .array(
+            z.object({
+                id: z.string().trim().min(1).max(64),
+                name: z.string().trim().min(1).max(120),
+                target_amount: z.number().finite().min(0),
+                current_amount: z.number().finite().min(0),
+                target_months: z.number().int().min(3).max(240),
+                suggested_months: z.number().int().min(3).max(240),
+                projected_monthly_contribution: z.number().finite().min(0),
+                required_monthly_contribution: z.number().finite().min(0),
+                gap_monthly_contribution: z.number().finite().min(0),
+            })
+        )
+        .optional(),
+    summary: z.string().trim().min(1).max(4000),
+    action_items: z.array(z.string().trim().min(1).max(240)).max(10).optional(),
+});
+
 const onboardingSetupSchema = z.object({
     orgName: z.string().trim().min(2).max(120).optional(),
     country: z.string().trim().min(2).max(2).optional(),
@@ -109,6 +151,7 @@ const onboardingSetupSchema = z.object({
         )
         .optional(),
     financialProfile: financialProfileSchema.optional(),
+    assistantRecommendation: assistantRecommendationSchema.optional(),
 });
 
 type SeedCategory = {
@@ -950,6 +993,25 @@ export async function createOrganizationWithOnboarding(
         }
     }
 
+    if (profileType === "personal" && safeSetup.assistantRecommendation) {
+        const { error: assistantInsightError } = await supabase
+            .from("assistant_insights")
+            .insert({
+                org_id: orgId,
+                user_id: user.id,
+                source: "onboarding_income_plan",
+                title: "Plan de ingresos recomendado (Onboarding)",
+                recommendation: safeSetup.assistantRecommendation,
+            });
+
+        if (assistantInsightError) {
+            logError("Error storing assistant onboarding insight", assistantInsightError, {
+                orgId,
+                userId: user.id,
+            });
+        }
+    }
+
     const answers = {
         ...safeSetup,
         profile_type: profileType,
@@ -964,7 +1026,7 @@ export async function createOrganizationWithOnboarding(
             org_id: orgId,
             user_id: user.id,
             profile_type: profileType,
-            step: 8,
+            step: 9,
             answers,
             completed_at: new Date().toISOString(),
         },
