@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { User } from "@supabase/supabase-js";
 import { cache } from "react";
+import { cookies } from "next/headers";
 
 export type AppSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -17,6 +18,8 @@ export interface OrgContext {
 export interface OrgActorContext extends OrgContext {
     user: User;
 }
+
+const ACTIVE_ORG_COOKIE = "cf_active_org_id";
 
 function isAuthSessionMissingError(error: unknown) {
     if (!error || typeof error !== "object") return false;
@@ -77,10 +80,33 @@ export async function requireUserContext(): Promise<UserContext> {
 const getOrgContextOrNullUncached = async (): Promise<OrgContext | null> => {
     const supabase = await createClient();
 
+    const cookieStore = await cookies();
+    const preferredOrgId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
+
+    if (preferredOrgId) {
+        const { data: preferredMember, error: preferredError } = await supabase
+            .from("org_members")
+            .select("org_id")
+            .eq("org_id", preferredOrgId)
+            .limit(1)
+            .maybeSingle();
+
+        if (preferredError) {
+            if (!isAuthSessionMissingError(preferredError)) {
+                throw preferredError;
+            }
+        } else if (preferredMember?.org_id) {
+            return {
+                supabase,
+                orgId: preferredMember.org_id,
+            };
+        }
+    }
+
     const { data: member, error } = await supabase
         .from("org_members")
         .select("org_id")
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireUserContext } from "@/lib/server/context";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
+import { cookies } from "next/headers";
 
 function normalizeOnboardingActionError(error: unknown): string {
     if (error instanceof Error) {
@@ -35,6 +36,16 @@ export async function createProfileOrganization(profileType: OrgType, setup?: On
         });
 
         const orgId = await createOrganizationWithOnboarding(profileType, setup);
+
+        const cookieStore = await cookies();
+        cookieStore.set("cf_active_org_id", orgId, {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 365,
+        });
+
         revalidatePath("/dashboard");
         revalidatePath("/onboarding/select-profile");
         revalidatePath("/dashboard/settings");
