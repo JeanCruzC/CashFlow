@@ -200,6 +200,18 @@ function parseDayOfMonth(value: string, fallback: number) {
     return Math.min(31, Math.max(1, parsed));
 }
 
+function isValidDayOfMonth(value: string) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 1 && parsed <= 31;
+}
+
+function parseCycleDayFromDate(value: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const day = Number.parseInt(value.slice(-2), 10);
+    if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+    return day;
+}
+
 function round2(value: number) {
     return Math.round(value * 100) / 100;
 }
@@ -259,6 +271,7 @@ export default function SelectProfilePage() {
     const [currency, setCurrency] = useState("PEN");
     const [timezone, setTimezone] = useState("America/Lima");
     const [preferredLocale, setPreferredLocale] = useState<"es" | "en">("es");
+    const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
 
     const [monthlyIncomeNet, setMonthlyIncomeNet] = useState("");
     const [salaryFrequency, setSalaryFrequency] = useState<"monthly" | "biweekly">("monthly");
@@ -365,6 +378,36 @@ export default function SelectProfilePage() {
     const additionalIncomeMonthly = useMemo(
         () => round2(hasAdditionalIncome ? parseAmount(additionalIncome) : 0),
         [hasAdditionalIncome, additionalIncome]
+    );
+
+    const cycleStartDay = useMemo(() => parseCycleDayFromDate(startDate), [startDate]);
+
+    const primaryIncomePaymentDays = useMemo(
+        () =>
+            salaryFrequency === "biweekly"
+                ? [parseDayOfMonth(salaryPaymentDay2, 15), parseDayOfMonth(salaryPaymentDay1, 30)]
+                : [parseDayOfMonth(salaryPaymentDay1, 30)],
+        [salaryFrequency, salaryPaymentDay1, salaryPaymentDay2]
+    );
+
+    const partnerIncomePaymentDays = useMemo(() => {
+        if (!sharesFinances) return [] as number[];
+        return partnerSalaryFrequency === "biweekly"
+            ? [parseDayOfMonth(partnerSalaryPaymentDay2, 15), parseDayOfMonth(partnerSalaryPaymentDay1, 30)]
+            : [parseDayOfMonth(partnerSalaryPaymentDay1, 30)];
+    }, [sharesFinances, partnerSalaryFrequency, partnerSalaryPaymentDay1, partnerSalaryPaymentDay2]);
+
+    const cardPaymentCalendar = useMemo(
+        () =>
+            (hasCreditCards ? creditCards : [])
+                .map((card) => ({
+                    id: card.id,
+                    name: card.name.trim() || "Tarjeta",
+                    paymentDay: parseDayOfMonth(card.paymentDay, 30),
+                    strategy: card.paymentStrategy,
+                }))
+                .sort((a, b) => a.paymentDay - b.paymentDay),
+        [hasCreditCards, creditCards]
     );
 
     const distribution = useMemo(() => {
@@ -1001,14 +1044,37 @@ export default function SelectProfilePage() {
                 setError("Ingresa el nombre del workspace.");
                 return;
             }
+            if (!startDate || parseCycleDayFromDate(startDate) === null) {
+                setError("Define una fecha de inicio válida para el ciclo financiero.");
+                return;
+            }
             if (selected === "personal") {
                 if (salaryFrequency === "monthly" && parseAmount(monthlyIncomeNet) <= 0) {
                     setError("Ingresa tu ingreso mensual neto para continuar.");
                     return;
                 }
+                if (salaryFrequency === "monthly" && !isValidDayOfMonth(salaryPaymentDay1)) {
+                    setError("Define el día de pago de tu ingreso mensual (1 al 31).");
+                    return;
+                }
                 if (salaryFrequency === "biweekly" && (parseAmount(firstFortnightAmount) <= 0 && parseAmount(secondFortnightAmount) <= 0)) {
                     setError("Ingresa el monto de al menos una quincena para continuar.");
                     return;
+                }
+                if (salaryFrequency === "biweekly" && (!isValidDayOfMonth(salaryPaymentDay1) || !isValidDayOfMonth(salaryPaymentDay2))) {
+                    setError("Define días de pago válidos para ambas quincenas (1 al 31).");
+                    return;
+                }
+                if (sharesFinances) {
+                    if (partnerSalaryFrequency === "monthly") {
+                        if (!isValidDayOfMonth(partnerSalaryPaymentDay1)) {
+                            setError("Define el día de aporte de tu pareja/familiar (1 al 31).");
+                            return;
+                        }
+                    } else if (!isValidDayOfMonth(partnerSalaryPaymentDay1) || !isValidDayOfMonth(partnerSalaryPaymentDay2)) {
+                        setError("Define días válidos para los aportes quincenales compartidos (1 al 31).");
+                        return;
+                    }
                 }
             }
         }
@@ -1016,6 +1082,28 @@ export default function SelectProfilePage() {
         if (step === 3 && selected === "personal" && !accountName.trim()) {
             setError("Define el nombre de tu cuenta inicial.");
             return;
+        }
+        if (step === 3 && selected === "personal" && hasCreditCards) {
+            const activeCards = creditCards.filter(
+                (card) =>
+                    card.name.trim().length > 0 ||
+                    parseAmount(card.creditLimit) > 0 ||
+                    parseAmount(card.currentBalance) > 0
+            );
+            if (activeCards.length === 0) {
+                setError("Registra al menos una tarjeta con línea de crédito para continuar.");
+                return;
+            }
+            for (const card of activeCards) {
+                if (parseAmount(card.creditLimit) <= 0) {
+                    setError(`La tarjeta "${card.name || "sin nombre"}" requiere línea de crédito mayor a 0.`);
+                    return;
+                }
+                if (!isValidDayOfMonth(card.paymentDay)) {
+                    setError(`La tarjeta "${card.name || "sin nombre"}" requiere día de pago válido (1 al 31).`);
+                    return;
+                }
+            }
         }
 
         if (step === 8 && selected === "personal" && distributionRule === "custom" && Math.abs(distributionTotal - 100) > 0.01) {
@@ -1057,6 +1145,7 @@ export default function SelectProfilePage() {
                 currency,
                 timezone,
                 preferredLocale,
+                startDate,
             };
 
             const initialBudgetsPayload = Object.entries(budgets)
@@ -1170,7 +1259,6 @@ export default function SelectProfilePage() {
                 selected === "personal"
                     ? {
                         ...shared,
-                        startDate: new Date().toISOString().slice(0, 10),
                         firstAccount: {
                             name: accountName.trim() || "Cuenta principal",
                             accountType,
@@ -1385,6 +1473,32 @@ export default function SelectProfilePage() {
                                                 <option value="es">Español</option>
                                                 <option value="en">English</option>
                                             </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="label text-sm text-[#0f2233]">Fecha de inicio del flujo</label>
+                                            <input
+                                                type="date"
+                                                className="input-field bg-white"
+                                                value={startDate}
+                                                onChange={(event) => setStartDate(event.target.value)}
+                                            />
+                                            <p className="mt-1 text-xs text-surface-500">
+                                                Usamos esta fecha como ancla operativa del ciclo mensual.
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                Día de inicio de ciclo
+                                            </p>
+                                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">
+                                                {cycleStartDay ? `Día ${cycleStartDay} de cada mes` : "No definido"}
+                                            </p>
+                                            <p className="mt-1 text-xs text-surface-500">
+                                                Desde este día se interpreta el orden del flujo: ingresos, compromisos y ahorro.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -1771,7 +1885,7 @@ export default function SelectProfilePage() {
                                                                 )}
                                                             </div>
                                                             <div>
-                                                                <label className="label text-xs">Día de pago</label>
+                                                                <label className="label text-xs">Día de vencimiento / pago</label>
                                                                 <input
                                                                     type="number"
                                                                     min="1"
@@ -2317,6 +2431,53 @@ export default function SelectProfilePage() {
                                                 <div className="border-t border-surface-200 pt-2.5 flex items-center justify-between text-sm">
                                                     <span className="font-semibold text-[#117068]">Saldo libre real</span>
                                                     <span className="font-semibold text-[#117068]">{currency} {availableAfterVariable.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                            <div className="mb-3 flex items-center justify-between gap-2">
+                                                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-surface-500">
+                                                    Calendario financiero del ciclo
+                                                </h3>
+                                                <InfoPopover title="Cómo se usa este calendario" align="left">
+                                                    <p>
+                                                        Esta agenda no crea transacciones automáticas. Te muestra el orden operativo
+                                                        del mes para que sepas cuándo debería entrar ingreso y cuándo vencen
+                                                        compromisos.
+                                                    </p>
+                                                </InfoPopover>
+                                            </div>
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-surface-600">Inicio de ciclo mensual</span>
+                                                    <span className="font-semibold text-[#0f2233]">
+                                                        {cycleStartDay ? `Día ${cycleStartDay}` : "No definido"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-surface-600">Abono ingreso principal</span>
+                                                    <span className="font-semibold text-[#0f2233]">
+                                                        {primaryIncomePaymentDays.map((day) => `Día ${day}`).join(" · ")}
+                                                    </span>
+                                                </div>
+                                                {sharesFinances && partnerIncomePaymentDays.length > 0 && (
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-surface-600">Abono pareja/familiar</span>
+                                                        <span className="font-semibold text-[#0f2233]">
+                                                            {partnerIncomePaymentDays.map((day) => `Día ${day}`).join(" · ")}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-start justify-between gap-4 text-sm">
+                                                    <span className="text-surface-600">Vencimientos de tarjetas</span>
+                                                    <span className="text-right font-semibold text-[#0f2233]">
+                                                        {cardPaymentCalendar.length === 0
+                                                            ? "Sin tarjetas registradas"
+                                                            : cardPaymentCalendar
+                                                                  .map((card) => `${card.name}: Día ${card.paymentDay}`)
+                                                                  .join(" · ")}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

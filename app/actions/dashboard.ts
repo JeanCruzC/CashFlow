@@ -55,6 +55,26 @@ export interface DashboardKPIs {
         budgetsMonth: number;
         transactions12m: number;
     };
+    personalCycle?: {
+        startDate: string | null;
+        cycleDay: number;
+        incomePaymentDays: number[];
+        partnerIncomePaymentDays: number[];
+        cardSchedules: Array<{
+            name: string;
+            paymentDay: number;
+            strategy: "full" | "minimum" | "fixed";
+            expectedPayment: number;
+            currentBalance: number;
+        }>;
+        fixedPlanned: number;
+        variablePlanned: number;
+        fullCardPayments: number;
+        revolvingMinimumPayments: number;
+        operationalCommitment: number;
+        plannedSavings: number;
+        projectedFreeCash: number;
+    };
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
 }
@@ -74,6 +94,63 @@ function toNumber(value: unknown) {
     if (typeof value === "number") return value;
     if (typeof value === "string") return Number(value);
     return 0;
+}
+
+function round2(value: number) {
+    return Math.round(value * 100) / 100;
+}
+
+function clampDay(value: number | null | undefined, fallback: number) {
+    if (value == null) return fallback;
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(31, Math.max(1, Math.round(value)));
+}
+
+function parseIsoDate(value: unknown) {
+    if (typeof value !== "string") return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return null;
+    return value.trim();
+}
+
+function extractOnboardingStartDate(rawAnswers: unknown) {
+    if (!rawAnswers || typeof rawAnswers !== "object") return null;
+    const answers = rawAnswers as Record<string, unknown>;
+    return parseIsoDate(answers.startDate) ?? parseIsoDate(answers.start_date);
+}
+
+function normalizeCategoryLabel(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+const FIXED_BUDGET_KEYWORDS = [
+    "vivienda",
+    "housing",
+    "rent",
+    "alquiler",
+    "hipoteca",
+    "mortgage",
+    "salud",
+    "health",
+    "insurance",
+    "seguro",
+    "utilities",
+    "servicios",
+    "internet",
+    "telefono",
+    "subscription",
+    "suscripcion",
+    "debt",
+    "deuda",
+    "loan",
+    "prestamo",
+];
+
+function isLikelyFixedBudgetCategory(name: string) {
+    const normalized = normalizeCategoryLabel(name);
+    return FIXED_BUDGET_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 function mapTransactions(raw: Array<Record<string, unknown>>): Transaction[] {
@@ -132,6 +209,15 @@ function mapAccounts(raw: Array<Record<string, unknown>>): Account[] {
         opening_balance: toNumber(item.opening_balance),
         credit_limit: item.credit_limit == null ? null : toNumber(item.credit_limit),
         interest_rate_apr: item.interest_rate_apr == null ? null : toNumber(item.interest_rate_apr),
+        payment_day: item.payment_day == null ? null : toNumber(item.payment_day),
+        card_payment_strategy:
+            item.card_payment_strategy === "full" ||
+            item.card_payment_strategy === "minimum" ||
+            item.card_payment_strategy === "fixed"
+                ? item.card_payment_strategy
+                : null,
+        minimum_payment_amount:
+            item.minimum_payment_amount == null ? null : toNumber(item.minimum_payment_amount),
         is_restricted_cash: Boolean(item.is_restricted_cash),
         is_active: Boolean(item.is_active ?? true),
         created_at: String(item.created_at ?? new Date().toISOString()),
@@ -184,6 +270,38 @@ function mapFinancialProfile(
         additional_income: toNumber(raw.additional_income),
         partner_contribution: toNumber(raw.partner_contribution),
         consolidated_income: toNumber(raw.consolidated_income),
+        salary_frequency:
+            raw.salary_frequency === "monthly" || raw.salary_frequency === "biweekly"
+                ? raw.salary_frequency
+                : undefined,
+        salary_payment_day_1:
+            raw.salary_payment_day_1 == null ? undefined : toNumber(raw.salary_payment_day_1),
+        salary_payment_day_2:
+            raw.salary_payment_day_2 == null ? undefined : toNumber(raw.salary_payment_day_2),
+        first_fortnight_amount:
+            raw.first_fortnight_amount == null ? undefined : toNumber(raw.first_fortnight_amount),
+        second_fortnight_amount:
+            raw.second_fortnight_amount == null ? undefined : toNumber(raw.second_fortnight_amount),
+        partner_salary_frequency:
+            raw.partner_salary_frequency === "monthly" || raw.partner_salary_frequency === "biweekly"
+                ? raw.partner_salary_frequency
+                : undefined,
+        partner_salary_payment_day_1:
+            raw.partner_salary_payment_day_1 == null
+                ? undefined
+                : toNumber(raw.partner_salary_payment_day_1),
+        partner_salary_payment_day_2:
+            raw.partner_salary_payment_day_2 == null
+                ? undefined
+                : toNumber(raw.partner_salary_payment_day_2),
+        partner_first_fortnight_amount:
+            raw.partner_first_fortnight_amount == null
+                ? undefined
+                : toNumber(raw.partner_first_fortnight_amount),
+        partner_second_fortnight_amount:
+            raw.partner_second_fortnight_amount == null
+                ? undefined
+                : toNumber(raw.partner_second_fortnight_amount),
         distribution_rule: (raw.distribution_rule as OrgFinancialProfile["distribution_rule"]) ?? "50_30_20",
         needs_pct: toNumber(raw.needs_pct),
         wants_pct: toNumber(raw.wants_pct),
@@ -237,6 +355,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         forecastResult,
         savingsGoalsResult,
         financialProfileResult,
+        onboardingStateResult,
     ] = await Promise.all([
         supabase
             .from("orgs")
@@ -259,6 +378,13 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             .maybeSingle(),
         supabase.from("savings_goals").select("*").eq("org_id", orgId),
         supabase.from("org_financial_profile").select("*").eq("org_id", orgId).maybeSingle(),
+        supabase
+            .from("onboarding_state")
+            .select("answers, completed_at, created_at")
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -292,6 +418,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     if (financialProfileResult.error && !isMissingTableError(financialProfileResult.error)) {
         logError("Error fetching org financial profile", financialProfileResult.error, { orgId });
     }
+    if (onboardingStateResult.error) {
+        logError("Error fetching onboarding state", onboardingStateResult.error, { orgId });
+    }
 
     const accounts = mapAccounts((accountsResult.data || []) as Array<Record<string, unknown>>);
     const categories = mapCategories((categoriesResult.data || []) as Array<Record<string, unknown>>);
@@ -310,6 +439,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
               savingsPriorities: financialProfile.savings_priorities,
           }
         : null;
+    const onboardingStartDate = extractOnboardingStartDate(
+        (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null
+    );
     const summary = {
         accounts: accounts.length,
         categories: categories.length,
@@ -320,6 +452,98 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     const orgType = orgResult.data.type;
     const currency = orgResult.data.currency || "USD";
     const locale = orgResult.data.preferred_locale === "en" ? "en" : "es";
+
+    const budgetByCategory = budgets.map((budget) => ({
+        amount: Number(budget.amount || 0),
+        category:
+            categories.find((category) => category.id === budget.category_gl_id) || null,
+    }));
+    const fixedPlanned = round2(
+        budgetByCategory.reduce((sum, row) => {
+            if (!row.category) return sum;
+            if (orgType === "business") {
+                return row.category.fixed_cost ? sum + row.amount : sum;
+            }
+            return isLikelyFixedBudgetCategory(row.category.name) ? sum + row.amount : sum;
+        }, 0)
+    );
+    const variablePlanned = round2(
+        budgetByCategory.reduce((sum, row) => {
+            if (!row.category) return sum + row.amount;
+            if (orgType === "business") {
+                if (row.category.fixed_cost) return sum;
+                return sum + row.amount;
+            }
+            return isLikelyFixedBudgetCategory(row.category.name) ? sum : sum + row.amount;
+        }, 0)
+    );
+
+    const creditCardSchedules = accounts
+        .filter((account) => account.account_type === "credit_card")
+        .map((account) => {
+            const strategy =
+                account.card_payment_strategy ||
+                (Number(account.minimum_payment_amount || 0) > 0 ? "minimum" : "full");
+            const currentBalance = round2(Math.abs(Number(account.opening_balance || 0)));
+            const expectedPayment =
+                strategy === "full"
+                    ? currentBalance
+                    : round2(
+                          Number(account.minimum_payment_amount || 0) > 0
+                              ? Number(account.minimum_payment_amount || 0)
+                              : currentBalance * 0.05
+                      );
+
+            return {
+                name: account.name,
+                paymentDay: clampDay(account.payment_day ?? null, 30),
+                strategy,
+                currentBalance,
+                expectedPayment,
+            };
+        });
+
+    const fullCardPayments = round2(
+        creditCardSchedules
+            .filter((card) => card.strategy === "full")
+            .reduce((sum, card) => sum + card.expectedPayment, 0)
+    );
+    const revolvingMinimumPayments = round2(
+        creditCardSchedules
+            .filter((card) => card.strategy !== "full")
+            .reduce((sum, card) => sum + card.expectedPayment, 0)
+    );
+    const operationalCommitment = round2(
+        fixedPlanned + variablePlanned + fullCardPayments + revolvingMinimumPayments
+    );
+    const plannedSavings = round2(personalSavingsPlan?.monthlySavingsPool ?? 0);
+    const projectedFreeCash = round2(
+        Math.max((personalSavingsPlan?.consolidatedIncome ?? 0) - operationalCommitment - plannedSavings, 0)
+    );
+
+    const incomePaymentDays =
+        financialProfile?.salary_frequency === "biweekly"
+            ? [
+                  clampDay(financialProfile.salary_payment_day_2, 15),
+                  clampDay(financialProfile.salary_payment_day_1, 30),
+              ]
+            : [clampDay(financialProfile?.salary_payment_day_1, 30)];
+    const partnerIncomePaymentDays =
+        (financialProfile?.partner_contribution || 0) > 0
+            ? financialProfile?.partner_salary_frequency === "biweekly"
+                ? [
+                      clampDay(financialProfile.partner_salary_payment_day_2, 15),
+                      clampDay(financialProfile.partner_salary_payment_day_1, 30),
+                  ]
+                : [clampDay(financialProfile?.partner_salary_payment_day_1, 30)]
+            : [];
+
+    const cycleDay = clampDay(
+        onboardingStartDate
+            ? Number.parseInt(onboardingStartDate.slice(-2), 10)
+            : null,
+        1
+    );
 
     if (orgType === "business") {
         const business = calculateBusinessKPIs(transactions, categories, budgets, month);
@@ -377,6 +601,20 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         financialProfile,
         personalSavingsPlan,
         summary,
+        personalCycle: {
+            startDate: onboardingStartDate,
+            cycleDay,
+            incomePaymentDays,
+            partnerIncomePaymentDays,
+            cardSchedules: creditCardSchedules,
+            fixedPlanned,
+            variablePlanned,
+            fullCardPayments,
+            revolvingMinimumPayments,
+            operationalCommitment,
+            plannedSavings,
+            projectedFreeCash,
+        },
         personal: {
             netCashFlow: personal.netCashFlow,
             savingsRatePct: personal.savingsRate * 100,

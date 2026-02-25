@@ -13,6 +13,14 @@ function formatter(locale: "es" | "en", currency: string) {
     };
 }
 
+function formatDayList(days: number[]) {
+    const uniqueSortedDays = Array.from(new Set(days))
+        .filter((day) => Number.isFinite(day) && day >= 1 && day <= 31)
+        .sort((a, b) => a - b);
+    if (uniqueSortedDays.length === 0) return "No definido";
+    return uniqueSortedDays.map((day) => `día ${day}`).join(" · ");
+}
+
 export default async function DashboardPage() {
     const [kpiBundle, recentTransactions] = await Promise.all([
         getDashboardKPIs(),
@@ -41,6 +49,8 @@ export default async function DashboardPage() {
         budgetsMonth: 0,
         transactions12m: 0,
     };
+    const cycle = kpiBundle.personalCycle || null;
+    const hasRealMovements = summary.transactions12m > 0;
 
     const cards =
         kpiBundle.orgType === "business" && kpiBundle.business
@@ -210,6 +220,113 @@ export default async function DashboardPage() {
                     />
                 ))}
             </section>
+
+            {!hasRealMovements && kpiBundle.orgType === "personal" && (
+                <section className="rounded-2xl border border-[#d6e3f0] bg-[#f3f8fd] px-5 py-4 shadow-card">
+                    <p className="text-sm font-semibold text-[#0f2233]">Cómo interpretar estos valores ahora</p>
+                    <p className="mt-1 text-sm text-surface-600">
+                        Aún no tienes movimientos registrados. Por eso flujo de caja y tasa de ahorro están en cero, y la desviación de presupuesto refleja
+                        presupuesto planificado sin gasto ejecutado.
+                    </p>
+                </section>
+            )}
+
+            {kpiBundle.orgType === "personal" && cycle && (
+                <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Calendario y flujo del ciclo mensual</h3>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Esta vista traduce lo que configuraste en onboarding a una secuencia operativa mensual.
+                    </p>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Inicio de ciclo</p>
+                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">
+                                {cycle.startDate ? `Día ${cycle.cycleDay}` : "Día 1 (por defecto)"}
+                            </p>
+                            <p className="mt-1 text-xs text-surface-500">
+                                {cycle.startDate ? `Ancla configurada: ${format.date.format(new Date(cycle.startDate))}` : "Sin fecha ancla guardada."}
+                            </p>
+                        </article>
+
+                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Abonos de ingreso</p>
+                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">{formatDayList(cycle.incomePaymentDays)}</p>
+                            {cycle.partnerIncomePaymentDays.length > 0 && (
+                                <p className="mt-1 text-xs text-surface-500">
+                                    Aporte compartido: {formatDayList(cycle.partnerIncomePaymentDays)}
+                                </p>
+                            )}
+                        </article>
+
+                        <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">Pagos de tarjeta</p>
+                            <p className="mt-2 text-sm font-semibold text-[#0f2233]">
+                                {cycle.cardSchedules.length === 0
+                                    ? "Sin tarjetas registradas"
+                                    : cycle.cardSchedules
+                                          .map((card) => `${card.name}: día ${card.paymentDay}`)
+                                          .join(" · ")}
+                            </p>
+                        </article>
+
+                        <article className="rounded-2xl border border-[#bedfd8] bg-[#edf9f6] p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#117068]">Saldo proyectado del ciclo</p>
+                            <p className="mt-2 text-sm font-semibold text-[#117068]">{format.money.format(cycle.projectedFreeCash)}</p>
+                            <p className="mt-1 text-xs text-surface-600">Ingreso - compromisos operativos - ahorro planificado.</p>
+                        </article>
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto rounded-2xl border border-surface-200">
+                        <table className="w-full min-w-[720px] text-sm">
+                            <tbody className="divide-y divide-surface-200">
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Ingreso consolidado mensual</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-[#0f2233]">
+                                        {format.money.format(savingsPlan?.consolidatedIncome || 0)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Gastos fijos planificados</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
+                                        -{format.money.format(cycle.fixedPlanned)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Gastos variables planificados</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
+                                        -{format.money.format(cycle.variablePlanned)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Pago total de tarjetas</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
+                                        -{format.money.format(cycle.fullCardPayments)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Pago mínimo de deuda revolvente</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-negative-600">
+                                        -{format.money.format(cycle.revolvingMinimumPayments)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white">
+                                    <td className="px-4 py-3 text-surface-600">Ahorro mensual planificado</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-[#0f2233]">
+                                        -{format.money.format(cycle.plannedSavings)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-[#edf9f6]">
+                                    <td className="px-4 py-3 font-semibold text-[#117068]">Saldo estimado libre del ciclo</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-[#117068]">
+                                        {format.money.format(cycle.projectedFreeCash)}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
 
             {/* ================= SAVINGS GOALS (MIS METAS) ================= */}
             {savingsGoals.length > 0 && (

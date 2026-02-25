@@ -53,6 +53,9 @@ export interface Account {
     opening_balance: number;
     credit_limit: number | null;
     interest_rate_apr: number | null;
+    payment_day?: number | null;
+    card_payment_strategy?: "full" | "minimum" | "fixed" | null;
+    minimum_payment_amount?: number | null;
     is_restricted_cash: boolean;
     is_active: boolean;
     created_at: string;
