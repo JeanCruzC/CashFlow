@@ -2349,24 +2349,62 @@ export default function SelectProfilePage() {
 
                                         {/* Inputs Custom */}
                                         {distributionRule === "custom" && (
-                                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 rounded-xl border border-surface-200 bg-white p-4">
-                                                <div>
-                                                    <label className="label text-xs">Necesidades (%)</label>
-                                                    <input type="number" className="input-field bg-surface-50" value={customNeedsPct} onChange={(event) => setCustomNeedsPct(event.target.value)} />
+                                            <div className="rounded-xl border border-surface-200 bg-white p-4">
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    <div className="min-w-0 rounded-lg border border-surface-200 bg-surface-50 p-2.5">
+                                                        <label className="label mb-1 text-xs">Necesidades (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            inputMode="decimal"
+                                                            className="input-field h-10 bg-white"
+                                                            value={customNeedsPct}
+                                                            onChange={(event) => setCustomNeedsPct(event.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="min-w-0 rounded-lg border border-surface-200 bg-surface-50 p-2.5">
+                                                        <label className="label mb-1 text-xs">Deseos (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            inputMode="decimal"
+                                                            className="input-field h-10 bg-white"
+                                                            value={customWantsPct}
+                                                            onChange={(event) => setCustomWantsPct(event.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="min-w-0 rounded-lg border border-surface-200 bg-surface-50 p-2.5">
+                                                        <label className="label mb-1 text-xs">Ahorro (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            inputMode="decimal"
+                                                            className="input-field h-10 bg-white"
+                                                            value={customSavingsPct}
+                                                            onChange={(event) => setCustomSavingsPct(event.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="min-w-0 rounded-lg border border-surface-200 bg-surface-50 p-2.5">
+                                                        <label className="label mb-1 text-xs">Deuda (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.01"
+                                                            inputMode="decimal"
+                                                            className="input-field h-10 bg-white"
+                                                            value={customDebtPct}
+                                                            onChange={(event) => setCustomDebtPct(event.target.value)}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <label className="label text-xs">Deseos (%)</label>
-                                                    <input type="number" className="input-field bg-surface-50" value={customWantsPct} onChange={(event) => setCustomWantsPct(event.target.value)} />
-                                                </div>
-                                                <div>
-                                                    <label className="label text-xs">Ahorro (%)</label>
-                                                    <input type="number" className="input-field bg-surface-50" value={customSavingsPct} onChange={(event) => setCustomSavingsPct(event.target.value)} />
-                                                </div>
-                                                <div>
-                                                    <label className="label text-xs">Deuda (%)</label>
-                                                    <input type="number" className="input-field bg-surface-50" value={customDebtPct} onChange={(event) => setCustomDebtPct(event.target.value)} />
-                                                </div>
-                                                <p className={`sm:col-span-4 text-xs font-medium text-right ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-600" : "text-negative-600"}`}>
+                                                <p className={`mt-3 text-xs font-medium text-right ${Math.abs(distributionTotal - 100) <= 0.01 ? "text-positive-600" : "text-negative-600"}`}>
                                                     El total suma: {distributionTotal.toFixed(2)}%
                                                 </p>
                                             </div>
