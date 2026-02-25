@@ -316,20 +316,20 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
             {/* ── Personal Tips ── */}
             {isPersonal && forecast.projections.length > 0 && (
                 <section className="rounded-3xl border border-[#b8d8f0] bg-[#edf6fd] p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#0d4c7a]">💡 Recomendaciones</h3>
+                    <h3 className="text-lg font-semibold text-[#0d4c7a]">Recomendaciones</h3>
                     <ul className="mt-3 space-y-2 text-sm text-surface-600">
                         {(forecast.projections[0]?.ebit ?? 0) > 0 ? (
                             <>
-                                <li>✅ Tu flujo neto es positivo. Estás ahorrando mensualmente.</li>
-                                <li>💰 Considera asignar una parte a tus metas de ahorro desde <a href="/dashboard/transactions/new" className="text-[#0d4c7a] underline">Registrar movimiento</a>.</li>
+                                <li>Tu flujo neto es positivo. Estás ahorrando mensualmente.</li>
+                                <li>Considera asignar una parte a tus metas de ahorro desde <a href="/dashboard/transactions/new" className="text-[#0d4c7a] underline">Registrar movimiento</a>.</li>
                                 {(forecast.projections[0]?.operating_margin_pct ?? 0) >= 20 && (
-                                    <li>🌟 Tu tasa de ahorro es de {forecast.projections[0]?.operating_margin_pct.toFixed(1)}% — ¡excelente!</li>
+                                    <li>Tu tasa de ahorro es de {forecast.projections[0]?.operating_margin_pct.toFixed(1)}% y se encuentra en un nivel saludable.</li>
                                 )}
                             </>
                         ) : (
                             <>
-                                <li>⚠️ Tu flujo neto es negativo. Estás gastando más de lo que ingresas.</li>
-                                <li>📊 Revisa tu <a href="/dashboard/budget" className="text-[#0d4c7a] underline">presupuesto</a> para identificar categorías donde puedes recortar.</li>
+                                <li>Tu flujo neto es negativo. Estás gastando más de lo que ingresas.</li>
+                                <li>Revisa tu <a href="/dashboard/budget" className="text-[#0d4c7a] underline">presupuesto</a> para identificar categorías donde puedes recortar.</li>
                             </>
                         )}
                     </ul>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getCategories, getOrgType } from "@/app/actions/categories";
-import { CategoryCreateForm } from "@/components/categories/CategoryCreateForm";
 import { CategoryGL } from "@/lib/types/finance";
 
 const KIND_ORDER = [
@@ -71,24 +70,19 @@ export default async function CategoriesPage() {
             <section className="rounded-3xl border border-surface-200 bg-white px-6 py-5 shadow-card">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-xl font-semibold text-[#0f2233]">Categorías</h2>
+                        <h2 className="text-xl font-semibold text-[#0f2233]">Categorías y clasificación</h2>
                         <p className="mt-1 text-sm text-surface-500">
-                            Cada movimiento se etiqueta con una categoría. Esto alimenta tu resumen y presupuesto.
+                            Aquí validas la estructura de categorías activa. Las altas y ajustes se realizan en Configuración.
                         </p>
                     </div>
-                    <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                        Registrar movimiento
-                    </Link>
-                </div>
-            </section>
-
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-base font-semibold text-[#10283b]">Agregar categoría</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Si necesitas una categoría nueva, créala aquí.
-                </p>
-                <div className="mt-4">
-                    <CategoryCreateForm orgType={orgType} />
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
+                            Administrar categorías
+                        </Link>
+                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                            Registrar movimiento
+                        </Link>
+                    </div>
                 </div>
             </section>
 

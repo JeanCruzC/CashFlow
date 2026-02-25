@@ -49,6 +49,12 @@ export interface DashboardKPIs {
         savingsPct: number;
         savingsPriorities: SavingsPriority[];
     } | null;
+    summary?: {
+        accounts: number;
+        categories: number;
+        budgetsMonth: number;
+        transactions12m: number;
+    };
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
 }
@@ -304,6 +310,12 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
               savingsPriorities: financialProfile.savings_priorities,
           }
         : null;
+    const summary = {
+        accounts: accounts.length,
+        categories: categories.length,
+        budgetsMonth: budgets.length,
+        transactions12m: transactions.length,
+    };
 
     const orgType = orgResult.data.type;
     const currency = orgResult.data.currency || "USD";
@@ -339,6 +351,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             savingsGoals,
             financialProfile,
             personalSavingsPlan,
+            summary,
             business: {
                 revenue: business.revenue,
                 cogs: business.cogs,
@@ -363,6 +376,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         savingsGoals,
         financialProfile,
         personalSavingsPlan,
+        summary,
         personal: {
             netCashFlow: personal.netCashFlow,
             savingsRatePct: personal.savingsRate * 100,

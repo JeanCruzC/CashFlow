@@ -35,6 +35,12 @@ export default async function DashboardPage() {
         ? "Necesitamos al menos dos meses de gastos reales para estimar tu cobertura con precisión."
         : "Indica cuántos meses puedes pagar tus gastos mensuales con tu efectivo actual si te quedas sin ingresos.";
     const consolidatedIncome = savingsPlan?.consolidatedIncome || 0;
+    const summary = kpiBundle.summary || {
+        accounts: 0,
+        categories: 0,
+        budgetsMonth: 0,
+        transactions12m: 0,
+    };
 
     const cards =
         kpiBundle.orgType === "business" && kpiBundle.business
@@ -131,6 +137,9 @@ export default async function DashboardPage() {
                         <h2 className="text-xl font-semibold text-[#0f2233]">
                             {kpiBundle.orgType === "business" ? "Resumen del negocio" : "Tu resumen financiero"}
                         </h2>
+                        <p className="mt-1 text-sm text-surface-500">
+                            Panel operativo con tus datos reales de cuentas, movimientos y planificación.
+                        </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
@@ -140,6 +149,52 @@ export default async function DashboardPage() {
                             Presupuesto
                         </Link>
                     </div>
+                </div>
+            </section>
+
+            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
+                <h3 className="text-lg font-semibold text-[#10283b]">Circuito de trabajo</h3>
+                <p className="mt-1 text-sm text-surface-500">
+                    Flujo recomendado para mantener el sistema ordenado y actualizado.
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">1. Estructura</p>
+                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">
+                            {summary.accounts} cuentas · {summary.categories} categorías
+                        </p>
+                        <p className="mt-1 text-xs text-surface-500">Base contable para operar sin ruido.</p>
+                        <Link href="/dashboard/settings#estructura-financiera" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                            Ir a configuración
+                        </Link>
+                    </article>
+
+                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">2. Registro diario</p>
+                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">{summary.transactions12m} movimientos (12m)</p>
+                        <p className="mt-1 text-xs text-surface-500">Cada movimiento alimenta KPIs, presupuesto y pronóstico.</p>
+                        <Link href="/dashboard/transactions/new" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                            Registrar movimiento
+                        </Link>
+                    </article>
+
+                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">3. Control mensual</p>
+                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">{summary.budgetsMonth} categorías con tope</p>
+                        <p className="mt-1 text-xs text-surface-500">Compara tope planificado contra ejecución real.</p>
+                        <Link href="/dashboard/budget" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                            Revisar presupuesto
+                        </Link>
+                    </article>
+
+                    <article className="rounded-2xl border border-surface-200 bg-surface-50/50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">4. Decisión</p>
+                        <p className="mt-2 text-sm font-semibold text-[#0f2233]">Asistente y pronóstico</p>
+                        <p className="mt-1 text-xs text-surface-500">Usa escenarios para decidir ajustes de ingreso y ahorro.</p>
+                        <Link href="/dashboard/assistant" className="mt-3 inline-block text-sm font-semibold text-[#0d4c7a] hover:text-[#117068]">
+                            Ver recomendaciones
+                        </Link>
+                    </article>
                 </div>
             </section>
 

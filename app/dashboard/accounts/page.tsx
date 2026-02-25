@@ -1,7 +1,7 @@
 import { getAccounts } from "@/app/actions/accounts";
 import { getAccountBalances } from "@/app/actions/accounts";
 import { getOrgSettings } from "@/app/actions/settings";
-import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
+import Link from "next/link";
 import { Account } from "@/lib/types/finance";
 
 function accountTypeLabel(type: Account["account_type"]) {
@@ -58,6 +58,7 @@ export default async function AccountsPage() {
         .reduce((sum, account) => sum + Math.abs(getRealBalance(account)), 0);
 
     const netWorth = totalAssets - totalLiabilities;
+    const hasAccounts = accounts.length > 0;
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -66,8 +67,16 @@ export default async function AccountsPage() {
                     <div>
                         <h2 className="text-xl font-semibold text-[#0f2233]">Cuentas</h2>
                         <p className="mt-1 text-sm text-surface-500">
-                            Bancos, efectivo, tarjetas y préstamos que alimentan tu balance.
+                            Este módulo muestra tu balance actual. La creación/edición de cuentas vive en Configuración.
                         </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
+                            Administrar cuentas
+                        </Link>
+                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                            Registrar movimiento
+                        </Link>
                     </div>
                 </div>
             </section>
@@ -93,15 +102,19 @@ export default async function AccountsPage() {
                 </article>
             </section>
 
-            <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Agregar cuenta</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Define moneda, tipo y saldo inicial para usarla en transacciones y reportes.
-                </p>
-                <div className="mt-4">
-                    <AccountCreateForm defaultCurrency={baseCurrency} />
-                </div>
-            </section>
+            {!hasAccounts && (
+                <section className="rounded-3xl border border-[#d6e3f0] bg-[#f3f8fd] p-6 shadow-card">
+                    <h3 className="text-lg font-semibold text-[#10283b]">Aún no tienes cuentas activas</h3>
+                    <p className="mt-1 text-sm text-surface-600">
+                        Completa la estructura financiera para que el resumen refleje activos, pasivos y patrimonio.
+                    </p>
+                    <div className="mt-4">
+                        <Link href="/dashboard/settings#estructura-financiera" className="btn-primary text-sm no-underline hover:text-white">
+                            Ir a configuración de cuentas
+                        </Link>
+                    </div>
+                </section>
+            )}
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                 <h3 className="text-lg font-semibold text-[#10283b]">Cuentas de Efectivo y Bancos</h3>
