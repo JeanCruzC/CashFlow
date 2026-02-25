@@ -791,6 +791,23 @@ export default function SelectProfilePage() {
         goalRecommendationRows,
     ]);
 
+    const scenarioGoalById = useMemo(
+        () =>
+            new Map(
+                (achievableScenario?.goals ?? []).map((goal) => [goal.id, goal] as const)
+            ),
+        [achievableScenario]
+    );
+
+    const scenarioWantsReserve = useMemo(() => {
+        if (!achievableScenario || !incomeGapRecommendation) return 0;
+        return round2(
+            (achievableScenario.scenarioIncome *
+                incomeGapRecommendation.healthy_plan_pct.wants_pct) /
+                100
+        );
+    }, [achievableScenario, incomeGapRecommendation]);
+
     function applyReachableIncomePreset(share: number) {
         if (!incomeGapRecommendation) return;
         const value = round2(
@@ -1203,14 +1220,17 @@ export default function SelectProfilePage() {
     }
 
     const isPersonalDistributionCanvas = step === 8 && selected === "personal";
+    const isPersonalRecommendationCanvas = step === 9 && selected === "personal";
+    const isWideOnboardingCanvas =
+        isPersonalDistributionCanvas || isPersonalRecommendationCanvas;
 
     return (
         <div
             className={`min-h-screen bg-[linear-gradient(165deg,#f7fbff_0%,#edf5fb_50%,#f9fcfd_100%)] px-4 py-8 sm:py-12 flex justify-center ${
-                isPersonalDistributionCanvas ? "items-start sm:px-10 lg:px-12" : "items-center sm:px-8"
+                isWideOnboardingCanvas ? "items-start sm:px-10 lg:px-12" : "items-center sm:px-8"
             }`}
         >
-            <div className={`w-full animate-fade-in relative ${isPersonalDistributionCanvas ? "max-w-[1360px]" : "max-w-3xl"}`}>
+            <div className={`w-full animate-fade-in relative ${isWideOnboardingCanvas ? "max-w-[1480px]" : "max-w-3xl"}`}>
                 <div
                     className="mb-8 grid gap-2"
                     style={{ gridTemplateColumns: `repeat(${TOTAL_STEPS}, minmax(0, 1fr))` }}
@@ -1233,14 +1253,14 @@ export default function SelectProfilePage() {
 
                 <div
                     className={`rounded-3xl border border-surface-200 bg-white shadow-card relative overflow-hidden ${
-                        isPersonalDistributionCanvas ? "p-5 sm:p-7 lg:p-8" : "p-6 sm:p-10"
+                        isWideOnboardingCanvas ? "p-5 sm:p-7 lg:p-8" : "p-6 sm:p-10"
                     }`}
                 >
                     <div className="absolute -top-8 -right-4 text-[120px] font-black text-surface-50 opacity-40 select-none pointer-events-none">
                         {step}
                     </div>
 
-                    <div className={`relative z-10 w-full transition-all duration-300 ${isPersonalDistributionCanvas ? "space-y-1" : ""}`}>
+                    <div className={`relative z-10 w-full transition-all duration-300 ${isWideOnboardingCanvas ? "space-y-1" : ""}`}>
                         {step === 1 && (
                             <div className="space-y-6 animate-fade-in">
                                 <div>
@@ -2704,248 +2724,226 @@ export default function SelectProfilePage() {
                                         Recomendación IA de ingreso adicional
                                     </h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Calculamos cuánto ingreso extra mensual necesitas para sostener una distribución saludable (necesidades, deseos, ahorro y deuda) y cumplir tus metas en el horizonte que elijas.
+                                        Aquí verás tres cosas separadas: tu situación actual, el objetivo recomendado y tu propio escenario alcanzable.
                                     </p>
                                 </div>
 
-                                <div className="grid gap-5 xl:grid-cols-12">
-                                    <section className="xl:col-span-7 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
-                                                    Diagnóstico de recomendación
-                                                </p>
-                                                <p className="mt-1 text-sm text-surface-600">
-                                                    Esta recomendación no modifica tus cálculos operativos ni tu dashboard.
-                                                </p>
+                                <section className="rounded-2xl border border-[#c8d9ea] bg-[#f2f8fd] px-4 py-3 text-sm text-surface-600">
+                                    <p className="font-semibold text-[#0f2233]">Cómo leer esta pantalla</p>
+                                    <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                        <p><b>Aporte objetivo mensual:</b> lo que debes ahorrar al mes para cumplir tu meta en el plazo elegido.</p>
+                                        <p><b>Aporte actual mensual:</b> lo que hoy tu distribución deja disponible para metas.</p>
+                                        <p><b>Diferencia mensual:</b> aporte objetivo menos aporte actual.</p>
+                                        <p><b>Tu propuesta adicional:</b> monto que tú sí crees posible agregar al mes; con eso simulamos el nuevo resultado.</p>
+                                    </div>
+                                </section>
+
+                                <div className="grid gap-5 xl:grid-cols-3">
+                                    <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                            1) Tu base actual
+                                        </p>
+                                        <div className="mt-3 space-y-2 text-sm">
+                                            <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                <p className="text-[11px] text-surface-500">Ingreso actual</p>
+                                                <p className="font-semibold text-[#0f2233]">{currency} {consolidatedIncome.toFixed(2)}</p>
                                             </div>
+                                            <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                <p className="text-[11px] text-surface-500">Compromisos mensuales (operación + deuda mínima)</p>
+                                                <p className="font-semibold text-[#0f2233]">{currency} {(operationalCashRequired + estimatedDebtPayment).toFixed(2)}</p>
+                                            </div>
+                                            <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                <p className="text-[11px] text-surface-500">Aporte actual estimado a metas</p>
+                                                <p className="font-semibold text-[#117068]">{currency} {dynamicSavingsPool.toFixed(2)}/mes</p>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                                2) Objetivo recomendado
+                                            </p>
                                             <button
                                                 type="button"
                                                 onClick={applyIncomeGapRecommendation}
                                                 disabled={isIncomeGapLoading}
                                                 className="rounded-lg border border-[#bfdbec] bg-[#f2f8fc] px-3 py-2 text-xs font-semibold text-[#0d4c7a] hover:bg-[#e8f3fb] disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {isIncomeGapLoading ? "Calculando..." : "Regenerar recomendación IA"}
+                                                {isIncomeGapLoading ? "Calculando..." : "Regenerar IA"}
                                             </button>
                                         </div>
 
                                         {incomeGapRecommendation ? (
-                                            <div className="mt-4 space-y-4">
-                                                <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
-                                                    <p className="text-sm font-medium text-[#0f2233]">
-                                                        {incomeGapRecommendation.summary}
+                                            <div className="mt-3 space-y-2">
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                    <p className="text-[11px] text-surface-500">Ingreso total recomendado por IA</p>
+                                                    <p className="font-semibold text-[#0f2233]">{currency} {incomeGapRecommendation.recommended_income.toFixed(2)}</p>
+                                                </div>
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                    <p className="text-[11px] text-surface-500">Ingreso adicional sugerido</p>
+                                                    <p className="font-semibold text-[#117068]">{currency} {incomeGapRecommendation.additional_income_needed.toFixed(2)}</p>
+                                                </div>
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                    <p className="text-[11px] text-surface-500">Ahorro objetivo mensual para cumplir plazo</p>
+                                                    <p className="font-semibold text-[#0f2233]">{currency} {incomeGapRecommendation.required_savings_for_goals.toFixed(2)}</p>
+                                                    <p className="mt-1 text-[11px] text-surface-500">
+                                                        Diferencia mensual hoy: {currency} {Math.max(incomeGapRecommendation.required_savings_for_goals - dynamicSavingsPool, 0).toFixed(2)}
                                                     </p>
                                                 </div>
-                                                {incomeGapRecommendation.action_items.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        {incomeGapRecommendation.action_items.map((item, index) => (
-                                                            <div
-                                                                key={`income-gap-action-${index}`}
-                                                                className="rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm text-surface-600"
-                                                            >
-                                                                {item}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                                    <p className="text-[11px] text-surface-500">Distribución saludable sugerida</p>
+                                                    <p className="mt-1 text-xs text-surface-600">
+                                                        Necesidades {incomeGapRecommendation.healthy_plan_pct.needs_pct.toFixed(2)}% · Deseos {incomeGapRecommendation.healthy_plan_pct.wants_pct.toFixed(2)}% · Ahorro {incomeGapRecommendation.healthy_plan_pct.savings_pct.toFixed(2)}% · Deuda {incomeGapRecommendation.healthy_plan_pct.debt_pct.toFixed(2)}%
+                                                    </p>
+                                                </div>
                                             </div>
                                         ) : (
-                                            <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${incomeGapError ? "border-negative-200 bg-negative-50 text-negative-700" : "border-surface-200 bg-surface-50 text-surface-600"}`}>
-                                                {incomeGapError || "Genera la recomendación para obtener una propuesta de ingreso adicional."}
+                                            <div className={`mt-3 rounded-lg border px-3 py-3 text-sm ${incomeGapError ? "border-negative-200 bg-negative-50 text-negative-700" : "border-surface-200 bg-surface-50 text-surface-600"}`}>
+                                                {incomeGapError || "Genera la recomendación para ver el objetivo."}
                                             </div>
                                         )}
                                     </section>
 
-                                    <section className="xl:col-span-5 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                                    <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
-                                            Resultado de referencia
+                                            3) Tu propuesta alcanzable
                                         </p>
-                                        {incomeGapRecommendation ? (
-                                            <div className="mt-3 space-y-3">
-                                                <div className="grid gap-2 sm:grid-cols-2">
-                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                        <p className="text-[11px] text-surface-500">Ingreso actual</p>
-                                                        <p className="mt-1 text-base font-semibold text-[#0f2233]">
-                                                            {currency} {incomeGapRecommendation.consolidated_income.toFixed(2)}
-                                                        </p>
-                                                    </article>
-                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                        <p className="text-[11px] text-surface-500">Ingreso recomendado</p>
-                                                        <p className="mt-1 text-base font-semibold text-[#0f2233]">
-                                                            {currency} {incomeGapRecommendation.recommended_income.toFixed(2)}
-                                                        </p>
-                                                    </article>
-                                                </div>
-                                                <article className="rounded-lg border border-[#bfe1d8] bg-[#eef9f5] px-3 py-2">
-                                                    <p className="text-[11px] text-[#117068]">Ingreso adicional sugerido</p>
-                                                    <p className="mt-1 text-lg font-semibold text-[#117068]">
-                                                        {currency} {incomeGapRecommendation.additional_income_needed.toFixed(2)}
-                                                    </p>
-                                                </article>
-                                                <article className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                                    <label className="label text-[11px] text-surface-500">
-                                                        Mi propuesta de ingreso adicional alcanzable
-                                                    </label>
-                                                    <div className="mt-1 flex items-center gap-2">
-                                                        <span className="text-sm text-surface-500">{currency}</span>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            step="0.01"
-                                                            className="input-field h-9 bg-surface-50 text-sm"
-                                                            value={achievableAdditionalIncome}
-                                                            onChange={(event) =>
-                                                                setAchievableAdditionalIncome(event.target.value)
+                                        <div className="mt-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <label className="label text-[11px] text-surface-500">
+                                                ¿Cuánto sí puedes añadir al mes?
+                                            </label>
+                                            <div className="mt-1 flex items-center gap-2">
+                                                <span className="text-sm text-surface-500">{currency}</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    className="input-field h-9 bg-white text-sm"
+                                                    value={achievableAdditionalIncome}
+                                                    onChange={(event) =>
+                                                        setAchievableAdditionalIncome(event.target.value)
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {REACHABLE_INCOME_PRESET_SHARES.map((share) => {
+                                                    const isDisabled = !incomeGapRecommendation;
+                                                    const presetValue = incomeGapRecommendation
+                                                        ? round2(
+                                                            incomeGapRecommendation.additional_income_needed *
+                                                            share
+                                                        )
+                                                        : 0;
+                                                    return (
+                                                        <button
+                                                            key={`reachable-share-${share}`}
+                                                            type="button"
+                                                            disabled={isDisabled}
+                                                            onClick={() =>
+                                                                applyReachableIncomePreset(share)
                                                             }
-                                                        />
-                                                    </div>
-                                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                                        {REACHABLE_INCOME_PRESET_SHARES.map((share) => {
-                                                            const isDisabled = !incomeGapRecommendation;
-                                                            const presetValue = incomeGapRecommendation
-                                                                ? round2(
-                                                                    incomeGapRecommendation.additional_income_needed *
-                                                                        share
-                                                                )
-                                                                : 0;
-                                                            return (
-                                                                <button
-                                                                    key={`reachable-share-${share}`}
-                                                                    type="button"
-                                                                    disabled={isDisabled}
-                                                                    onClick={() =>
-                                                                        applyReachableIncomePreset(share)
-                                                                    }
-                                                                    className="rounded-md border border-surface-300 bg-surface-50 px-2 py-1 text-[10px] font-semibold text-surface-600 hover:border-[#0d4c7a]/40 hover:text-[#0d4c7a] disabled:opacity-50"
-                                                                >
-                                                                    {Math.round(share * 100)}% IA ({currency} {presetValue.toFixed(0)})
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                    <p className="mt-1 text-[10px] text-surface-500">
-                                                        Úsalo para simular cuánto sí podrías añadir al mes (segundo trabajo, ingresos extra, etc.).
+                                                            className="rounded-md border border-surface-300 bg-white px-2 py-1 text-[10px] font-semibold text-surface-600 hover:border-[#0d4c7a]/40 hover:text-[#0d4c7a] disabled:opacity-50"
+                                                        >
+                                                            {Math.round(share * 100)}% IA ({currency} {presetValue.toFixed(0)})
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {incomeGapRecommendation ? (
+                                            <div className="mt-3 space-y-2 text-xs">
+                                                <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                                    <p className="text-surface-500">Cómo se usa tu propuesta</p>
+                                                    <p className="mt-1 text-surface-700">
+                                                        Ingreso total estimado = {currency} {consolidatedIncome.toFixed(2)} + {currency} {reachableAdditionalIncomeValue.toFixed(2)} = <b>{currency} {(consolidatedIncome + reachableAdditionalIncomeValue).toFixed(2)}</b>
                                                     </p>
-                                                </article>
-                                                <div className="grid gap-2 sm:grid-cols-2">
-                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
-                                                        <p className="text-surface-500">Compromiso operativo</p>
-                                                        <p className="mt-1 font-semibold text-[#0f2233]">
-                                                            {currency} {incomeGapRecommendation.operational_commitment.toFixed(2)}
-                                                        </p>
-                                                    </article>
-                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
-                                                        <p className="text-surface-500">Ahorro mensual requerido</p>
-                                                        <p className="mt-1 font-semibold text-[#0f2233]">
-                                                            {currency} {incomeGapRecommendation.required_savings_for_goals.toFixed(2)}
-                                                        </p>
-                                                    </article>
+                                                    <p className="mt-1 text-surface-700">
+                                                        Reserva de deseos estimada = {currency} {scenarioWantsReserve.toFixed(2)}
+                                                    </p>
+                                                    <p className="mt-1 text-surface-700">
+                                                        Ahorro estimado para metas = <b>{currency} {achievableScenario?.scenarioSavingsPool.toFixed(2) ?? "0.00"}/mes</b>
+                                                    </p>
                                                 </div>
-                                                <article className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                                    <p className="text-[11px] text-surface-500 mb-2">Distribución saludable sugerida</p>
-                                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
-                                                            Necesidades: {incomeGapRecommendation.healthy_plan_pct.needs_pct.toFixed(2)}%
-                                                        </div>
-                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
-                                                            Deseos: {incomeGapRecommendation.healthy_plan_pct.wants_pct.toFixed(2)}%
-                                                        </div>
-                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
-                                                            Ahorro: {incomeGapRecommendation.healthy_plan_pct.savings_pct.toFixed(2)}%
-                                                        </div>
-                                                        <div className="rounded-md border border-surface-200 bg-surface-50 px-2 py-1.5">
-                                                            Deuda: {incomeGapRecommendation.healthy_plan_pct.debt_pct.toFixed(2)}%
-                                                        </div>
-                                                    </div>
-                                                </article>
-                                                {achievableScenario && (
-                                                    <article className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
-                                                        <p className="text-[11px] text-surface-500">
-                                                            Escenario con ingreso alcanzable
-                                                        </p>
-                                                        <div className="mt-1 grid gap-2 sm:grid-cols-2 text-xs">
-                                                            <div className="rounded-md border border-surface-200 bg-white px-2 py-1.5">
-                                                                Ingreso total: <span className="font-semibold text-[#0f2233]">{currency} {achievableScenario.scenarioIncome.toFixed(2)}</span>
-                                                            </div>
-                                                            <div className="rounded-md border border-surface-200 bg-white px-2 py-1.5">
-                                                                Ahorro a metas: <span className="font-semibold text-[#0f2233]">{currency} {achievableScenario.scenarioSavingsPool.toFixed(2)}/mes</span>
-                                                            </div>
-                                                        </div>
-                                                        {achievableScenario.incomeGapToTarget > 0 ? (
-                                                            <p className="mt-2 text-[11px] text-[#b42318]">
-                                                                Aún faltarían {currency} {achievableScenario.incomeGapToTarget.toFixed(2)} para cumplir el plan objetivo sin extender plazos.
-                                                            </p>
-                                                        ) : (
-                                                            <p className="mt-2 text-[11px] text-[#117068]">
-                                                                Este escenario ya cubre el plan objetivo de ingresos.
-                                                            </p>
-                                                        )}
-                                                    </article>
-                                                )}
+                                                <div className={`rounded-lg border px-3 py-2 ${achievableScenario && achievableScenario.incomeGapToTarget > 0 ? "border-negative-200 bg-negative-50 text-negative-700" : "border-[#bfe1d8] bg-[#eef9f5] text-[#117068]"}`}>
+                                                    {achievableScenario && achievableScenario.incomeGapToTarget > 0
+                                                        ? `Con tu propuesta aún faltan ${currency} ${achievableScenario.incomeGapToTarget.toFixed(2)} para cumplir el objetivo sin extender plazos.`
+                                                        : "Con tu propuesta ya cubres el objetivo recomendado."}
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="mt-3 rounded-lg border border-surface-200 bg-surface-50 px-3 py-3 text-sm text-surface-600">
-                                                El resultado aparecerá aquí cuando la IA termine de calcular.
-                                            </div>
-                                        )}
+                                        ) : null}
                                     </section>
                                 </div>
 
                                 {goalRecommendationRows.length > 0 && (
                                     <section className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
                                         <h3 className="text-sm font-semibold text-[#0f2233]">
-                                            Ajuste de plazo por meta de ahorro
+                                            Ajuste de plazo por meta
                                         </h3>
                                         <p className="mt-1 text-xs text-surface-500">
-                                            Edita el horizonte de cada meta para recalcular la recomendación final de ingreso.
+                                            Aquí verás exactamente de dónde sale cada monto mensual.
                                         </p>
 
-                                        <div className="mt-4 overflow-x-auto rounded-xl border border-surface-200">
-                                            <table className="w-full min-w-[760px] text-sm">
-                                                <thead className="bg-surface-50 text-left text-surface-500">
-                                                    <tr>
-                                                        <th className="px-3 py-2 font-semibold">Meta</th>
-                                                        <th className="px-3 py-2 font-semibold">Monto objetivo</th>
-                                                        <th className="px-3 py-2 font-semibold">Plazo</th>
-                                                        <th className="px-3 py-2 font-semibold">Aporte actual</th>
-                                                        <th className="px-3 py-2 font-semibold">Aporte requerido</th>
-                                                        <th className="px-3 py-2 font-semibold">Brecha</th>
-                                                        <th className="px-3 py-2 font-semibold">ETA con escenario</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-surface-200 bg-white">
-                                                    {goalRecommendationRows.map((goal) => (
-                                                        <tr key={`goal-reco-${goal.id}`}>
-                                                            <td className="px-3 py-2 font-medium text-[#0f2233]">{goal.name}</td>
-                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.targetAmount.toFixed(2)}</td>
-                                                            <td className="px-3 py-2">
-                                                                <select
-                                                                    className="input-field h-9 min-w-[120px] bg-surface-50 text-sm"
-                                                                    value={goalTargetMonthsById[goal.id] ?? String(goal.suggestedMonths)}
-                                                                    onChange={(event) => handleGoalHorizonChange(goal.id, Number(event.target.value))}
-                                                                >
-                                                                    {GOAL_HORIZON_OPTIONS.map((option) => (
-                                                                        <option key={`${goal.id}-horizon-${option}`} value={option}>
-                                                                            {formatHorizonLabel(option)}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                            </td>
-                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.projectedMonthlyContribution.toFixed(2)}</td>
-                                                            <td className="px-3 py-2 text-surface-600">{currency} {goal.requiredMonthlyContribution.toFixed(2)}</td>
-                                                            <td className="px-3 py-2 font-semibold text-[#117068]">{currency} {goal.gapMonthlyContribution.toFixed(2)}</td>
-                                                            <td className="px-3 py-2 text-surface-600">
-                                                                {(() => {
-                                                                    const scenarioGoal = achievableScenario?.goals.find((item) => item.id === goal.id);
-                                                                    if (!scenarioGoal || scenarioGoal.scenarioEtaMonths === null) return "Sin avance";
-                                                                    const label = formatHorizonLabel(scenarioGoal.scenarioEtaMonths);
-                                                                    return scenarioGoal.meetsTarget ? label : `${label} (extendido)`;
-                                                                })()}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                            {goalRecommendationRows.map((goal) => {
+                                                const scenarioGoal = scenarioGoalById.get(goal.id);
+                                                return (
+                                                    <article key={`goal-reco-card-${goal.id}`} className="rounded-xl border border-surface-200 bg-surface-50 p-4">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div>
+                                                                <p className="text-sm font-semibold text-[#0f2233]">{goal.name}</p>
+                                                                <p className="text-xs text-surface-500">Monto objetivo: {currency} {goal.targetAmount.toFixed(2)}</p>
+                                                            </div>
+                                                            <select
+                                                                className="input-field h-9 min-w-[140px] bg-white text-sm"
+                                                                value={goalTargetMonthsById[goal.id] ?? String(goal.suggestedMonths)}
+                                                                onChange={(event) => handleGoalHorizonChange(goal.id, Number(event.target.value))}
+                                                            >
+                                                                {GOAL_HORIZON_OPTIONS.map((option) => (
+                                                                    <option key={`${goal.id}-horizon-${option}`} value={option}>
+                                                                        {formatHorizonLabel(option)}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        <div className="mt-3 grid gap-2 sm:grid-cols-2 text-xs">
+                                                            <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                                                <p className="text-surface-500">Aporte objetivo mensual</p>
+                                                                <p className="mt-1 font-semibold text-[#0f2233]">{currency} {goal.requiredMonthlyContribution.toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                                                <p className="text-surface-500">Aporte actual mensual</p>
+                                                                <p className="mt-1 font-semibold text-[#0f2233]">{currency} {goal.projectedMonthlyContribution.toFixed(2)}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="mt-2 text-[11px] text-surface-500">
+                                                            Cálculo: {currency} {goal.targetAmount.toFixed(2)} / {goal.targetMonths} meses = {currency} {goal.requiredMonthlyContribution.toFixed(2)}
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-semibold text-[#117068]">
+                                                            Diferencia mensual hoy: {currency} {goal.gapMonthlyContribution.toFixed(2)}
+                                                        </p>
+
+                                                        <div className="mt-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-xs">
+                                                            <p className="text-surface-500">Con tu propuesta de ingreso adicional</p>
+                                                            <p className="mt-1 text-surface-700">
+                                                                Aporte estimado: <b>{currency} {scenarioGoal?.scenarioContribution.toFixed(2) ?? "0.00"}/mes</b>
+                                                            </p>
+                                                            <p className="mt-1 text-surface-700">
+                                                                Tiempo estimado: <b>{
+                                                                    !scenarioGoal || scenarioGoal.scenarioEtaMonths === null
+                                                                        ? "Sin avance"
+                                                                        : scenarioGoal.meetsTarget
+                                                                            ? formatHorizonLabel(scenarioGoal.scenarioEtaMonths)
+                                                                            : `${formatHorizonLabel(scenarioGoal.scenarioEtaMonths)} (más del plazo objetivo)`
+                                                                }</b>
+                                                            </p>
+                                                        </div>
+                                                    </article>
+                                                );
+                                            })}
                                         </div>
                                     </section>
                                 )}
