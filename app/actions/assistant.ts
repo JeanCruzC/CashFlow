@@ -65,6 +65,36 @@ function toRecommendation(raw: unknown): IncomeGapRecommendationResult | null {
                     gap_monthly_contribution: Number(goal.gap_monthly_contribution ?? 0),
                 }))
             : [],
+        user_scenario: value.user_scenario && typeof value.user_scenario === "object"
+            ? {
+                achievable_additional_income: Number(
+                    (value.user_scenario as Record<string, unknown>).achievable_additional_income ?? 0
+                ),
+                scenario_income: Number(
+                    (value.user_scenario as Record<string, unknown>).scenario_income ?? 0
+                ),
+                scenario_savings_pool: Number(
+                    (value.user_scenario as Record<string, unknown>).scenario_savings_pool ?? 0
+                ),
+                scenario_income_gap_to_target: Number(
+                    (value.user_scenario as Record<string, unknown>).scenario_income_gap_to_target ?? 0
+                ),
+                goals: Array.isArray((value.user_scenario as Record<string, unknown>).goals)
+                    ? ((value.user_scenario as Record<string, unknown>).goals as unknown[])
+                        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+                        .map((goal) => ({
+                            id: String(goal.id ?? "goal"),
+                            name: String(goal.name ?? "Meta"),
+                            scenario_monthly_contribution: Number(goal.scenario_monthly_contribution ?? 0),
+                            scenario_eta_months:
+                                goal.scenario_eta_months === null
+                                    ? null
+                                    : Number(goal.scenario_eta_months ?? 0),
+                            meets_target: Boolean(goal.meets_target),
+                        }))
+                    : [],
+            }
+            : undefined,
         summary: String(value.summary),
         action_items: Array.isArray(value.action_items)
             ? value.action_items.map((item) => String(item))

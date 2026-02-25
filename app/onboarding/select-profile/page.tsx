@@ -84,6 +84,7 @@ const RULE_CARD_CONFIG: Record<
 };
 
 const GOAL_HORIZON_OPTIONS = [12, 18, 24, 36, 48, 60, 84, 120];
+const REACHABLE_INCOME_PRESET_SHARES = [0.25, 0.5, 0.75, 1];
 
 const FIXED_EXPENSE_KEYWORDS = [
     "alquiler",
@@ -730,10 +731,15 @@ export default function SelectProfilePage() {
         consolidatedIncome,
     ]);
 
+    const reachableAdditionalIncomeValue = useMemo(
+        () => round2(Math.max(parseAmount(achievableAdditionalIncome), 0)),
+        [achievableAdditionalIncome]
+    );
+
     const achievableScenario = useMemo(() => {
         if (!incomeGapRecommendation) return null;
 
-        const additionalIncomeReachable = round2(Math.max(parseAmount(achievableAdditionalIncome), 0));
+        const additionalIncomeReachable = reachableAdditionalIncomeValue;
         const scenarioIncome = round2(consolidatedIncome + additionalIncomeReachable);
         const wantsPct = incomeGapRecommendation.healthy_plan_pct.wants_pct;
         const wantsReserve = round2((scenarioIncome * wantsPct) / 100);
@@ -777,13 +783,21 @@ export default function SelectProfilePage() {
         };
     }, [
         incomeGapRecommendation,
-        achievableAdditionalIncome,
+        reachableAdditionalIncomeValue,
         consolidatedIncome,
         operationalCashRequired,
         estimatedDebtPayment,
         savingsGoals,
         goalRecommendationRows,
     ]);
+
+    function applyReachableIncomePreset(share: number) {
+        if (!incomeGapRecommendation) return;
+        const value = round2(
+            Math.max(incomeGapRecommendation.additional_income_needed * share, 0)
+        );
+        setAchievableAdditionalIncome(String(value));
+    }
 
     function handleCountryChange(value: string) {
         setCountry(value);
@@ -1099,6 +1113,39 @@ export default function SelectProfilePage() {
                                 Number.parseInt(goalTargetMonthsById[goal.id] ?? "", 10) ||
                                 goal.target_months,
                         })),
+                        user_scenario: achievableScenario
+                            ? {
+                                achievable_additional_income:
+                                    achievableScenario.additionalIncomeReachable,
+                                scenario_income: achievableScenario.scenarioIncome,
+                                scenario_savings_pool: achievableScenario.scenarioSavingsPool,
+                                scenario_income_gap_to_target:
+                                    achievableScenario.incomeGapToTarget,
+                                goals: achievableScenario.goals.map((goal) => ({
+                                    id: goal.id,
+                                    name: goal.name,
+                                    scenario_monthly_contribution:
+                                        goal.scenarioContribution,
+                                    scenario_eta_months: goal.scenarioEtaMonths,
+                                    meets_target: goal.meetsTarget,
+                                })),
+                            }
+                            : {
+                                achievable_additional_income:
+                                    reachableAdditionalIncomeValue,
+                                scenario_income: round2(
+                                    consolidatedIncome + reachableAdditionalIncomeValue
+                                ),
+                                scenario_savings_pool: 0,
+                                scenario_income_gap_to_target: round2(
+                                    Math.max(
+                                        incomeGapRecommendation.recommended_income -
+                                            (consolidatedIncome + reachableAdditionalIncomeValue),
+                                        0
+                                    )
+                                ),
+                                goals: [],
+                            },
                     }
                     : undefined;
 
@@ -2737,7 +2784,7 @@ export default function SelectProfilePage() {
                                                 </article>
                                                 <article className="rounded-lg border border-surface-200 bg-white px-3 py-2">
                                                     <label className="label text-[11px] text-surface-500">
-                                                        Ingreso adicional alcanzable (tu escenario)
+                                                        Mi propuesta de ingreso adicional alcanzable
                                                     </label>
                                                     <div className="mt-1 flex items-center gap-2">
                                                         <span className="text-sm text-surface-500">{currency}</span>
@@ -2752,8 +2799,32 @@ export default function SelectProfilePage() {
                                                             }
                                                         />
                                                     </div>
+                                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                                        {REACHABLE_INCOME_PRESET_SHARES.map((share) => {
+                                                            const isDisabled = !incomeGapRecommendation;
+                                                            const presetValue = incomeGapRecommendation
+                                                                ? round2(
+                                                                    incomeGapRecommendation.additional_income_needed *
+                                                                        share
+                                                                )
+                                                                : 0;
+                                                            return (
+                                                                <button
+                                                                    key={`reachable-share-${share}`}
+                                                                    type="button"
+                                                                    disabled={isDisabled}
+                                                                    onClick={() =>
+                                                                        applyReachableIncomePreset(share)
+                                                                    }
+                                                                    className="rounded-md border border-surface-300 bg-surface-50 px-2 py-1 text-[10px] font-semibold text-surface-600 hover:border-[#0d4c7a]/40 hover:text-[#0d4c7a] disabled:opacity-50"
+                                                                >
+                                                                    {Math.round(share * 100)}% IA ({currency} {presetValue.toFixed(0)})
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
                                                     <p className="mt-1 text-[10px] text-surface-500">
-                                                        Úsalo para simular un segundo ingreso realista sin alterar la operación de la app.
+                                                        Úsalo para simular cuánto sí podrías añadir al mes (segundo trabajo, ingresos extra, etc.).
                                                     </p>
                                                 </article>
                                                 <div className="grid gap-2 sm:grid-cols-2">

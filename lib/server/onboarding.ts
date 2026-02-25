@@ -75,6 +75,25 @@ const assistantRecommendationSchema = z.object({
             })
         )
         .optional(),
+    user_scenario: z
+        .object({
+            achievable_additional_income: z.number().finite().min(0),
+            scenario_income: z.number().finite().min(0),
+            scenario_savings_pool: z.number().finite().min(0),
+            scenario_income_gap_to_target: z.number().finite().min(0),
+            goals: z
+                .array(
+                    z.object({
+                        id: z.string().trim().min(1).max(64),
+                        name: z.string().trim().min(1).max(120),
+                        scenario_monthly_contribution: z.number().finite().min(0),
+                        scenario_eta_months: z.number().int().min(1).max(480).nullable(),
+                        meets_target: z.boolean(),
+                    })
+                )
+                .max(30),
+        })
+        .optional(),
     summary: z.string().trim().min(1).max(4000),
     action_items: z.array(z.string().trim().min(1).max(240)).max(10).optional(),
 });

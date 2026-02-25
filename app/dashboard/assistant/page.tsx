@@ -99,6 +99,49 @@ export default async function AssistantPage() {
                                 </article>
                             </div>
 
+                            {recommendation.user_scenario && (
+                                <article className="mt-4 rounded-2xl border border-surface-200 bg-surface-50 p-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">
+                                        Escenario definido por usuario
+                                    </h3>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ingreso adicional propuesto</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(
+                                                    recommendation.user_scenario.achievable_additional_income,
+                                                    currency
+                                                )}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ingreso total escenario</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(recommendation.user_scenario.scenario_income, currency)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ahorro mensual en escenario</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(
+                                                    recommendation.user_scenario.scenario_savings_pool,
+                                                    currency
+                                                )}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
+                                            <p className="text-surface-500">Brecha restante</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(
+                                                    recommendation.user_scenario.scenario_income_gap_to_target,
+                                                    currency
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </article>
+                            )}
+
                             <div className="mt-5 grid gap-4 lg:grid-cols-2">
                                 <article className="rounded-2xl border border-surface-200 bg-white p-4">
                                     <h3 className="text-sm font-semibold text-[#0f2233]">

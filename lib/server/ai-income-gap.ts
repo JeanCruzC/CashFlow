@@ -75,6 +75,19 @@ export interface IncomeGapRecommendationResult {
         debt_amount: number;
     };
     goals: IncomeGapGoalResult[];
+    user_scenario?: {
+        achievable_additional_income: number;
+        scenario_income: number;
+        scenario_savings_pool: number;
+        scenario_income_gap_to_target: number;
+        goals: Array<{
+            id: string;
+            name: string;
+            scenario_monthly_contribution: number;
+            scenario_eta_months: number | null;
+            meets_target: boolean;
+        }>;
+    };
     summary: string;
     action_items: string[];
 }
