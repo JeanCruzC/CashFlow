@@ -380,6 +380,27 @@ function isMissingRelationError(error: unknown, relationName: string) {
     );
 }
 
+function isMissingColumnError(
+    error: unknown,
+    tableName: string,
+    columnNames: string[]
+) {
+    const normalized = normalizeSupabaseError(error);
+    const details = normalized.message.toLowerCase();
+    const normalizedTable = tableName.toLowerCase();
+
+    if (!details.includes("42703") && !details.includes("does not exist")) {
+        return false;
+    }
+    if (!details.includes(`column ${normalizedTable}.`)) {
+        return false;
+    }
+
+    return columnNames.some((columnName) =>
+        details.includes(`${normalizedTable}.${columnName.toLowerCase()}`)
+    );
+}
+
 function computeGoalRowsFromOnboarding(
     orgId: string,
     setup: OnboardingSetupInput
@@ -795,6 +816,24 @@ export async function createOrganizationWithOnboarding(
                     "No se pudo guardar el perfil financiero porque falta migrar ese módulo en Supabase. Ejecuta: npm run supabase:migrate:remote"
                 );
             }
+            if (
+                isMissingColumnError(profileError, "org_financial_profile", [
+                    "salary_frequency",
+                    "salary_payment_day_1",
+                    "salary_payment_day_2",
+                    "first_fortnight_amount",
+                    "second_fortnight_amount",
+                    "partner_salary_frequency",
+                    "partner_salary_payment_day_1",
+                    "partner_salary_payment_day_2",
+                    "partner_first_fortnight_amount",
+                    "partner_second_fortnight_amount",
+                ])
+            ) {
+                throw new Error(
+                    "No se pudo guardar el perfil financiero porque faltan columnas de sueldos/quincenas en Supabase. Ejecuta: npm run supabase:migrate:remote (incluye migración 012)."
+                );
+            }
             throw new Error("No se pudo guardar el perfil financiero inicial");
         }
     }
@@ -847,6 +886,20 @@ export async function createOrganizationWithOnboarding(
         const { error: ccError } = await supabase.from("accounts").insert(ccRows);
         if (ccError) {
             logError("Error creating credit card accounts", ccError, { orgId });
+            if (
+                isMissingColumnError(ccError, "accounts", [
+                    "payment_day",
+                    "card_payment_strategy",
+                    "minimum_payment_amount",
+                    "tea",
+                    "has_desgravamen",
+                    "desgravamen_amount",
+                ])
+            ) {
+                throw new Error(
+                    "No se pudieron crear las tarjetas porque faltan columnas en accounts. Ejecuta: npm run supabase:migrate:remote (migraciones 012 y 013)."
+                );
+            }
             throw new Error("No se pudieron crear las tarjetas de crédito");
         }
     }
