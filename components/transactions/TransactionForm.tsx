@@ -44,9 +44,9 @@ export function TransactionForm({
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [direction, setDirection] = useState<"outcome" | "income">(() => {
-        if (!initialValues) return "outcome";
-        return initialValues.amount >= 0 ? "income" : "outcome";
+    const [direction, setDirection] = useState<"expense" | "income">(() => {
+        if (!initialValues) return "expense";
+        return initialValues.amount >= 0 ? "income" : "expense";
     });
     const [amount, setAmount] = useState(
         initialValues ? String(Math.abs(initialValues.amount)) : ""
@@ -59,13 +59,14 @@ export function TransactionForm({
     const [categoryId, setCategoryId] = useState(initialValues?.category_gl_id ?? "");
     const [savingsGoalId, setSavingsGoalId] = useState(initialValues?.savings_goal_id ?? "");
     const [notes, setNotes] = useState(initialValues?.notes ?? "");
+
     const selectedAccountCurrency = useMemo(() => {
         const accountCurrency = accounts.find((account) => account.id === accountId)?.currency;
         return (accountCurrency || initialValues?.currency || accounts[0]?.currency || "USD").toUpperCase();
     }, [accountId, accounts, initialValues?.currency]);
 
-    const pageTitle = mode === "edit" ? "Editar transacción" : "Nueva transacción";
-    const submitLabel = mode === "edit" ? "Guardar cambios" : "Crear transacción";
+    const pageTitle = mode === "edit" ? "Editar movimiento" : "Registrar movimiento";
+    const submitLabel = mode === "edit" ? "Guardar cambios" : "Guardar movimiento";
 
     const filteredCategories = useMemo(
         () =>
@@ -96,7 +97,7 @@ export function TransactionForm({
             const payload = {
                 date,
                 description: description.trim(),
-                amount: direction === "outcome" ? -numericAmount : numericAmount,
+                amount: direction === "expense" ? -numericAmount : numericAmount,
                 account_id: accountId,
                 category_gl_id: categoryId || undefined,
                 currency: selectedAccountCurrency,
@@ -104,7 +105,7 @@ export function TransactionForm({
                 counterparty_id: undefined,
                 cost_center_id: undefined,
                 transfer_group_id: undefined,
-                savings_goal_id: direction === "outcome" && savingsGoalId ? savingsGoalId : undefined,
+                savings_goal_id: direction === "expense" && savingsGoalId ? savingsGoalId : undefined,
                 detraccion_rate: undefined,
                 detraccion_amount: undefined,
                 notes: notes.trim() || undefined,
@@ -136,12 +137,12 @@ export function TransactionForm({
     if (accounts.length === 0) {
         return (
             <div className="mx-auto max-w-2xl animate-fade-in">
-                <div className="rounded-3xl border border-surface-200 bg-white p-6 text-center shadow-card">
-                    <h1 className="text-xl font-bold">No hay cuentas disponibles</h1>
-                    <p className="text-muted mt-2">
-                        Para registrar transacciones primero debes crear al menos una cuenta.
+                <div className="rounded-2xl border border-[#d9e2f0] bg-white p-6 text-center shadow-card">
+                    <h1 className="text-xl font-semibold text-[#0f2233]">No hay cuentas disponibles</h1>
+                    <p className="mt-2 text-sm text-surface-500">
+                        Para registrar movimientos primero debes crear al menos una cuenta.
                     </p>
-                    <Link href="/dashboard/settings#estructura-financiera" className="btn-primary inline-flex mt-4 text-sm no-underline hover:text-white">
+                    <Link href="/dashboard/settings#estructura-financiera" className="btn-primary mt-4 inline-flex text-sm no-underline hover:text-white">
                         Configurar cuentas
                     </Link>
                 </div>
@@ -150,48 +151,76 @@ export function TransactionForm({
     }
 
     return (
-        <div className="mx-auto max-w-3xl animate-fade-in">
+        <div className="mx-auto max-w-4xl space-y-4 animate-fade-in">
             <Link
                 href="/dashboard/transactions"
-                className="inline-flex items-center gap-1 text-sm text-muted hover:text-surface-900 dark:hover:text-surface-100 mb-6 transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-surface-500 no-underline hover:text-[#0f2233]"
             >
-                Volver a transacciones
+                ← Volver al libro de movimientos
             </Link>
 
-            <div className="overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card">
-                <div className="border-b border-surface-200 p-6">
-                    <h1 className="text-2xl font-semibold text-[#0f2233]">{pageTitle}</h1>
-                    <p className="text-sm text-muted mt-1">
-                        {mode === "edit" ? "Actualiza la información del movimiento." : "Registra una transacción manual."}
-                    </p>
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
+                            Ciclo mensual · Registrar
+                        </p>
+                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">{pageTitle}</h1>
+                        <p className="mt-2 text-sm text-surface-600">
+                            Captura un movimiento real para actualizar automáticamente panorama,
+                            control presupuestal y proyección.
+                        </p>
+                    </div>
+
+                    <article className="rounded-xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Reglas rápidas
+                        </p>
+                        <ul className="mt-2 space-y-1 text-sm text-surface-600">
+                            <li>1. Usa descripción específica y corta.</li>
+                            <li>2. Selecciona la cuenta correcta de origen/destino.</li>
+                            <li>3. Revisa categoría para mejorar tus reportes.</li>
+                        </ul>
+                    </article>
                 </div>
+            </section>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {error && (
-                        <div className="bg-negative-50 text-negative-600 p-3 rounded-md text-sm">
-                            {error}
-                        </div>
-                    )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error ? (
+                    <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
+                        {error}
+                    </div>
+                ) : null}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h2 className="text-base font-semibold text-[#0f2233]">1. Tipo y monto</h2>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Define si es ingreso o egreso, y el importe exacto en la moneda de la cuenta.
+                    </p>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">Tipo</label>
-                            <div className="flex bg-surface-100 dark:bg-surface-800 p-1 rounded-lg">
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo de movimiento</label>
+                            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-1.5">
                                 <button
                                     type="button"
-                                    onClick={() => setDirection("outcome")}
-                                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${direction === "outcome"
-                                        ? "bg-white dark:bg-surface-700 shadow-sm text-negative-600"
-                                        : "text-muted hover:text-surface-900 dark:hover:text-surface-300"}`}
+                                    onClick={() => setDirection("expense")}
+                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                                        direction === "expense"
+                                            ? "bg-white text-negative-600 shadow-sm"
+                                            : "text-surface-500 hover:text-[#0f2233]"
+                                    }`}
                                 >
                                     Egreso
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setDirection("income")}
-                                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${direction === "income"
-                                        ? "bg-white dark:bg-surface-700 shadow-sm text-positive-600"
-                                        : "text-muted hover:text-surface-900 dark:hover:text-surface-300"}`}
+                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                                        direction === "income"
+                                            ? "bg-white text-positive-600 shadow-sm"
+                                            : "text-surface-500 hover:text-[#0f2233]"
+                                    }`}
                                 >
                                     Ingreso
                                 </button>
@@ -199,7 +228,7 @@ export function TransactionForm({
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Monto</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Monto</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-wide text-surface-400">
                                     {selectedAccountCurrency}
@@ -216,23 +245,30 @@ export function TransactionForm({
                             </div>
                         </div>
                     </div>
+                </section>
 
-                    <div className="space-y-4">
+                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h2 className="text-base font-semibold text-[#0f2233]">2. Datos del movimiento</h2>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Describe el hecho contable y define fecha + cuenta de impacto.
+                    </p>
+
+                    <div className="mt-4 space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Descripción</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Descripción</label>
                             <input
                                 type="text"
                                 required
                                 value={description}
                                 onChange={(event) => setDescription(event.target.value)}
                                 className="input-field"
-                                placeholder="Ej. Compra de supermercado o cobro de servicio"
+                                placeholder="Ej. Compra de supermercado / Cobro de servicio"
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <div>
-                                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Fecha</label>
+                                <label className="mb-1.5 block text-sm font-medium text-surface-700">Fecha</label>
                                 <input
                                     type="date"
                                     required
@@ -241,13 +277,16 @@ export function TransactionForm({
                                     className="input-field"
                                 />
                             </div>
+
                             <Select
                                 label="Cuenta"
                                 value={accountId}
                                 onChange={(event) => setAccountId(event.target.value)}
                                 required
                             >
-                                <option value="" disabled>Selecciona una cuenta</option>
+                                <option value="" disabled>
+                                    Selecciona una cuenta
+                                </option>
                                 {accounts.map((account) => (
                                     <option key={account.id} value={account.id}>
                                         {account.name} ({account.currency})
@@ -255,7 +294,16 @@ export function TransactionForm({
                                 ))}
                             </Select>
                         </div>
+                    </div>
+                </section>
 
+                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h2 className="text-base font-semibold text-[#0f2233]">3. Clasificación y contexto</h2>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Asigna categoría, meta de ahorro y observaciones para mejorar análisis posterior.
+                    </p>
+
+                    <div className="mt-4 space-y-4">
                         <Select
                             label="Categoría"
                             value={categoryId}
@@ -269,9 +317,9 @@ export function TransactionForm({
                             ))}
                         </Select>
 
-                        {direction === "outcome" && savingsGoals && savingsGoals.length > 0 && (
+                        {direction === "expense" && savingsGoals && savingsGoals.length > 0 ? (
                             <Select
-                                label="Asignar a Meta de Ahorro (Opcional)"
+                                label="Asignar a meta de ahorro (opcional)"
                                 value={savingsGoalId}
                                 onChange={(event) => setSavingsGoalId(event.target.value)}
                             >
@@ -282,38 +330,38 @@ export function TransactionForm({
                                     </option>
                                 ))}
                             </Select>
-                        )}
+                        ) : null}
 
                         <div>
-                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">Notas</label>
+                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Notas (opcional)</label>
                             <textarea
                                 value={notes}
                                 onChange={(event) => setNotes(event.target.value)}
-                                className="input-field min-h-[90px]"
-                                placeholder="Opcional"
+                                className="input-field min-h-[96px]"
+                                placeholder="Detalle adicional para auditoría o seguimiento"
                             />
                         </div>
                     </div>
+                </section>
 
-                    <div className="flex justify-end pt-2">
-                        <button
-                            type="button"
-                            onClick={() => router.back()}
-                            disabled={isPending}
-                            className="btn-ghost mr-2"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isPending}
-                            className="btn-primary min-w-[130px]"
-                        >
-                            {isPending ? "Guardando..." : submitLabel}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <section className="flex flex-wrap items-center justify-end gap-2 pb-2">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        disabled={isPending}
+                        className="btn-secondary"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isPending}
+                        className="btn-primary min-w-[180px]"
+                    >
+                        {isPending ? "Guardando..." : submitLabel}
+                    </button>
+                </section>
+            </form>
         </div>
     );
 }

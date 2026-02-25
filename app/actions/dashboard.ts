@@ -39,10 +39,17 @@ export interface BusinessDashboardKPIs {
     restrictedCash: number;
 }
 
+export interface MonthlyTrendPoint {
+    month: string;
+    income: number;
+    expenses: number;
+}
+
 export interface DashboardKPIs {
     orgType: "personal" | "business";
     currency: string;
     locale: "es" | "en";
+    monthlyTrend: MonthlyTrendPoint[];
     savingsGoals?: SavingsGoal[];
     financialProfile?: OrgFinancialProfile | null;
     personalSavingsPlan?: {
@@ -57,6 +64,8 @@ export interface DashboardKPIs {
         budgetsMonth: number;
         transactions12m: number;
     };
+    budgetUsed?: number;
+    budgetTotal?: number;
     personalCycle?: {
         startDate: string | null;
         cycleDay: number;
@@ -83,6 +92,24 @@ export interface DashboardKPIs {
 
 function resolveCurrentMonth() {
     return new Date().toISOString().slice(0, 7);
+}
+
+function computeMonthlyTrend(transactions: Transaction[]): MonthlyTrendPoint[] {
+    const byMonth = new Map<string, { income: number; expenses: number }>();
+    for (const t of transactions) {
+        const month = t.date.slice(0, 7);
+        const bucket = byMonth.get(month) || { income: 0, expenses: 0 };
+        if (t.amount >= 0) {
+            bucket.income += t.amount;
+        } else {
+            bucket.expenses += Math.abs(t.amount);
+        }
+        byMonth.set(month, bucket);
+    }
+    return Array.from(byMonth.entries())
+        .map(([month, data]) => ({ month, ...data }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-6);
 }
 
 function resolveWindowStart(monthsBack: number) {
@@ -214,8 +241,8 @@ function mapAccounts(raw: Array<Record<string, unknown>>): Account[] {
         payment_day: item.payment_day == null ? null : toNumber(item.payment_day),
         card_payment_strategy:
             item.card_payment_strategy === "full" ||
-            item.card_payment_strategy === "minimum" ||
-            item.card_payment_strategy === "fixed"
+                item.card_payment_strategy === "minimum" ||
+                item.card_payment_strategy === "fixed"
                 ? item.card_payment_strategy
                 : null,
         minimum_payment_amount:
@@ -331,6 +358,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             orgType: "personal",
             currency: "USD",
             locale: "es",
+            monthlyTrend: [],
             personal: {
                 netCashFlow: 0,
                 savingsRatePct: 0,
@@ -436,12 +464,12 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     );
     const personalSavingsPlan = financialProfile
         ? {
-              consolidatedIncome: financialProfile.consolidated_income,
-              monthlySavingsPool:
-                  (financialProfile.consolidated_income * financialProfile.savings_pct) / 100,
-              savingsPct: financialProfile.savings_pct,
-              savingsPriorities: financialProfile.savings_priorities,
-          }
+            consolidatedIncome: financialProfile.consolidated_income,
+            monthlySavingsPool:
+                (financialProfile.consolidated_income * financialProfile.savings_pct) / 100,
+            savingsPct: financialProfile.savings_pct,
+            savingsPriorities: financialProfile.savings_priorities,
+        }
         : null;
     const onboardingStartDate = extractOnboardingStartDate(
         (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null
@@ -493,10 +521,10 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
                 strategy === "full"
                     ? currentBalance
                     : round2(
-                          Number(account.minimum_payment_amount || 0) > 0
-                              ? Number(account.minimum_payment_amount || 0)
-                              : currentBalance * 0.05
-                      );
+                        Number(account.minimum_payment_amount || 0) > 0
+                            ? Number(account.minimum_payment_amount || 0)
+                            : currentBalance * 0.05
+                    );
 
             return {
                 name: account.name,
@@ -528,17 +556,17 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     const incomePaymentDays =
         financialProfile?.salary_frequency === "biweekly"
             ? [
-                  clampDay(financialProfile.salary_payment_day_2, 15),
-                  clampDay(financialProfile.salary_payment_day_1, 30),
-              ]
+                clampDay(financialProfile.salary_payment_day_2, 15),
+                clampDay(financialProfile.salary_payment_day_1, 30),
+            ]
             : [clampDay(financialProfile?.salary_payment_day_1, 30)];
     const partnerIncomePaymentDays =
         (financialProfile?.partner_contribution || 0) > 0
             ? financialProfile?.partner_salary_frequency === "biweekly"
                 ? [
-                      clampDay(financialProfile.partner_salary_payment_day_2, 15),
-                      clampDay(financialProfile.partner_salary_payment_day_1, 30),
-                  ]
+                    clampDay(financialProfile.partner_salary_payment_day_2, 15),
+                    clampDay(financialProfile.partner_salary_payment_day_1, 30),
+                ]
                 : [clampDay(financialProfile?.partner_salary_payment_day_1, 30)]
             : [];
 
@@ -548,6 +576,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             : null,
         1
     );
+
+    const monthlyTrend = computeMonthlyTrend(transactions);
+    const budgetTotalAmount = round2(budgetByCategory.reduce((s, r) => s + r.amount, 0));
 
     if (orgType === "business") {
         const business = calculateBusinessKPIs(transactions, categories, budgets, month);
@@ -571,15 +602,19 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             },
         });
         const firstProjection = businessForecast.projections[0];
+        const budgetUsedBiz = round2(business.budgetVsActual.reduce((s, i) => s + i.actual, 0));
 
         return {
             orgType,
             currency,
             locale,
+            monthlyTrend,
             savingsGoals,
             financialProfile,
             personalSavingsPlan,
             summary,
+            budgetUsed: budgetUsedBiz,
+            budgetTotal: budgetTotalAmount,
             business: {
                 revenue: business.revenue,
                 cogs: business.cogs,
@@ -597,14 +632,19 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     const personal = calculatePersonalKPIs(transactions, categories, accounts, budgets, month);
     const budgetVariance = personal.budgetUtilization.reduce((sum, item) => sum + item.variance, 0);
 
+    const budgetUsedPersonal = round2(personal.budgetUtilization.reduce((s, i) => s + i.actual, 0));
+
     return {
         orgType,
         currency,
         locale,
+        monthlyTrend,
         savingsGoals,
         financialProfile,
         personalSavingsPlan,
         summary,
+        budgetUsed: budgetUsedPersonal,
+        budgetTotal: budgetTotalAmount,
         personalCycle: {
             startDate: onboardingStartDate,
             cycleDay,

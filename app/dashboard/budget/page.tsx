@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getBudgetOverview } from "@/app/actions/budgets";
 import { getCategories } from "@/app/actions/categories";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
+import { BudgetBars } from "@/components/ui/BudgetBars";
 
 function getRecentMonths(count = 6) {
     const current = new Date();
@@ -84,19 +85,27 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
         currency: overview.currency || "USD",
     });
     const variance = overview.totalActual - overview.totalBudget;
+    const usageRate =
+        overview.totalBudget > 0 ? Math.min((overview.totalActual / overview.totalBudget) * 100, 100) : 0;
+    const chartRows = overview.rows
+        .map((row) => ({
+            category: friendlyCategoryName(row.category),
+            budget: row.budget,
+            actual: row.actual,
+            progress: row.progress,
+        }))
+        .sort((a, b) => b.actual - a.actual);
     const profileLabel = overview.orgType === "business" ? "empresa" : "personal";
 
     return (
-        <div className="space-y-7 animate-fade-in">
-            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-7 shadow-card">
+        <div className="space-y-6 animate-fade-in">
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                            Control mensual
-                        </p>
-                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Presupuesto operativo</h2>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">Control mensual</p>
+                        <h2 className="mt-2 text-2xl font-semibold text-[#0f2233]">Presupuesto operativo</h2>
                         <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            Define topes por categoría y compáralos contra la ejecución real.
+                            Define topes por categoría y compáralos contra la ejecución real para {monthLabel(overview.month)}.
                         </p>
                     </div>
                     <form className="flex items-center gap-2" method="get">
@@ -112,60 +121,63 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                         </button>
                     </form>
                 </div>
+                <div className="mt-4">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-200">
+                        <div
+                            className={`h-full rounded-full transition-all ${
+                                usageRate >= 100 ? "bg-negative-500" : "bg-[#117068]"
+                            }`}
+                            style={{ width: `${usageRate}%` }}
+                        />
+                    </div>
+                    <p className="mt-2 text-xs text-surface-500">
+                        Uso total del presupuesto: <span className="font-semibold text-[#0f2233]">{Math.round(usageRate)}%</span>
+                    </p>
+                </div>
             </section>
 
-            <section className="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
-                <article className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Definir tope por categoría</h3>
+            <section className="grid gap-4 md:grid-cols-3">
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
+                    <p className="text-xs font-medium text-surface-500">Tope total planificado</p>
+                    <p className="mt-2 text-3xl font-semibold text-[#0f2233]">
+                        {currencyFormatter.format(overview.totalBudget)}
+                    </p>
+                </article>
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
+                    <p className="text-xs font-medium text-surface-500">Ejecución registrada</p>
+                    <p className="mt-2 text-3xl font-semibold text-[#0f2233]">
+                        {currencyFormatter.format(overview.totalActual)}
+                    </p>
+                </article>
+                <article
+                    className={`rounded-2xl border p-5 shadow-card ${
+                        variance <= 0 ? "border-[#bfe1d8] bg-[#eef9f5]" : "border-[#f3dec1] bg-[#fff6ea]"
+                    }`}
+                >
+                    <p className="text-xs font-medium text-surface-500">
+                        {variance <= 0 ? "Margen disponible" : "Exceso sobre plan"}
+                    </p>
+                    <p className={`mt-2 text-3xl font-semibold ${variance <= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}>
+                        {currencyFormatter.format(Math.abs(variance))}
+                    </p>
+                </article>
+            </section>
+
+            <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr]">
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h3 className="text-base font-semibold text-[#10283b]">Definir tope por categoría</h3>
                     <p className="mt-1 text-sm text-surface-500">
                         Perfil {profileLabel}. Mes activo: {monthLabel(overview.month)}.
                     </p>
                     <div className="mt-4">
                         <BudgetSetForm month={month} categories={budgetCategories} />
                     </div>
-                </article>
-
-                <article className="rounded-3xl border border-[#d9e2f0] bg-[#f5f9ff] p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Semáforo del mes</h3>
-                    <div className="mt-4 space-y-3">
-                        <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
-                            <p className="text-xs text-surface-500">Tope total planificado</p>
-                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">
-                                {currencyFormatter.format(overview.totalBudget)}
-                            </p>
-                        </div>
-                        <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
-                            <p className="text-xs text-surface-500">Ejecución registrada</p>
-                            <p className="mt-1 text-xl font-semibold text-[#0f2233]">
-                                {currencyFormatter.format(overview.totalActual)}
-                            </p>
-                        </div>
-                        <div
-                            className={`rounded-xl border px-4 py-3 ${
-                                variance <= 0
-                                    ? "border-[#bfe1d8] bg-[#eef9f5]"
-                                    : "border-[#f3dec1] bg-[#fff6ea]"
-                            }`}
-                        >
-                            <p className="text-xs text-surface-500">
-                                {variance <= 0 ? "Margen disponible" : "Exceso sobre plan"}
-                            </p>
-                            <p
-                                className={`mt-1 text-xl font-semibold ${
-                                    variance <= 0 ? "text-[#117068]" : "text-[#a3462a]"
-                                }`}
-                            >
-                                {currencyFormatter.format(Math.abs(variance))}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="mt-5 rounded-xl border border-[#d9e2f0] bg-white p-4">
+                    <div className="mt-5 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-4">
                         <p className="text-sm font-semibold text-[#0f2233]">Orden recomendado</p>
                         <ol className="mt-2 space-y-1.5 text-sm text-surface-600">
-                            <li>1. Define topes para categorías fijas.</li>
+                            <li>1. Define topes para categorías fijas y críticas.</li>
                             <li>2. Registra movimientos reales en el mes.</li>
-                            <li>3. Revisa desviaciones por categoría y corrige.</li>
+                            <li>3. Revisa desviaciones y corrige antes del cierre.</li>
                         </ol>
                         <div className="mt-4 flex flex-wrap gap-2">
                             <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
@@ -177,12 +189,22 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                         </div>
                     </div>
                 </article>
+
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h3 className="text-base font-semibold text-[#10283b]">Ejecución por categoría</h3>
+                    <p className="mt-1 text-sm text-surface-500">
+                        Barras comparativas entre tope y gasto real.
+                    </p>
+                    <div className="mt-4">
+                        <BudgetBars rows={chartRows} currency={overview.currency || "USD"} />
+                    </div>
+                </article>
             </section>
 
-            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Detalle por categoría</h3>
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <h3 className="text-base font-semibold text-[#10283b]">Detalle por categoría</h3>
                 <p className="mt-1 text-sm text-surface-500">
-                    Comparación de presupuesto vs ejecución para {monthLabel(overview.month)}.
+                    Vista tabular para auditoría de presupuesto vs ejecución.
                 </p>
 
                 {overview.rows.length === 0 ? (

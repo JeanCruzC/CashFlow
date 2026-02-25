@@ -29,23 +29,41 @@ function formatHorizonLabel(months: number) {
 
 export default async function AssistantPage() {
     const insights = await getAssistantInsights(12);
+    const latest = insights[0] || null;
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-6 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">
-                    Asistente financiero
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#0f2233]">
-                    Recomendaciones guardadas
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm text-surface-500">
-                    Este módulo conserva recomendaciones de planificación para que puedas revisar cuánto ingreso adicional necesitas y cómo ajustar plazos de tus metas sin alterar el comportamiento operativo de la app.
-                </p>
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr] xl:items-start">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
+                            Soporte operativo · Asistente
+                        </p>
+                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Recomendaciones financieras</h2>
+                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
+                            Guarda recomendaciones de ingreso, ahorro y metas para revisar escenarios,
+                            comparar brechas y decidir ajustes concretos de tu plan mensual.
+                        </p>
+                    </div>
+
+                    <article className="rounded-2xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Estado del módulo
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold text-[#0f2233]">
+                            {insights.length} recomendaciones
+                        </p>
+                        <p className="mt-1 text-sm text-surface-600">
+                            {latest
+                                ? `Última actualización: ${formatDate(latest.created_at)}`
+                                : "Sin recomendaciones guardadas todavía."}
+                        </p>
+                    </article>
+                </div>
             </section>
 
             {insights.length === 0 ? (
-                <section className="rounded-3xl border border-surface-200 bg-white px-6 py-10 text-sm text-surface-500 shadow-card">
+                <section className="rounded-2xl border border-[#d9e2f0] bg-white px-6 py-10 text-sm text-surface-500 shadow-card">
                     Todavía no hay recomendaciones guardadas. Completa el paso final de onboarding para generar la primera.
                 </section>
             ) : (
@@ -56,30 +74,30 @@ export default async function AssistantPage() {
                     return (
                         <section
                             key={insight.id}
-                            className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card"
+                            className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card"
                         >
                             <div className="flex flex-wrap items-start justify-between gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
                                         {insight.title}
                                     </p>
                                     <p className="mt-2 text-base font-semibold text-[#0f2233]">
                                         {recommendation.summary}
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-600">
+                                <span className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs text-surface-600">
                                     {formatDate(insight.created_at)}
-                                </div>
+                                </span>
                             </div>
 
                             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                <article className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
                                     <p className="text-xs text-surface-500">Ingreso actual</p>
                                     <p className="mt-1 text-lg font-semibold text-[#0f2233]">
                                         {formatMoney(recommendation.consolidated_income, currency)}
                                     </p>
                                 </article>
-                                <article className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
                                     <p className="text-xs text-surface-500">Ingreso recomendado</p>
                                     <p className="mt-1 text-lg font-semibold text-[#0f2233]">
                                         {formatMoney(recommendation.recommended_income, currency)}
@@ -91,82 +109,37 @@ export default async function AssistantPage() {
                                         {formatMoney(recommendation.additional_income_needed, currency)}
                                     </p>
                                 </article>
-                                <article className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
-                                    <p className="text-xs text-surface-500">Ahorro mensual requerido</p>
+                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
+                                    <p className="text-xs text-surface-500">Ahorro requerido</p>
                                     <p className="mt-1 text-lg font-semibold text-[#0f2233]">
                                         {formatMoney(recommendation.required_savings_for_goals, currency)}
                                     </p>
                                 </article>
                             </div>
 
-                            {recommendation.user_scenario && (
-                                <article className="mt-4 rounded-2xl border border-surface-200 bg-surface-50 p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">
-                                        Escenario definido por usuario
-                                    </h3>
-                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ingreso adicional propuesto</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(
-                                                    recommendation.user_scenario.achievable_additional_income,
-                                                    currency
-                                                )}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ingreso total escenario</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(recommendation.user_scenario.scenario_income, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ahorro mensual en escenario</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(
-                                                    recommendation.user_scenario.scenario_savings_pool,
-                                                    currency
-                                                )}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-surface-200 bg-white px-3 py-2">
-                                            <p className="text-surface-500">Brecha restante</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(
-                                                    recommendation.user_scenario.scenario_income_gap_to_target,
-                                                    currency
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </article>
-                            )}
-
-                            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                                <article className="rounded-2xl border border-surface-200 bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">
-                                        Plan saludable recomendado
-                                    </h3>
+                            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1fr]">
+                                <article className="rounded-xl border border-[#d9e2f0] bg-white p-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Distribución saludable</h3>
                                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                                        <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
                                             <p className="text-surface-500">Necesidades</p>
                                             <p className="mt-1 font-semibold text-[#0f2233]">
                                                 {recommendation.healthy_plan_pct.needs_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.needs_amount, currency)}
                                             </p>
                                         </div>
-                                        <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
                                             <p className="text-surface-500">Deseos</p>
                                             <p className="mt-1 font-semibold text-[#0f2233]">
                                                 {recommendation.healthy_plan_pct.wants_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.wants_amount, currency)}
                                             </p>
                                         </div>
-                                        <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
                                             <p className="text-surface-500">Ahorro</p>
                                             <p className="mt-1 font-semibold text-[#0f2233]">
                                                 {recommendation.healthy_plan_pct.savings_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.savings_amount, currency)}
                                             </p>
                                         </div>
-                                        <div className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs">
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
                                             <p className="text-surface-500">Deuda</p>
                                             <p className="mt-1 font-semibold text-[#0f2233]">
                                                 {recommendation.healthy_plan_pct.debt_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.debt_amount, currency)}
@@ -175,13 +148,11 @@ export default async function AssistantPage() {
                                     </div>
                                 </article>
 
-                                <article className="rounded-2xl border border-surface-200 bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">
-                                        Acciones sugeridas
-                                    </h3>
+                                <article className="rounded-xl border border-[#d9e2f0] bg-white p-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Acciones sugeridas</h3>
                                     <ul className="mt-3 space-y-2 text-sm text-surface-600">
                                         {recommendation.action_items.map((item, index) => (
-                                            <li key={`${insight.id}-action-${index}`} className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2">
+                                            <li key={`${insight.id}-action-${index}`} className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
                                                 {item}
                                             </li>
                                         ))}
@@ -189,14 +160,44 @@ export default async function AssistantPage() {
                                 </article>
                             </div>
 
-                            {recommendation.goals.length > 0 && (
-                                <article className="mt-5 rounded-2xl border border-surface-200 bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">
-                                        Metas evaluadas en la recomendación
-                                    </h3>
-                                    <div className="mt-3 overflow-x-auto rounded-xl border border-surface-200">
+                            {recommendation.user_scenario ? (
+                                <article className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Escenario definido por usuario</h3>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ingreso adicional</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(recommendation.user_scenario.achievable_additional_income, currency)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ingreso total escenario</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(recommendation.user_scenario.scenario_income, currency)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
+                                            <p className="text-surface-500">Ahorro mensual escenario</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(recommendation.user_scenario.scenario_savings_pool, currency)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
+                                            <p className="text-surface-500">Brecha restante</p>
+                                            <p className="mt-1 font-semibold text-[#0f2233]">
+                                                {formatMoney(recommendation.user_scenario.scenario_income_gap_to_target, currency)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </article>
+                            ) : null}
+
+                            {recommendation.goals.length > 0 ? (
+                                <article className="mt-4 rounded-xl border border-[#d9e2f0] bg-white p-4">
+                                    <h3 className="text-sm font-semibold text-[#0f2233]">Metas evaluadas</h3>
+                                    <div className="mt-3 overflow-x-auto rounded-lg border border-[#d9e2f0]">
                                         <table className="w-full min-w-[720px] text-sm">
-                                            <thead className="bg-surface-50 text-left text-surface-500">
+                                            <thead className="bg-[#f5f9ff] text-left text-surface-500">
                                                 <tr>
                                                     <th className="px-3 py-2 font-semibold">Meta</th>
                                                     <th className="px-3 py-2 font-semibold">Horizonte</th>
@@ -205,7 +206,7 @@ export default async function AssistantPage() {
                                                     <th className="px-3 py-2 font-semibold">Brecha</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-surface-200 bg-white">
+                                            <tbody className="divide-y divide-[#e8eef7] bg-white">
                                                 {recommendation.goals.map((goal) => (
                                                     <tr key={`${insight.id}-goal-${goal.id}`}>
                                                         <td className="px-3 py-2 font-medium text-[#0f2233]">{goal.name}</td>
@@ -225,7 +226,7 @@ export default async function AssistantPage() {
                                         </table>
                                     </div>
                                 </article>
-                            )}
+                            ) : null}
                         </section>
                     );
                 })

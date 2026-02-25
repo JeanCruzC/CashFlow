@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getForecastOverview } from "@/app/actions/forecast";
 import { ForecastAssumptionsForm } from "@/components/forecast/ForecastAssumptionsForm";
+import { ForecastChart } from "@/components/ui/ForecastChart";
 
 interface ForecastPageProps {
     searchParams: Promise<{ month?: string; horizon?: string }>;
@@ -69,6 +70,12 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
 
     const forecast = await getForecastOverview(month, horizon);
     const isPersonal = forecast.model.selected_model === "personal_average";
+    const chartData = forecast.projections.map((projection) => ({
+        month: projection.month,
+        revenue: projection.revenue,
+        opex: projection.opex,
+        ebit: projection.ebit,
+    }));
 
     return (
         <div className="space-y-7 animate-fade-in">
@@ -138,9 +145,29 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                 </article>
             </section>
 
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-semibold text-[#10283b]">Tendencia proyectada</h3>
+                        <p className="text-sm text-surface-500">
+                            {isPersonal ? "Ingresos, gastos y flujo neto" : "Revenue, OPEX y EBIT"} para los próximos{" "}
+                            {forecast.horizon_months} meses.
+                        </p>
+                    </div>
+                    <span className="rounded-full border border-[#d9e2f0] bg-[#f5f9ff] px-3 py-1 text-xs font-semibold text-[#0f2233]">
+                        Horizonte {forecast.horizon_months}m
+                    </span>
+                </div>
+                <ForecastChart
+                    data={chartData}
+                    currency={forecast.currency}
+                    isPersonal={isPersonal}
+                />
+            </section>
+
             <section className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
-                <article className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Lógica aplicada</h3>
+                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h3 className="text-base font-semibold text-[#10283b]">Lógica aplicada</h3>
                     <p className="mt-1 text-sm text-surface-600">{forecast.model.reason}</p>
                     <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-surface-600">
                         {forecast.items_used.map((item) => (
@@ -178,8 +205,8 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                     )}
                 </article>
 
-                <article className="rounded-3xl border border-[#d9e2f0] bg-[#f5f9ff] p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Lectura rápida del periodo</h3>
+                <article className="rounded-2xl border border-[#d9e2f0] bg-[#f5f9ff] p-6 shadow-card">
+                    <h3 className="text-base font-semibold text-[#10283b]">Lectura rápida del periodo</h3>
                     <div className="mt-4 space-y-3">
                         <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
                             <p className="text-xs text-surface-500">
@@ -232,8 +259,8 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                 </article>
             </section>
 
-            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-lg font-semibold text-[#10283b]">Proyección mensual</h3>
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <h3 className="text-base font-semibold text-[#10283b]">Proyección mensual</h3>
                 {forecast.projections.length === 0 ? (
                     <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
                         No hay datos suficientes para proyectar este periodo.
@@ -322,8 +349,8 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
             </section>
 
             {!isPersonal && (
-                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-lg font-semibold text-[#10283b]">Editar supuestos</h3>
+                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <h3 className="text-base font-semibold text-[#10283b]">Editar supuestos</h3>
                     <p className="mt-1 text-sm text-surface-500">
                         Mantén auditables los cambios de hipótesis por periodo.
                     </p>

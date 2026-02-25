@@ -1,9 +1,9 @@
 "use client";
 
-import { deleteTransaction } from "@/app/actions/transactions";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { deleteTransaction } from "@/app/actions/transactions";
 import { Transaction } from "@/lib/types/finance";
 
 interface TransactionWithJoins extends Transaction {
@@ -37,6 +37,11 @@ function formatRowAmount(amount: number, currency?: string) {
     }).format(Math.abs(amount));
 }
 
+function sortIndicator(column: string, activeSort: string, activeDirection: string) {
+    if (column !== activeSort) return "";
+    return activeDirection === "asc" ? "↑" : "↓";
+}
+
 export function TransactionGrid({
     initialData,
     totalCount,
@@ -68,6 +73,7 @@ export function TransactionGrid({
     const hasData = data.length > 0;
     const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
     const showingTo = totalCount === 0 ? 0 : Math.min(page * pageSize, totalCount);
+
     const activeFilterCount = [
         search,
         accountId,
@@ -108,9 +114,7 @@ export function TransactionGrid({
 
     function handleSort(key: string) {
         if (sort === key) {
-            updateParams({
-                sortDir: sortDir === "asc" ? "desc" : "asc",
-            });
+            updateParams({ sortDir: sortDir === "asc" ? "desc" : "asc" });
             return;
         }
 
@@ -139,6 +143,7 @@ export function TransactionGrid({
         ["search", "accountId", "categoryId", "direction", "dateFrom", "dateTo", "page"].forEach((key) => {
             params.delete(key);
         });
+
         const query = params.toString();
         router.replace(query ? `${pathname}?${query}` : pathname);
     }
@@ -156,7 +161,7 @@ export function TransactionGrid({
             return;
         }
 
-        setNotice("Transacción eliminada.");
+        setNotice("Transacción eliminada correctamente.");
         router.refresh();
     }
 
@@ -196,8 +201,8 @@ export function TransactionGrid({
             const rowErrors = payload.errors || [];
             const summary =
                 rowErrors.length > 0
-                    ? `Importación finalizada: ${inserted} filas insertadas, ${rowErrors.length} con error.`
-                    : `Importación finalizada: ${inserted} filas insertadas.`;
+                    ? `Importación completada: ${inserted} filas insertadas y ${rowErrors.length} con error.`
+                    : `Importación completada: ${inserted} filas insertadas.`;
 
             setNotice(summary);
             router.refresh();
@@ -211,41 +216,45 @@ export function TransactionGrid({
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Paso 2 · Ejecución</p>
-                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Libro de transacciones</h1>
-                        <p className="mt-2 text-sm text-surface-500">
-                            Aquí registras ingresos y egresos reales. Este módulo alimenta resumen, presupuesto y pronóstico.
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
+                            Ciclo mensual · Registrar
+                        </p>
+                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Libro de movimientos</h1>
+                        <p className="mt-2 text-sm text-surface-600">
+                            Registro operativo de ingresos y egresos. Esta data alimenta el panorama,
+                            el control presupuestal y la proyección.
                         </p>
 
                         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
-                                <p className="text-xs text-surface-500">Movimientos encontrados</p>
-                                <p className="mt-1 font-semibold text-[#0f2233]">{totalCount}</p>
-                            </div>
-                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
+                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
+                                <p className="text-xs text-surface-500">Movimientos</p>
+                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">{totalCount}</p>
+                            </article>
+                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
                                 <p className="text-xs text-surface-500">Filtros activos</p>
-                                <p className="mt-1 font-semibold text-[#0f2233]">{activeFilterCount}</p>
-                            </div>
-                            <div className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm">
+                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">{activeFilterCount}</p>
+                            </article>
+                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
                                 <p className="text-xs text-surface-500">Rango visible</p>
-                                <p className="mt-1 font-semibold text-[#0f2233]">
+                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">
                                     {showingFrom}-{showingTo}
                                 </p>
-                            </div>
+                            </article>
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-surface-200 bg-surface-50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+                    <aside className="rounded-2xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
                             Acciones rápidas
                         </p>
                         <p className="mt-1 text-sm text-surface-600">
-                            Carga masiva, exportación y registro manual del periodo.
+                            Importa, exporta o registra manualmente en segundos.
                         </p>
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
+
+                        <div className="mt-4 flex flex-wrap gap-2">
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -255,42 +264,43 @@ export function TransactionGrid({
                             />
                             <button
                                 onClick={handleImportClick}
-                                className="btn-ghost text-sm"
+                                className="btn-secondary text-sm"
                                 disabled={importing}
                                 type="button"
                             >
                                 {importing ? "Importando..." : "Importar CSV"}
                             </button>
-                            <a href={exportHref} className="btn-ghost text-sm">
+                            <a href={exportHref} className="btn-secondary text-sm no-underline">
                                 Exportar CSV
                             </a>
                             <Link
                                 href="/dashboard/transactions/new"
                                 className="btn-primary text-sm no-underline hover:text-white"
                             >
-                                Nueva transacción
+                                Nuevo movimiento
                             </Link>
                         </div>
-                    </div>
+                    </aside>
                 </div>
             </section>
 
-            {error && (
-                <div className="mb-4 rounded-lg border border-negative-200 bg-negative-50 px-4 py-3 text-sm text-negative-700">
+            {error ? (
+                <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
                     {error}
                 </div>
-            )}
-            {notice && (
-                <div className="mb-4 rounded-lg border border-positive-200 bg-positive-50 px-4 py-3 text-sm text-positive-700">
+            ) : null}
+            {notice ? (
+                <div className="rounded-xl border border-[#c6e5dd] bg-[#eef9f5] px-4 py-3 text-sm text-positive-600">
                     {notice}
                 </div>
-            )}
+            ) : null}
 
-            <section className="space-y-3 rounded-3xl border border-surface-200 bg-white p-4 shadow-card">
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-4 shadow-card">
                 <p className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
                     Filtros del libro
                 </p>
-                <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleSearchSubmit}>
+
+                <form className="mt-3 flex flex-col gap-3 sm:flex-row" onSubmit={handleSearchSubmit}>
                     <input
                         type="text"
                         value={term}
@@ -301,12 +311,12 @@ export function TransactionGrid({
                     <button type="submit" className="btn-secondary text-sm">
                         Buscar
                     </button>
-                    <button type="button" className="btn-ghost text-sm" onClick={handleClearFilters}>
-                        Limpiar filtros
+                    <button type="button" className="btn-secondary text-sm" onClick={handleClearFilters}>
+                        Limpiar
                     </button>
                 </form>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <select
                         className="input-field text-sm"
                         value={accountId}
@@ -338,7 +348,7 @@ export function TransactionGrid({
                         value={direction}
                         onChange={(event) => handleFilterChange("direction", event.target.value)}
                     >
-                        <option value="all">Todos los movimientos</option>
+                        <option value="all">Todos</option>
                         <option value="income">Solo ingresos</option>
                         <option value="expense">Solo egresos</option>
                     </select>
@@ -359,48 +369,45 @@ export function TransactionGrid({
                 </div>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-card">
+            <section className="overflow-hidden rounded-2xl border border-[#d9e2f0] bg-white shadow-card">
                 <div className="overflow-x-auto scrollbar-thin">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b bg-surface-50 dark:bg-surface-900/50">
+                    <table className="w-full min-w-[860px] text-sm">
+                        <thead className="bg-[#f5f9ff]">
+                            <tr className="text-left text-surface-500">
                                 {[
                                     { key: "date", label: "Fecha", sortable: true },
                                     { key: "description", label: "Descripción", sortable: true },
                                     { key: "account", label: "Cuenta", sortable: false },
                                     { key: "category", label: "Categoría", sortable: false },
                                     { key: "amount", label: "Monto", sortable: true, align: "right" },
-                                ].map((column) => {
-                                    const isSorted = sort === column.key;
-
-                                    return (
-                                        <th
-                                            key={column.key}
-                                            className={`table-header py-3 px-4 ${column.align === "right" ? "text-right" : "text-left"} ${column.sortable ? "cursor-pointer hover:text-surface-700 dark:hover:text-surface-200" : ""}`}
-                                            onClick={column.sortable ? () => handleSort(column.key) : undefined}
-                                        >
-                                            <span className="inline-flex items-center gap-1">
-                                                {column.label}
-                                                {isSorted && (
-                                                    <span className="text-brand-500 text-[10px]">
-                                                        {sortDir === "asc" ? "↑" : "↓"}
-                                                    </span>
-                                                )}
+                                ].map((column) => (
+                                    <th
+                                        key={column.key}
+                                        className={`px-4 py-3 font-semibold ${column.align === "right" ? "text-right" : "text-left"} ${
+                                            column.sortable ? "cursor-pointer select-none" : ""
+                                        }`}
+                                        onClick={column.sortable ? () => handleSort(column.key) : undefined}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            {column.label}
+                                            <span className="text-[11px] text-[#0d4c7a]">
+                                                {sortIndicator(column.key, sort, sortDir)}
                                             </span>
-                                        </th>
-                                    );
-                                })}
-                                <th className="table-header py-3 px-4 text-right">Acciones</th>
+                                        </span>
+                                    </th>
+                                ))}
+                                <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y">
+
+                        <tbody className="divide-y divide-[#e9eef6] bg-white">
                             {!hasData ? (
                                 <tr>
-                                    <td colSpan={6} className="py-8 px-4 text-center text-muted">
+                                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-surface-500">
                                         <p>No hay transacciones para los filtros seleccionados.</p>
                                         <Link
                                             href="/dashboard/transactions/new"
-                                            className="mt-3 inline-flex text-sm font-semibold text-brand-600 no-underline hover:text-brand-700"
+                                            className="mt-3 inline-flex text-sm font-semibold text-[#0d4c7a] no-underline hover:text-[#117068]"
                                         >
                                             Registrar primer movimiento
                                         </Link>
@@ -408,29 +415,33 @@ export function TransactionGrid({
                                 </tr>
                             ) : (
                                 data.map((row) => (
-                                    <tr key={row.id} className="hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
-                                        <td className="py-3 px-4 whitespace-nowrap text-muted">
+                                    <tr key={row.id} className="hover:bg-[#f9fcff] transition-colors">
+                                        <td className="px-4 py-3 text-surface-500">
                                             {new Date(row.date).toLocaleDateString("es-PE")}
                                         </td>
-                                        <td className="py-3 px-4 font-medium">{row.description}</td>
-                                        <td className="py-3 px-4 text-muted">{row.accounts?.name || "-"}</td>
-                                        <td className="py-3 px-4 text-muted">{row.categories_gl?.name || "Sin categoría"}</td>
-                                        <td className={`py-3 px-4 text-right font-medium ${row.amount >= 0 ? "amount-positive" : "amount-negative"}`}>
+                                        <td className="px-4 py-3 font-medium text-[#0f2233]">{row.description}</td>
+                                        <td className="px-4 py-3 text-surface-500">{row.accounts?.name || "-"}</td>
+                                        <td className="px-4 py-3 text-surface-500">{row.categories_gl?.name || "Sin categoría"}</td>
+                                        <td
+                                            className={`px-4 py-3 text-right font-semibold ${
+                                                row.amount >= 0 ? "text-positive-600" : "text-negative-600"
+                                            }`}
+                                        >
                                             {row.amount >= 0 ? "+" : "-"}
                                             {formatRowAmount(row.amount, row.currency)}
                                         </td>
-                                        <td className="py-3 px-4">
+                                        <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-3 text-sm">
                                                 <Link
                                                     href={`/dashboard/transactions/${row.id}/edit`}
-                                                    className="text-brand-600 hover:text-brand-700"
+                                                    className="font-medium text-[#0d4c7a] no-underline hover:text-[#117068]"
                                                 >
                                                     Editar
                                                 </Link>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDelete(row.id)}
-                                                    className="text-negative-600 hover:text-negative-700"
+                                                    className="font-medium text-negative-600 hover:text-negative-700"
                                                 >
                                                     Eliminar
                                                 </button>
@@ -443,25 +454,25 @@ export function TransactionGrid({
                     </table>
                 </div>
 
-                <div className="flex items-center justify-between px-4 py-3 border-t">
-                    <p className="text-xs text-muted">
-                        Mostrando {showingFrom}-{showingTo} de {totalCount} transacciones
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e9eef6] px-4 py-3">
+                    <p className="text-xs text-surface-500">
+                        Mostrando {showingFrom}-{showingTo} de {totalCount} movimientos
                     </p>
                     <div className="flex items-center gap-2 text-sm">
                         <button
                             type="button"
-                            className="btn-ghost px-2 py-1"
+                            className="btn-secondary px-3 py-1.5 text-sm"
                             disabled={page <= 1}
                             onClick={() => handlePage(page - 1)}
                         >
                             Anterior
                         </button>
-                        <span>
+                        <span className="text-surface-600">
                             Página {page} de {totalPages}
                         </span>
                         <button
                             type="button"
-                            className="btn-ghost px-2 py-1"
+                            className="btn-secondary px-3 py-1.5 text-sm"
                             disabled={page >= totalPages}
                             onClick={() => handlePage(page + 1)}
                         >
