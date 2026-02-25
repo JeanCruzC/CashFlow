@@ -10,7 +10,6 @@ type NavItem = {
     href: string;
     label: string;
     description: string;
-    cycleStep?: string;
 };
 
 const CYCLE_NAV: NavItem[] = [
@@ -18,25 +17,21 @@ const CYCLE_NAV: NavItem[] = [
         href: "/dashboard",
         label: "Panorama",
         description: "Estado actual de tu ciclo mensual",
-        cycleStep: "1",
     },
     {
         href: "/dashboard/transactions",
         label: "Registrar",
         description: "Ingresos y gastos del día",
-        cycleStep: "2",
     },
     {
         href: "/dashboard/budget",
         label: "Controlar",
         description: "Plan vs ejecución",
-        cycleStep: "3",
     },
     {
         href: "/dashboard/forecast",
         label: "Proyectar",
         description: "Escenarios del siguiente cierre",
-        cycleStep: "4",
     },
 ];
 
@@ -85,12 +80,6 @@ function currentSection(pathname: string) {
     };
 }
 
-function currentCycleStep(pathname: string) {
-    const index = CYCLE_NAV.findIndex((item) => isActivePath(pathname, item.href));
-    if (index < 0) return 1;
-    return index + 1;
-}
-
 export default function DashboardShell({
     children,
     activeOrgId,
@@ -118,8 +107,6 @@ export default function DashboardShell({
     }, [pathname]);
 
     const current = useMemo(() => currentSection(pathname), [pathname]);
-    const cycleStep = useMemo(() => currentCycleStep(pathname), [pathname]);
-    const cycleProgress = Math.round((cycleStep / CYCLE_NAV.length) * 100);
 
     const activeWorkspace = useMemo(
         () => workspaces.find((workspace) => workspace.orgId === selectedWorkspace) || null,
@@ -181,20 +168,6 @@ export default function DashboardShell({
                             <p className="text-xs text-surface-500">Ciclo financiero integrado</p>
                         </div>
                     </div>
-                    <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f5f9ff] p-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
-                            Avance del ciclo
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-[#0f2233]">
-                            Paso {cycleStep} de {CYCLE_NAV.length}
-                        </p>
-                        <div className="mt-2 h-1.5 w-full rounded-full bg-[#dce6f2]">
-                            <div
-                                className="h-full rounded-full bg-[linear-gradient(90deg,#0d4c7a,#117068)]"
-                                style={{ width: `${cycleProgress}%` }}
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 <nav className="h-[calc(100%-15rem)] overflow-y-auto px-4 py-4 scrollbar-thin">
@@ -220,9 +193,7 @@ export default function DashboardShell({
                                                     : "border-transparent text-surface-600 hover:border-[#d9e2f0] hover:bg-surface-50 hover:text-[#0f2233]"
                                             }`}
                                         >
-                                            <p className="text-sm font-semibold">
-                                                {item.cycleStep ? `${item.cycleStep}. ${item.label}` : item.label}
-                                            </p>
+                                            <p className="text-sm font-semibold">{item.label}</p>
                                             <p className="mt-0.5 text-xs text-surface-500">{item.description}</p>
                                         </Link>
                                     );
@@ -256,7 +227,7 @@ export default function DashboardShell({
                             </button>
                             <div>
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-400">
-                                    Workspace interno
+                                    Tu workspace
                                 </p>
                                 <h1 className="text-lg font-semibold text-[#0f2233]">{current.label}</h1>
                                 <p className="text-xs text-surface-500">{current.description}</p>
