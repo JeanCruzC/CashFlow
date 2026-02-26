@@ -25,6 +25,11 @@ export interface BudgetOverview {
     rows: BudgetRow[];
 }
 
+interface CopyBudgetPlanInput {
+    sourceMonth: string;
+    targetMonth: string;
+}
+
 interface BudgetQueryRow {
     category_gl_id: string;
     amount: number | string;
@@ -104,59 +109,6 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
     const budgets = (budgetsResult.data || []) as BudgetQueryRow[];
     const transactions = (transactionsResult.data || []) as TransactionQueryRow[];
 
-    // ── AUTO-CLONE: If no budgets exist for this month, copy from the most recent prior month ──
-    let effectiveBudgets = budgets;
-    if (budgets.length === 0) {
-        // Find the most recent month that has budgets
-        const { data: latestBudgets, error: latestError } = await supabase
-            .from("budgets")
-            .select("category_gl_id, amount, categories_gl(name)")
-            .eq("org_id", orgId)
-            .order("month", { ascending: false })
-            .limit(50);
-
-        if (!latestError && latestBudgets && latestBudgets.length > 0) {
-            // Get the month from the first row (most recent)
-            const { data: latestMonth } = await supabase
-                .from("budgets")
-                .select("month")
-                .eq("org_id", orgId)
-                .order("month", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (latestMonth?.month) {
-                const { data: priorBudgets } = await supabase
-                    .from("budgets")
-                    .select("category_gl_id, amount, categories_gl(name)")
-                    .eq("org_id", orgId)
-                    .eq("month", latestMonth.month);
-
-                if (priorBudgets && priorBudgets.length > 0) {
-                    // Clone them into the current month silently
-                    const cloneRows = priorBudgets.map((b: { category_gl_id: string; amount: number | string }) => ({
-                        org_id: orgId,
-                        month: targetMonth,
-                        category_gl_id: b.category_gl_id,
-                        cost_center_id: null,
-                        amount: Number(b.amount),
-                    }));
-
-                    await supabase.from("budgets").insert(cloneRows);
-
-                    // Re-fetch the now-inserted budgets
-                    const { data: freshBudgets } = await supabase
-                        .from("budgets")
-                        .select("category_gl_id, amount, categories_gl(name)")
-                        .eq("org_id", orgId)
-                        .eq("month", targetMonth);
-
-                    effectiveBudgets = (freshBudgets || []) as BudgetQueryRow[];
-                }
-            }
-        }
-    }
-
     const actualByCategory = new Map<string, number>();
     transactions.forEach((txn) => {
         if (!txn.category_gl_id) return;
@@ -164,7 +116,7 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
         actualByCategory.set(txn.category_gl_id, current + Math.abs(Number(txn.amount)));
     });
 
-    const rows: BudgetRow[] = effectiveBudgets.map((item) => {
+    const rows: BudgetRow[] = budgets.map((item) => {
         const budget = Number(item.amount);
         const actual = actualByCategory.get(item.category_gl_id) || 0;
         const remaining = budget - actual;
@@ -195,6 +147,85 @@ export async function getBudgetOverview(month?: string): Promise<BudgetOverview>
         totalActual,
         totalRemaining,
         rows,
+    };
+}
+
+export async function copyBudgetPlan(input: CopyBudgetPlanInput) {
+    const sourceMonth = input.sourceMonth?.trim();
+    const targetMonth = input.targetMonth?.trim();
+
+    if (!/^\d{4}-\d{2}$/.test(sourceMonth) || !/^\d{4}-\d{2}$/.test(targetMonth)) {
+        return { error: "Mes inválido. Usa formato YYYY-MM." };
+    }
+
+    if (sourceMonth === targetMonth) {
+        return { error: "El mes de origen y destino no pueden ser iguales." };
+    }
+
+    const { supabase, orgId, user } = await requireOrgActorContext();
+
+    try {
+        assertRateLimit({
+            key: `copy-budget:${user.id}`,
+            limit: 12,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
+    const { data: sourceRows, error: sourceError } = await supabase
+        .from("budgets")
+        .select("category_gl_id, cost_center_id, amount")
+        .eq("org_id", orgId)
+        .eq("month", sourceMonth);
+
+    if (sourceError) {
+        logError("Error reading source budget month", sourceError, { orgId, sourceMonth, userId: user.id });
+        return { error: "No se pudo leer el mes origen." };
+    }
+
+    if (!sourceRows || sourceRows.length === 0) {
+        return { error: "El mes origen no tiene categorías presupuestadas." };
+    }
+
+    const { error: clearError } = await supabase
+        .from("budgets")
+        .delete()
+        .eq("org_id", orgId)
+        .eq("month", targetMonth);
+
+    if (clearError) {
+        logError("Error clearing target budget month", clearError, { orgId, targetMonth, userId: user.id });
+        return { error: "No se pudo limpiar el mes destino." };
+    }
+
+    const insertRows = sourceRows.map((row) => ({
+        org_id: orgId,
+        month: targetMonth,
+        category_gl_id: row.category_gl_id,
+        cost_center_id: row.cost_center_id,
+        amount: Number(row.amount),
+    }));
+
+    const { error: insertError } = await supabase.from("budgets").insert(insertRows);
+    if (insertError) {
+        logError("Error copying budget month", insertError, {
+            orgId,
+            sourceMonth,
+            targetMonth,
+            userId: user.id,
+            rows: insertRows.length,
+        });
+        return { error: "No se pudo copiar el plan al mes destino." };
+    }
+
+    revalidatePath("/dashboard/budget");
+    revalidatePath("/dashboard");
+
+    return {
+        success: true,
+        copiedCount: insertRows.length,
     };
 }
 
