@@ -31,7 +31,7 @@ export async function getUserWorkspaces(): Promise<WorkspaceSummary[]> {
         return [];
     }
 
-    return (data || [])
+    const mapped = (data || [])
         .map((row) => {
             const org = Array.isArray(row.orgs) ? row.orgs[0] : row.orgs;
             if (!org || !org.id) return null;
@@ -46,6 +46,15 @@ export async function getUserWorkspaces(): Promise<WorkspaceSummary[]> {
             } satisfies WorkspaceSummary;
         })
         .filter((item): item is WorkspaceSummary => item !== null);
+
+    const deduped = new Map<string, WorkspaceSummary>();
+    for (const workspace of mapped) {
+        if (!deduped.has(workspace.orgId)) {
+            deduped.set(workspace.orgId, workspace);
+        }
+    }
+
+    return Array.from(deduped.values());
 }
 
 export async function setActiveWorkspace(orgId: string) {
