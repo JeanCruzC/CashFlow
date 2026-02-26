@@ -140,6 +140,7 @@ export default function DashboardShell({
         () => workspaces.find((workspace) => workspace.orgId === selectedWorkspace) || null,
         [workspaces, selectedWorkspace]
     );
+    const canSwitchWorkspace = workspaceOptions.length > 1;
 
     function prefetchOnIntent(href: string) {
         if (prefetchedRoutesRef.current.has(href)) return;
@@ -264,27 +265,36 @@ export default function DashboardShell({
 
                         <div className="flex flex-wrap items-start justify-end gap-2 md:gap-3">
                             <div className="min-w-[14rem] max-w-[20rem]">
-                                <select
-                                    value={selectedWorkspace}
-                                    onChange={handleWorkspaceChange}
-                                    disabled={workspaceOptions.length <= 1 || isSwitchingWorkspace}
-                                    className="input-field h-10 py-2 text-sm"
-                                    aria-label="Seleccionar workspace activo"
-                                >
-                                    {workspaceOptions.length === 0 ? (
-                                        <option value={activeOrgId}>Workspace actual</option>
-                                    ) : (
-                                        workspaceOptions.map((workspace) => (
-                                            <option key={workspace.orgId} value={workspace.orgId}>
-                                                {workspace.name} · {workspace.type === "business" ? "Empresa" : "Personal"}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
+                                {canSwitchWorkspace ? (
+                                    <select
+                                        value={selectedWorkspace}
+                                        onChange={handleWorkspaceChange}
+                                        disabled={isSwitchingWorkspace}
+                                        className="input-field h-10 py-2 text-sm"
+                                        aria-label="Seleccionar workspace activo"
+                                    >
+                                        {workspaceOptions.length === 0 ? (
+                                            <option value={activeOrgId}>Workspace actual</option>
+                                        ) : (
+                                            workspaceOptions.map((workspace) => (
+                                                <option key={workspace.orgId} value={workspace.orgId}>
+                                                    {workspace.name} · {workspace.type === "business" ? "Empresa" : "Personal"}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                ) : (
+                                    <div className="flex h-10 items-center rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 text-sm font-medium text-[#0f2233]">
+                                        {activeWorkspace
+                                            ? `${activeWorkspace.name} · ${activeWorkspace.type === "business" ? "Empresa" : "Personal"}`
+                                            : "Workspace actual"}
+                                    </div>
+                                )}
                                 <p className="mt-1 text-[11px] text-surface-500">
                                     {activeWorkspace
                                         ? `${activeWorkspace.currency} · ${activeWorkspace.role}`
                                         : "Sin datos de workspace"}
+                                    {canSwitchWorkspace ? "" : " · Workspace unico"}
                                     {isSwitchingWorkspace ? " · Cambiando..." : ""}
                                 </p>
                                 {workspaceError ? (
