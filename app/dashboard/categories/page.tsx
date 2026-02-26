@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCategories, getOrgType } from "@/app/actions/categories";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { CategoryGL } from "@/lib/types/finance";
 
 const KIND_ORDER = [
@@ -73,6 +74,23 @@ function groupHint(kind: string) {
     return "Salidas operativas del flujo.";
 }
 
+function categoryPriority(category: CategoryGL): PriorityLevel {
+    if (category.kind === "expense" || category.kind === "cogs" || category.kind === "tax" || category.fixed_cost) {
+        return "critical";
+    }
+    if (category.kind === "opex" || category.kind === "other_expense" || category.kind === "transfer" || category.variable_cost) {
+        return "followup";
+    }
+    return "info";
+}
+
+function categoryProfileLabel(category: CategoryGL) {
+    if (category.fixed_cost && category.variable_cost) return "Mixto";
+    if (category.fixed_cost) return "Fijo";
+    if (category.variable_cost) return "Variable";
+    return "General";
+}
+
 export default async function CategoriesPage() {
     const [categories, orgType] = await Promise.all([
         getCategories() as Promise<CategoryGL[]>,
@@ -106,6 +124,10 @@ export default async function CategoriesPage() {
         .map((kind) => ({ kind, count: grouped[kind].length }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 3);
+
+    const flatCategories = sortedKinds.flatMap((kind) =>
+        grouped[kind].slice().sort((a, b) => a.name.localeCompare(b.name))
+    );
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -151,16 +173,25 @@ export default async function CategoriesPage() {
             <section className="grid gap-4 md:grid-cols-3">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Tipo de workspace</p>
+                    <div className="mt-1">
+                        <PriorityPill level="info" />
+                    </div>
                     <p className="mt-2 text-2xl font-semibold text-[#0f2233]">
                         {orgType === "business" ? "Empresa" : "Personal"}
                     </p>
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Grupos activos</p>
+                    <div className="mt-1">
+                        <PriorityPill level="followup" />
+                    </div>
                     <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{sortedKinds.length}</p>
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Categorías activas</p>
+                    <div className="mt-1">
+                        <PriorityPill level="critical" />
+                    </div>
                     <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{totalCategories}</p>
                 </article>
             </section>
@@ -246,6 +277,54 @@ export default async function CategoriesPage() {
                         </ul>
                     </section>
                 </article>
+            </section>
+
+            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                <h3 className="text-base font-semibold text-[#10283b]">Vista tabular operativa</h3>
+                <p className="mt-1 text-sm text-surface-500">
+                    Tabla densa con prioridad y perfil de cada categoria.
+                </p>
+
+                <div className="enterprise-table-shell mt-4">
+                    <div className="enterprise-table-wrap scrollbar-thin">
+                        <table className="enterprise-table min-w-[920px]">
+                            <thead>
+                                <tr>
+                                    <th className="enterprise-col-key-header">Categoria</th>
+                                    <th>Grupo</th>
+                                    <th>Prioridad</th>
+                                    <th>Perfil</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {flatCategories.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-surface-500">
+                                            No hay categorias activas en este workspace.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    flatCategories.map((category) => (
+                                        <tr key={category.id}>
+                                            <td className="enterprise-col-key text-[#10233f]">{category.name}</td>
+                                            <td>{kindLabel(category.kind)}</td>
+                                            <td>
+                                                <PriorityPill level={categoryPriority(category)} />
+                                            </td>
+                                            <td>{categoryProfileLabel(category)}</td>
+                                            <td>
+                                                <span className="rounded-full border border-[#b7c6da] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#425972]">
+                                                    {category.is_active ? "Activa" : "Inactiva"}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
         </div>
     );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAccounts, getAccountBalances } from "@/app/actions/accounts";
 import { getOrgSettings } from "@/app/actions/settings";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { Account } from "@/lib/types/finance";
 
 function accountTypeLabel(type: Account["account_type"]) {
@@ -25,6 +26,16 @@ function balanceTone(value: number) {
     if (value > 0) return "text-positive-600";
     if (value < 0) return "text-negative-600";
     return "text-surface-600";
+}
+
+function accountPriority(account: Account, balance: number): PriorityLevel {
+    if ((account.account_type === "credit_card" || account.account_type === "loan") && balance < 0) {
+        return "critical";
+    }
+    if (account.is_restricted_cash || account.account_type === "investment") {
+        return "followup";
+    }
+    return "info";
 }
 
 export default async function AccountsPage() {
@@ -111,11 +122,17 @@ export default async function AccountsPage() {
             <section className="grid gap-4 md:grid-cols-3">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Activos</p>
+                    <div className="mt-1">
+                        <PriorityPill level="info" />
+                    </div>
                     <p className="mt-2 text-3xl font-semibold text-positive-600">{formatMoney(assets)}</p>
                     <p className="mt-1 text-xs text-surface-400">Liquidez + inversiones + saldos positivos.</p>
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Pasivos</p>
+                    <div className="mt-1">
+                        <PriorityPill level="critical" />
+                    </div>
                     <p className="mt-2 text-3xl font-semibold text-negative-600">{formatMoney(liabilities)}</p>
                     <p className="mt-1 text-xs text-surface-400">
                         Ratio deuda/activos: {leverageRatio.toFixed(1)}%
@@ -123,6 +140,9 @@ export default async function AccountsPage() {
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
                     <p className="text-xs font-medium text-surface-500">Patrimonio neto</p>
+                    <div className="mt-1">
+                        <PriorityPill level="followup" />
+                    </div>
                     <p className={`mt-2 text-3xl font-semibold ${netWorth >= 0 ? "text-[#0f2233]" : "text-negative-600"}`}>
                         {formatMoney(netWorth)}
                     </p>
@@ -254,7 +274,7 @@ export default async function AccountsPage() {
             <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
                 <h3 className="text-base font-semibold text-[#10283b]">Inventario completo de cuentas</h3>
                 <p className="mt-1 text-sm text-surface-500">
-                    Referencia rápida de todas las cuentas activas con su saldo operativo.
+                    Vista tabular densa con prioridad operativa para revisión diaria.
                 </p>
 
                 {accounts.length === 0 ? (
@@ -262,29 +282,46 @@ export default async function AccountsPage() {
                         Todavía no tienes cuentas activas.
                     </div>
                 ) : (
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {accounts.map((account) => {
-                            const balance = getRealBalance(account);
+                    <div className="enterprise-table-shell mt-4">
+                        <div className="enterprise-table-wrap scrollbar-thin">
+                            <table className="enterprise-table min-w-[980px]">
+                                <thead>
+                                    <tr>
+                                        <th className="enterprise-col-key-header">Cuenta</th>
+                                        <th>Tipo</th>
+                                        <th>Moneda</th>
+                                        <th className="text-right">Saldo operativo</th>
+                                        <th>Prioridad</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {accounts.map((account) => {
+                                        const balance = getRealBalance(account);
+                                        const priority = accountPriority(account, balance);
 
-                            return (
-                                <article key={account.id} className="rounded-xl border border-[#d9e2f0] bg-[#fbfdff] p-4">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <p className="text-sm font-semibold text-[#0f2233]">{account.name}</p>
-                                            <p className="mt-0.5 text-xs text-surface-500">
-                                                {accountTypeLabel(account.account_type)} · {account.currency}
-                                            </p>
-                                        </div>
-                                        <span className="rounded-full border border-[#d9e2f0] bg-white px-2 py-0.5 text-[11px] font-semibold text-surface-500">
-                                            {account.is_active ? "Activa" : "Inactiva"}
-                                        </span>
-                                    </div>
-                                    <p className={`mt-4 text-lg font-semibold ${balanceTone(balance)}`}>
-                                        {formatMoney(balance, account.currency)}
-                                    </p>
-                                </article>
-                            );
-                        })}
+                                        return (
+                                            <tr key={account.id}>
+                                                <td className="enterprise-col-key text-[#10233f]">{account.name}</td>
+                                                <td>{accountTypeLabel(account.account_type)}</td>
+                                                <td>{account.currency}</td>
+                                                <td className={`text-right font-semibold ${balanceTone(balance)}`}>
+                                                    {formatMoney(balance, account.currency)}
+                                                </td>
+                                                <td>
+                                                    <PriorityPill level={priority} />
+                                                </td>
+                                                <td>
+                                                    <span className="rounded-full border border-[#b7c6da] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#425972]">
+                                                        {account.is_active ? "Activa" : "Inactiva"}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </section>

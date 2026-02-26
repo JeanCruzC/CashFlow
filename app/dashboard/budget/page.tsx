@@ -5,6 +5,7 @@ import { BudgetCopyForm } from "@/components/budget/BudgetCopyForm";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
 import { BudgetBars } from "@/components/ui/BudgetBars";
 import { HoverMetricCard } from "@/components/ui/HoverMetricCard";
+import type { PriorityLevel } from "@/components/ui/PriorityPill";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 
 function getRecentMonths(count = 6) {
@@ -105,6 +106,8 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
         }))
         .sort((a, b) => b.actual - a.actual);
     const profileLabel = overview.orgType === "business" ? "empresa" : "personal";
+    const spendingPriority: PriorityLevel = usageRate >= 90 ? "critical" : usageRate >= 70 ? "followup" : "info";
+    const remainingPriority: PriorityLevel = remaining < 0 ? "critical" : "followup";
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -189,6 +192,8 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                     label="Plan total del mes"
                     value={currencyFormatter.format(overview.totalBudget)}
                     valueClassName="text-3xl font-semibold text-[#0f2233]"
+                    priorityLevel="info"
+                    priorityLabel="Informativo"
                     note="Este valor suma límites por categoría; no es tu saldo de hoy."
                     details={[
                         { label: "Mes evaluado", value: monthLabel(overview.month) },
@@ -208,6 +213,7 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                     label="Gastado registrado"
                     value={currencyFormatter.format(overview.totalActual)}
                     valueClassName="text-3xl font-semibold text-[#0f2233]"
+                    priorityLevel={spendingPriority}
                     details={[
                         { label: "Uso del plan", value: `${Math.round(usageRate)}%` },
                         { label: "Categorías pasadas", value: String(overBudgetCategories) },
@@ -226,6 +232,7 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                     label={remaining >= 0 ? "Disponible dentro del plan" : "Exceso sobre el plan"}
                     value={currencyFormatter.format(Math.abs(remaining))}
                     valueClassName={`text-3xl font-semibold ${remaining >= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}
+                    priorityLevel={remainingPriority}
                     note={remaining >= 0 ? "Vas por debajo del límite total del mes." : "Ya superaste el límite total del mes."}
                     details={[
                         { label: "Mes evaluado", value: monthLabel(overview.month) },

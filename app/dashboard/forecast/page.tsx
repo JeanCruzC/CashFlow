@@ -3,6 +3,7 @@ import { getForecastOverview } from "@/app/actions/forecast";
 import { ForecastAssumptionsForm } from "@/components/forecast/ForecastAssumptionsForm";
 import { ForecastChart } from "@/components/ui/ForecastChart";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 
 interface ForecastPageProps {
     searchParams: Promise<{ month?: string; horizon?: string }>;
@@ -71,6 +72,17 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
 
     const forecast = await getForecastOverview(month, horizon);
     const isPersonal = forecast.model.selected_model === "personal_average";
+    const modelPriority: PriorityLevel = isPersonal ? "followup" : "info";
+    const historyPriority: PriorityLevel =
+        forecast.history.history_months_with_data >= 6
+            ? "info"
+            : forecast.history.history_months_with_data >= 3
+              ? "followup"
+              : "critical";
+    const qualityPriority: PriorityLevel =
+        forecast.model.validation_mape_pct == null || forecast.model.validation_mape_pct > 15
+            ? "followup"
+            : "info";
     const chartData = forecast.projections.map((projection) => ({
         month: projection.month,
         revenue: projection.revenue,
@@ -132,16 +144,25 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">Modelo</p>
+                    <div className="mt-1">
+                        <PriorityPill level={modelPriority} />
+                    </div>
                     <p className="mt-2 text-lg font-semibold text-[#0f2233]">
                         {formatModelName(forecast.model.selected_model)}
                     </p>
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">Horizonte</p>
+                    <div className="mt-1">
+                        <PriorityPill level="info" />
+                    </div>
                     <p className="mt-2 text-lg font-semibold text-[#0f2233]">{forecast.horizon_months} meses</p>
                 </article>
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">Historial útil</p>
+                    <div className="mt-1">
+                        <PriorityPill level={historyPriority} />
+                    </div>
                     <p className="mt-2 text-lg font-semibold text-[#0f2233]">
                         {forecast.history.history_months_with_data} / {forecast.history.history_months_total} meses
                     </p>
@@ -150,6 +171,9 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
                     <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
                         {isPersonal ? "Precisión" : "MAPE validación"}
                     </p>
+                    <div className="mt-1">
+                        <PriorityPill level={qualityPriority} />
+                    </div>
                     <p className="mt-2 text-lg font-semibold text-[#0f2233]">
                         {forecast.model.validation_mape_pct == null
                             ? isPersonal

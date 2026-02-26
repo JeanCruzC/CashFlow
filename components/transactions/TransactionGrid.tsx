@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { deleteTransaction } from "@/app/actions/transactions";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { Transaction } from "@/lib/types/finance";
 
 interface TransactionWithJoins extends Transaction {
@@ -41,6 +42,13 @@ function formatRowAmount(amount: number, currency?: string) {
 function sortIndicator(column: string, activeSort: string, activeDirection: string) {
     if (column !== activeSort) return "";
     return activeDirection === "asc" ? "↑" : "↓";
+}
+
+function getTransactionPriority(row: TransactionWithJoins): PriorityLevel {
+    const amount = Math.abs(row.amount);
+    if (row.amount < 0 && amount >= 1000) return "critical";
+    if (row.amount < 0) return "followup";
+    return "info";
 }
 
 export function TransactionGrid({
@@ -83,6 +91,17 @@ export function TransactionGrid({
         dateFrom,
         dateTo,
     ].filter(Boolean).length;
+
+    const prioritySummary = useMemo(() => {
+        return data.reduce(
+            (acc, row) => {
+                const level = getTransactionPriority(row);
+                acc[level] += 1;
+                return acc;
+            },
+            { critical: 0, followup: 0, info: 0 }
+        );
+    }, [data]);
 
     const exportHref = useMemo(() => {
         const params = new URLSearchParams(searchParams.toString());
@@ -259,7 +278,7 @@ export function TransactionGrid({
                     </>
                 }
             >
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-4">
                     <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
                         <p className="text-xs text-surface-500">Movimientos</p>
                         <p className="mt-1 text-lg font-semibold text-[#0f2233]">{totalCount}</p>
@@ -273,6 +292,14 @@ export function TransactionGrid({
                         <p className="mt-1 text-lg font-semibold text-[#0f2233]">
                             {showingFrom}-{showingTo}
                         </p>
+                    </article>
+                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
+                        <p className="text-xs text-surface-500">Modo prioridad</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <PriorityPill level="critical" label={`C ${prioritySummary.critical}`} />
+                            <PriorityPill level="followup" label={`S ${prioritySummary.followup}`} />
+                            <PriorityPill level="info" label={`I ${prioritySummary.info}`} />
+                        </div>
                     </article>
                 </div>
             </ModuleHero>
@@ -362,41 +389,43 @@ export function TransactionGrid({
                 </div>
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-[#d9e2f0] bg-white shadow-card">
-                <div className="overflow-x-auto scrollbar-thin">
-                    <table className="w-full min-w-[860px] text-sm">
-                        <thead className="bg-[#f5f9ff]">
-                            <tr className="text-left text-surface-500">
-                                {[
-                                    { key: "date", label: "Fecha", sortable: true },
-                                    { key: "description", label: "Descripción", sortable: true },
-                                    { key: "account", label: "Cuenta", sortable: false },
-                                    { key: "category", label: "Categoría", sortable: false },
-                                    { key: "amount", label: "Monto", sortable: true, align: "right" },
-                                ].map((column) => (
-                                    <th
-                                        key={column.key}
-                                        className={`px-4 py-3 font-semibold ${column.align === "right" ? "text-right" : "text-left"} ${
-                                            column.sortable ? "cursor-pointer select-none" : ""
-                                        }`}
-                                        onClick={column.sortable ? () => handleSort(column.key) : undefined}
-                                    >
-                                        <span className="inline-flex items-center gap-1">
-                                            {column.label}
-                                            <span className="text-[11px] text-[#0d4c7a]">
-                                                {sortIndicator(column.key, sort, sortDir)}
-                                            </span>
-                                        </span>
-                                    </th>
-                                ))}
-                                <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+            <section className="enterprise-table-shell">
+                <div className="enterprise-table-wrap scrollbar-thin">
+                    <table className="enterprise-table min-w-[980px]">
+                        <thead>
+                            <tr>
+                                <th
+                                    className="enterprise-col-key-header cursor-pointer select-none"
+                                    onClick={() => handleSort("date")}
+                                >
+                                    <span className="inline-flex items-center gap-1">
+                                        Fecha
+                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("date", sort, sortDir)}</span>
+                                    </span>
+                                </th>
+                                <th className="cursor-pointer select-none" onClick={() => handleSort("description")}>
+                                    <span className="inline-flex items-center gap-1">
+                                        Descripcion
+                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("description", sort, sortDir)}</span>
+                                    </span>
+                                </th>
+                                <th>Cuenta</th>
+                                <th>Categoria</th>
+                                <th className="text-right cursor-pointer select-none" onClick={() => handleSort("amount")}>
+                                    <span className="inline-flex items-center gap-1">
+                                        Monto
+                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("amount", sort, sortDir)}</span>
+                                    </span>
+                                </th>
+                                <th>Prioridad</th>
+                                <th className="text-right">Acciones</th>
                             </tr>
                         </thead>
 
-                        <tbody className="divide-y divide-[#e9eef6] bg-white">
+                        <tbody>
                             {!hasData ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-surface-500">
+                                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-surface-500">
                                         <p>No hay transacciones para los filtros seleccionados.</p>
                                         <Link
                                             href="/dashboard/transactions/new"
@@ -407,47 +436,54 @@ export function TransactionGrid({
                                     </td>
                                 </tr>
                             ) : (
-                                data.map((row) => (
-                                    <tr key={row.id} className="hover:bg-[#f9fcff] transition-colors">
-                                        <td className="px-4 py-3 text-surface-500">
-                                            {new Date(row.date).toLocaleDateString("es-PE")}
-                                        </td>
-                                        <td className="px-4 py-3 font-medium text-[#0f2233]">{row.description}</td>
-                                        <td className="px-4 py-3 text-surface-500">{row.accounts?.name || "-"}</td>
-                                        <td className="px-4 py-3 text-surface-500">{row.categories_gl?.name || "Sin categoría"}</td>
-                                        <td
-                                            className={`px-4 py-3 text-right font-semibold ${
-                                                row.amount >= 0 ? "text-positive-600" : "text-negative-600"
-                                            }`}
-                                        >
-                                            {row.amount >= 0 ? "+" : "-"}
-                                            {formatRowAmount(row.amount, row.currency)}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-end gap-3 text-sm">
-                                                <Link
-                                                    href={`/dashboard/transactions/${row.id}/edit`}
-                                                    className="font-medium text-[#0d4c7a] no-underline hover:text-[#117068]"
-                                                >
-                                                    Editar
-                                                </Link>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDelete(row.id)}
-                                                    className="font-medium text-negative-600 hover:text-negative-700"
-                                                >
-                                                    Eliminar
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                data.map((row) => {
+                                    const priorityLevel = getTransactionPriority(row);
+
+                                    return (
+                                        <tr key={row.id}>
+                                            <td className="enterprise-col-key text-surface-600">
+                                                {new Date(row.date).toLocaleDateString("es-PE")}
+                                            </td>
+                                            <td className="font-medium text-[#10233f]">{row.description}</td>
+                                            <td className="text-surface-600">{row.accounts?.name || "-"}</td>
+                                            <td className="text-surface-600">{row.categories_gl?.name || "Sin categoria"}</td>
+                                            <td
+                                                className={`text-right font-semibold ${
+                                                    row.amount >= 0 ? "text-positive-600" : "text-negative-600"
+                                                }`}
+                                            >
+                                                {row.amount >= 0 ? "+" : "-"}
+                                                {formatRowAmount(row.amount, row.currency)}
+                                            </td>
+                                            <td>
+                                                <PriorityPill level={priorityLevel} />
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center justify-end gap-3 text-sm">
+                                                    <Link
+                                                        href={`/dashboard/transactions/${row.id}/edit`}
+                                                        className="font-medium text-[#1b4679] no-underline hover:text-[#0d7a6d]"
+                                                    >
+                                                        Editar
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(row.id)}
+                                                        className="font-medium text-negative-600 hover:text-negative-700"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e9eef6] px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d2dce9] px-4 py-3">
                     <p className="text-xs text-surface-500">
                         Mostrando {showingFrom}-{showingTo} de {totalCount} movimientos
                     </p>

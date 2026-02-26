@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 
 interface HoverMetricDetail {
     label: string;
@@ -13,6 +14,8 @@ interface HoverMetricCardProps {
     note?: string;
     footer?: ReactNode;
     tooltipSide?: "top" | "bottom";
+    priorityLevel?: PriorityLevel;
+    priorityLabel?: string;
 }
 
 export function HoverMetricCard({
@@ -23,6 +26,8 @@ export function HoverMetricCard({
     note,
     footer,
     tooltipSide = "top",
+    priorityLevel,
+    priorityLabel,
 }: HoverMetricCardProps) {
     const hasTooltipContent = details.length > 0 || Boolean(footer);
     const tooltipPositionClasses =
@@ -37,6 +42,7 @@ export function HoverMetricCard({
         >
             <div className="flex items-center gap-1.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-surface-600">{label}</p>
+                {priorityLevel ? <PriorityPill level={priorityLevel} label={priorityLabel} /> : null}
                 {hasTooltipContent ? (
                     <span
                         aria-label="Información adicional"
