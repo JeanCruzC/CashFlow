@@ -174,27 +174,27 @@ export default function DashboardShell({
     }
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#f0f6fd_48%,#f9fcff_100%)]">
+        <div className="min-h-screen bg-[linear-gradient(180deg,#eef2f6_0%,#e9eef5_52%,#f3f6fa_100%)]">
             <div
-                className={`fixed inset-0 z-40 bg-[#0f2233]/30 transition-opacity lg:hidden ${
+                className={`fixed inset-0 z-40 bg-[#0f2233]/45 transition-opacity lg:hidden ${
                     mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
                 }`}
                 onClick={() => setMobileOpen(false)}
             />
 
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-[18.75rem] transform border-r border-[#d9e2f0] bg-white transition-transform duration-300 lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 w-[18.75rem] transform border-r border-[#1f3553] bg-[linear-gradient(180deg,#122744_0%,#0f2037_62%,#0c1a2e_100%)] transition-transform duration-300 lg:translate-x-0 ${
                     mobileOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
-                <div className="border-b border-[#d9e2f0] px-5 py-5">
+                <div className="border-b border-[#244063] px-5 py-5">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(145deg,#0d4c7a,#117068)] text-sm font-bold text-white shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#315a88] bg-[linear-gradient(145deg,#2f6db1,#1b4679)] text-sm font-bold text-white shadow-sm">
                             CF
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-[#0f2233]">CashFlow</p>
-                            <p className="text-xs text-surface-500">Ciclo financiero integrado</p>
+                            <p className="text-sm font-semibold text-[#e8f1ff]">CashFlow</p>
+                            <p className="text-xs text-[#8fa6c4]">Panel financiero operativo</p>
                         </div>
                     </div>
                 </div>
@@ -202,7 +202,7 @@ export default function DashboardShell({
                 <nav className="h-[calc(100%-15rem)] overflow-y-auto px-4 py-4 scrollbar-thin">
                     {NAV_GROUPS.map((group) => (
                         <div key={group.title} className="mb-6">
-                            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-surface-400">
+                            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8fa6c4]">
                                 {group.title}
                             </p>
                             <div className="space-y-1.5">
@@ -218,12 +218,12 @@ export default function DashboardShell({
                                             onFocus={() => prefetchOnIntent(item.href)}
                                             className={`block rounded-xl border px-3 py-2.5 no-underline transition-colors ${
                                                 active
-                                                    ? "border-[#0d4c7a]/25 bg-[#eaf3fd] text-[#0d4c7a]"
-                                                    : "border-transparent text-surface-600 hover:border-[#d9e2f0] hover:bg-surface-50 hover:text-[#0f2233]"
+                                                    ? "border-[#72a0d7] bg-[#17365c] text-[#e8f1ff]"
+                                                    : "border-transparent text-[#b8c8de] hover:border-[#30527f] hover:bg-[#142b4b] hover:text-white"
                                             }`}
                                         >
                                             <p className="text-sm font-semibold">{item.label}</p>
-                                            <p className="mt-0.5 text-xs text-surface-500">{item.description}</p>
+                                            <p className={`mt-0.5 text-xs ${active ? "text-[#b8cbe3]" : "text-[#8fa6c4]"}`}>{item.description}</p>
                                         </Link>
                                     );
                                 })}
@@ -232,10 +232,10 @@ export default function DashboardShell({
                     ))}
                 </nav>
 
-                <div className="absolute bottom-0 left-0 right-0 border-t border-[#d9e2f0] bg-white px-4 py-3">
+                <div className="absolute bottom-0 left-0 right-0 border-t border-[#244063] bg-[#0d1c31] px-4 py-3">
                     <button
                         onClick={handleLogout}
-                        className="w-full rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-negative-600 transition-colors hover:border-negative-100 hover:bg-negative-50"
+                        className="w-full rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-[#f3a8a8] transition-colors hover:border-[#734747] hover:bg-[#371f24] hover:text-[#ffd2d2]"
                     >
                         Cerrar sesión
                     </button>
@@ -243,23 +243,23 @@ export default function DashboardShell({
             </aside>
 
             <div className="lg:pl-[18.75rem]">
-                <header className="sticky top-0 z-30 border-b border-[#d9e2f0] bg-white/92 px-4 py-3 backdrop-blur md:px-6">
+                <header className="sticky top-0 z-30 border-b border-[#c4cfdd] bg-white px-4 py-3 md:px-6">
                     <div className="mx-auto flex w-full max-w-[108rem] items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
                             <button
                                 type="button"
                                 onClick={() => setMobileOpen((prev) => !prev)}
-                                className="mt-0.5 rounded-lg border border-[#d9e2f0] px-2 py-1 text-sm text-surface-600 hover:bg-surface-50 lg:hidden"
+                                className="mt-0.5 rounded-lg border border-[#c4cfdd] px-2 py-1 text-sm text-surface-700 hover:bg-surface-100 lg:hidden"
                                 aria-label="Abrir menú de navegación"
                             >
                                 {mobileOpen ? "✕" : "☰"}
                             </button>
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-400">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
                                     Tu workspace
                                 </p>
-                                <h1 className="text-lg font-semibold text-[#0f2233]">{current.label}</h1>
-                                <p className="text-xs text-surface-500">{current.description}</p>
+                                <h1 className="text-lg font-bold text-[#10233f]">{current.label}</h1>
+                                <p className="text-xs text-surface-600">{current.description}</p>
                             </div>
                         </div>
 
@@ -284,13 +284,13 @@ export default function DashboardShell({
                                         )}
                                     </select>
                                 ) : (
-                                    <div className="flex h-10 items-center rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 text-sm font-medium text-[#0f2233]">
+                                    <div className="flex h-10 items-center rounded-xl border border-[#c4cfdd] bg-[#f4f7fb] px-3 text-sm font-medium text-[#10233f]">
                                         {activeWorkspace
                                             ? `${activeWorkspace.name} · ${activeWorkspace.type === "business" ? "Empresa" : "Personal"}`
                                             : "Workspace actual"}
                                     </div>
                                 )}
-                                <p className="mt-1 text-[11px] text-surface-500">
+                                <p className="mt-1 text-[11px] text-surface-600">
                                     {activeWorkspace
                                         ? `${activeWorkspace.currency} · ${activeWorkspace.role}`
                                         : "Sin datos de workspace"}

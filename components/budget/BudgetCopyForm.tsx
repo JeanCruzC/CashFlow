@@ -79,9 +79,14 @@ export function BudgetCopyForm({ targetMonth, sourceOptions }: BudgetCopyFormPro
                         ))}
                     </select>
                 </div>
-                <div>
-                    <label className="label">Mes destino</label>
-                    <input className="input-field" value={targetMonth} disabled />
+                <div className="rounded-lg border border-[#b9c9de] bg-[#edf3fa] p-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <label className="label mb-0">Mes destino</label>
+                        <span className="rounded-full border border-[#9db3ce] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#1b4679]">
+                            Reemplaza plan
+                        </span>
+                    </div>
+                    <input className="input-field mt-1" value={targetMonth} disabled />
                 </div>
             </div>
 

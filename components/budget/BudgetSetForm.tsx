@@ -84,13 +84,18 @@ export function BudgetSetForm({ month, categories }: BudgetSetFormProps) {
                         ))}
                     </select>
                 </div>
-                <div>
-                    <label className="label">Tope mensual</label>
+                <div className="rounded-lg border border-[#b9c9de] bg-[#edf3fa] p-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <label className="label mb-0">Tope mensual</label>
+                        <span className="rounded-full border border-[#9db3ce] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#1b4679]">
+                            Campo clave
+                        </span>
+                    </div>
                     <input
                         type="number"
                         min="0"
                         step="0.01"
-                        className="input-field"
+                        className="input-field mt-1"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
                         placeholder="Ej. 800"

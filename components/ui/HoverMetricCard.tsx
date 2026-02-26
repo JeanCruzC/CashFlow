@@ -32,15 +32,15 @@ export function HoverMetricCard({
 
     return (
         <article
-            className="group relative rounded-xl border border-[#d9e2f0] bg-[#fbfdff] px-3 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0d4c7a]/30"
+            className="group relative rounded-xl border border-[#bcc9da] bg-white px-3.5 py-3.5 shadow-[0_2px_8px_rgba(15,35,62,0.06)] transition-colors duration-200 hover:border-[#7e96b8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1b4679]/35"
             tabIndex={0}
         >
             <div className="flex items-center gap-1.5">
-                <p className="text-xs text-surface-500">{label}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-surface-600">{label}</p>
                 {hasTooltipContent ? (
                     <span
                         aria-label="Información adicional"
-                        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#9fb4c9] bg-white text-[10px] font-semibold leading-none text-[#0f2233]"
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#7f98ba] bg-[#edf3fa] text-[10px] font-bold leading-none text-[#17365c]"
                     >
                         i
                     </span>
@@ -51,9 +51,9 @@ export function HoverMetricCard({
 
             {hasTooltipContent && (
                 <div
-                    className={`pointer-events-none absolute z-30 w-[min(22rem,calc(100vw-2.5rem))] max-w-[22rem] rounded-xl border border-[#d9e2f0] bg-white p-3 shadow-[0_10px_30px_rgba(15,34,51,0.14)] opacity-0 translate-y-1 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 ${tooltipPositionClasses}`}
+                    className={`pointer-events-none absolute z-30 w-[min(22rem,calc(100vw-2.5rem))] max-w-[22rem] rounded-xl border border-[#b7c6da] bg-white p-3 shadow-[0_12px_28px_rgba(15,35,62,0.16)] opacity-0 translate-y-1 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 ${tooltipPositionClasses}`}
                 >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-600">
                         Detalle
                     </p>
                     <div className="mt-2 max-h-64 space-y-1.5 overflow-y-auto pr-1 text-xs">
