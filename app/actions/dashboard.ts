@@ -85,6 +85,14 @@ export interface DashboardKPIs {
         operationalCommitment: number;
         plannedSavings: number;
         projectedFreeCash: number;
+        fixedBreakdown: Array<{
+            name: string;
+            amount: number;
+        }>;
+        variableBreakdown: Array<{
+            name: string;
+            amount: number;
+        }>;
     };
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
@@ -490,6 +498,33 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         category:
             categories.find((category) => category.id === budget.category_gl_id) || null,
     }));
+
+    const fixedBreakdownMap = new Map<string, number>();
+    const variableBreakdownMap = new Map<string, number>();
+
+    for (const row of budgetByCategory) {
+        const amount = round2(Math.abs(Number(row.amount || 0)));
+        if (amount <= 0) continue;
+
+        const categoryName = (row.category?.name || "Sin categoria").trim() || "Sin categoria";
+        const isFixedCategory = row.category
+            ? orgType === "business"
+                ? Boolean(row.category.fixed_cost)
+                : isLikelyFixedBudgetCategory(row.category.name)
+            : false;
+
+        const targetMap = isFixedCategory ? fixedBreakdownMap : variableBreakdownMap;
+        targetMap.set(categoryName, round2((targetMap.get(categoryName) || 0) + amount));
+    }
+
+    const fixedBreakdown = Array.from(fixedBreakdownMap.entries())
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+    const variableBreakdown = Array.from(variableBreakdownMap.entries())
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
     const fixedPlanned = round2(
         budgetByCategory.reduce((sum, row) => {
             if (!row.category) return sum;
@@ -658,6 +693,8 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             operationalCommitment,
             plannedSavings,
             projectedFreeCash,
+            fixedBreakdown,
+            variableBreakdown,
         },
         personal: {
             netCashFlow: personal.netCashFlow,

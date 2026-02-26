@@ -18,9 +18,11 @@ export function ModuleHero({
     children,
 }: ModuleHeroProps) {
     return (
-        <section className="relative overflow-hidden rounded-3xl border border-[#d9e2f0] bg-[radial-gradient(circle_at_18%_0%,#eaf4ff_0%,#f8fbff_46%,#ffffff_100%)] p-6 shadow-card md:p-8">
-            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#cbe2ff_0%,rgba(203,226,255,0)_70%)]" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#d4f0ea_0%,rgba(212,240,234,0)_70%)]" />
+        <section className="relative rounded-3xl border border-[#d9e2f0] bg-[radial-gradient(circle_at_18%_0%,#eaf4ff_0%,#f8fbff_46%,#ffffff_100%)] p-6 shadow-card md:p-8">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#cbe2ff_0%,rgba(203,226,255,0)_70%)]" />
+                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#d4f0ea_0%,rgba(212,240,234,0)_70%)]" />
+            </div>
 
             <div
                 className={`relative grid gap-6 ${

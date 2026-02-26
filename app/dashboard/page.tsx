@@ -220,6 +220,39 @@ export default async function DashboardPage() {
         }`
         : "Proximo pago tarjeta: sin fecha";
 
+    const fixedCompositionDetails = (cycle?.fixedBreakdown || []).map((item) => ({
+        label: item.name,
+        value: format.money.format(item.amount),
+    }));
+    const variableCompositionDetails = (cycle?.variableBreakdown || []).map((item) => ({
+        label: item.name,
+        value: format.money.format(item.amount),
+    }));
+
+    const fixedHoverDetails = [
+        ...fixedCompositionDetails,
+        {
+            label: "Total planificado",
+            value: format.money.format(fixedExpenses),
+        },
+        {
+            label: "Peso en el ciclo",
+            value: `${format.percent.format(fixedRatio)}%`,
+        },
+    ];
+
+    const variableHoverDetails = [
+        ...variableCompositionDetails,
+        {
+            label: "Total planificado",
+            value: format.money.format(variableExpenses),
+        },
+        {
+            label: "Peso en el ciclo",
+            value: `${format.percent.format(variableRatio)}%`,
+        },
+    ];
+
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
@@ -252,32 +285,16 @@ export default async function DashboardPage() {
                             <HoverMetricCard
                                 label="Gastos fijos"
                                 value={format.moneyCompact.format(fixedExpenses)}
-                                details={[
-                                    {
-                                        label: "Total planificado",
-                                        value: format.money.format(fixedExpenses),
-                                    },
-                                    {
-                                        label: "Peso en el ciclo",
-                                        value: `${format.percent.format(fixedRatio)}%`,
-                                    },
-                                ]}
-                                footer="Incluye rubros recurrentes de vivienda, servicios y compromisos no movibles."
+                                details={fixedHoverDetails}
+                                footer="Composicion basada en partidas presupuestadas clasificadas como gasto fijo."
+                                tooltipSide="bottom"
                             />
                             <HoverMetricCard
                                 label="Gastos variables"
                                 value={format.moneyCompact.format(variableExpenses)}
-                                details={[
-                                    {
-                                        label: "Total planificado",
-                                        value: format.money.format(variableExpenses),
-                                    },
-                                    {
-                                        label: "Peso en el ciclo",
-                                        value: `${format.percent.format(variableRatio)}%`,
-                                    },
-                                ]}
-                                footer="Incluye consumo flexible del mes: compras, ocio, traslados y ajustes diarios."
+                                details={variableHoverDetails}
+                                footer="Composicion basada en partidas presupuestadas clasificadas como gasto variable."
+                                tooltipSide="bottom"
                             />
                             <HoverMetricCard
                                 label="Pagos de tarjeta"
