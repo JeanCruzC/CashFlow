@@ -108,6 +108,34 @@ export default function DashboardShell({
 
     const current = useMemo(() => currentSection(pathname), [pathname]);
 
+    const workspaceOptions = useMemo(() => {
+        const groups = new Map<string, WorkspaceSummary[]>();
+
+        for (const workspace of workspaces) {
+            const key = [
+                workspace.name.trim().toLowerCase(),
+                workspace.type,
+                workspace.currency,
+                workspace.role,
+            ].join("|");
+
+            if (!groups.has(key)) {
+                groups.set(key, [workspace]);
+                continue;
+            }
+
+            groups.get(key)!.push(workspace);
+        }
+
+        return Array.from(groups.values()).map((group) => {
+            const selectedMatch =
+                group.find((workspace) => workspace.orgId === selectedWorkspace) ||
+                group.find((workspace) => workspace.orgId === activeOrgId);
+
+            return selectedMatch || group[0];
+        });
+    }, [activeOrgId, selectedWorkspace, workspaces]);
+
     const activeWorkspace = useMemo(
         () => workspaces.find((workspace) => workspace.orgId === selectedWorkspace) || null,
         [workspaces, selectedWorkspace]
@@ -239,14 +267,14 @@ export default function DashboardShell({
                                 <select
                                     value={selectedWorkspace}
                                     onChange={handleWorkspaceChange}
-                                    disabled={workspaces.length <= 1 || isSwitchingWorkspace}
+                                    disabled={workspaceOptions.length <= 1 || isSwitchingWorkspace}
                                     className="input-field h-10 py-2 text-sm"
                                     aria-label="Seleccionar workspace activo"
                                 >
-                                    {workspaces.length === 0 ? (
+                                    {workspaceOptions.length === 0 ? (
                                         <option value={activeOrgId}>Workspace actual</option>
                                     ) : (
-                                        workspaces.map((workspace) => (
+                                        workspaceOptions.map((workspace) => (
                                             <option key={workspace.orgId} value={workspace.orgId}>
                                                 {workspace.name} · {workspace.type === "business" ? "Empresa" : "Personal"}
                                             </option>
