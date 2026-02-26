@@ -78,6 +78,11 @@ export interface DashboardKPIs {
             expectedPayment: number;
             currentBalance: number;
         }>;
+        subscriptionSchedules: Array<{
+            name: string;
+            billingDay: number;
+            monthlyCost: number;
+        }>;
         fixedPlanned: number;
         variablePlanned: number;
         fullCardPayments: number;
@@ -153,6 +158,34 @@ function extractOnboardingStartDate(rawAnswers: unknown) {
     if (!rawAnswers || typeof rawAnswers !== "object") return null;
     const answers = rawAnswers as Record<string, unknown>;
     return parseIsoDate(answers.startDate) ?? parseIsoDate(answers.start_date);
+}
+
+function extractOnboardingSubscriptions(rawAnswers: unknown) {
+    if (!rawAnswers || typeof rawAnswers !== "object") return [] as Array<{
+        name: string;
+        billingDay: number;
+        monthlyCost: number;
+    }>;
+
+    const answers = rawAnswers as Record<string, unknown>;
+    const rawSubscriptions = answers.subscriptions;
+    if (!Array.isArray(rawSubscriptions)) {
+        return [] as Array<{
+            name: string;
+            billingDay: number;
+            monthlyCost: number;
+        }>;
+    }
+
+    return rawSubscriptions
+        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        .map((item) => ({
+            name: String(item.name || "Suscripcion"),
+            billingDay: clampDay(toNumber(item.billingDay), 1),
+            monthlyCost: round2(Math.max(toNumber(item.monthlyCost), 0)),
+        }))
+        .filter((item) => item.monthlyCost > 0)
+        .sort((a, b) => a.billingDay - b.billingDay);
 }
 
 function normalizeCategoryLabel(value: string) {
@@ -501,9 +534,10 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             savingsPriorities: financialProfile.savings_priorities,
         }
         : null;
-    const onboardingStartDate = extractOnboardingStartDate(
-        (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null
-    );
+    const onboardingAnswers =
+        (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null;
+    const onboardingStartDate = extractOnboardingStartDate(onboardingAnswers);
+    const onboardingSubscriptions = extractOnboardingSubscriptions(onboardingAnswers);
     const summary = {
         accounts: accounts.length,
         categories: categories.length,
@@ -716,6 +750,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             incomePaymentDays,
             partnerIncomePaymentDays,
             cardSchedules: creditCardSchedules,
+            subscriptionSchedules: onboardingSubscriptions,
             fixedPlanned,
             variablePlanned,
             fullCardPayments,

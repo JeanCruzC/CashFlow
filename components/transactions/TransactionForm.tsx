@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { createTransaction, updateTransaction } from "@/app/actions/transactions";
 import { Select } from "@/components/ui/Select";
 import { Account, CategoryGL } from "@/lib/types/finance";
@@ -27,6 +27,28 @@ interface TransactionFormProps {
     initialValues?: TransactionFormInitialValues;
 }
 
+interface ExtractedTransactionDraft {
+    date: string;
+    description: string;
+    amount: number;
+    direction: "income" | "expense";
+    currency: string;
+    account_id: string;
+    account_name?: string | null;
+    category_gl_id?: string;
+    category_name?: string | null;
+    notes?: string;
+    confidence: number;
+    ready_to_save: boolean;
+}
+
+interface ExtractDocumentResponse {
+    success?: boolean;
+    error?: string;
+    warnings?: string[];
+    extracted?: ExtractedTransactionDraft;
+}
+
 function toInputDate(value?: string) {
     if (!value) return new Date().toISOString().slice(0, 10);
     return value.slice(0, 10);
@@ -41,6 +63,7 @@ export function TransactionForm({
     initialValues,
 }: TransactionFormProps) {
     const router = useRouter();
+    const documentInputRef = useRef<HTMLInputElement>(null);
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +82,13 @@ export function TransactionForm({
     const [categoryId, setCategoryId] = useState(initialValues?.category_gl_id ?? "");
     const [savingsGoalId, setSavingsGoalId] = useState(initialValues?.savings_goal_id ?? "");
     const [notes, setNotes] = useState(initialValues?.notes ?? "");
+
+    const [documentFile, setDocumentFile] = useState<File | null>(null);
+    const [scanPending, setScanPending] = useState(false);
+    const [scanError, setScanError] = useState<string | null>(null);
+    const [scanNotice, setScanNotice] = useState<string | null>(null);
+    const [autoCreateFromDocument, setAutoCreateFromDocument] = useState(true);
+    const [extractedDraft, setExtractedDraft] = useState<ExtractedTransactionDraft | null>(null);
 
     const selectedAccountCurrency = useMemo(() => {
         const accountCurrency = accounts.find((account) => account.id === accountId)?.currency;
@@ -79,50 +109,169 @@ export function TransactionForm({
         [categories, direction]
     );
 
-    async function handleSubmit(event: React.FormEvent) {
+    function resolveCurrencyByAccountId(accountIdValue: string, fallbackCurrency?: string | null) {
+        const accountCurrency = accounts.find((account) => account.id === accountIdValue)?.currency;
+        return (accountCurrency || fallbackCurrency || selectedAccountCurrency || "USD").toUpperCase();
+    }
+
+    function buildPayloadFromValues(values: {
+        directionValue: "income" | "expense";
+        amountValue: string;
+        descriptionValue: string;
+        dateValue: string;
+        accountIdValue: string;
+        categoryIdValue?: string;
+        savingsGoalIdValue?: string;
+        notesValue?: string;
+        currencyHint?: string | null;
+    }) {
+        const numericAmount = Number(values.amountValue);
+        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+            throw new Error("Ingresa un monto válido.");
+        }
+
+        if (!values.accountIdValue) {
+            throw new Error("Selecciona una cuenta.");
+        }
+
+        const normalizedDescription = values.descriptionValue.trim();
+        if (!normalizedDescription) {
+            throw new Error("Ingresa una descripción del movimiento.");
+        }
+
+        return {
+            date: values.dateValue,
+            description: normalizedDescription,
+            amount:
+                values.directionValue === "expense"
+                    ? -numericAmount
+                    : numericAmount,
+            account_id: values.accountIdValue,
+            category_gl_id: values.categoryIdValue || undefined,
+            currency: resolveCurrencyByAccountId(values.accountIdValue, values.currencyHint),
+            is_transfer: false,
+            counterparty_id: undefined,
+            cost_center_id: undefined,
+            transfer_group_id: undefined,
+            savings_goal_id:
+                values.directionValue === "expense" && values.savingsGoalIdValue
+                    ? values.savingsGoalIdValue
+                    : undefined,
+            detraccion_rate: undefined,
+            detraccion_amount: undefined,
+            notes: values.notesValue?.trim() || undefined,
+            tax_amount: undefined,
+        };
+    }
+
+    async function persistTransaction(payload: ReturnType<typeof buildPayloadFromValues>) {
+        const result =
+            mode === "edit" && transactionId
+                ? await updateTransaction(transactionId, payload)
+                : await createTransaction(payload);
+
+        if (result.error) {
+            throw new Error(result.error);
+        }
+
+        router.push("/dashboard/transactions");
+        router.refresh();
+    }
+
+    function applyExtractedDraftToForm(draft: ExtractedTransactionDraft) {
+        setDirection(draft.direction);
+        setAmount(String(draft.amount));
+        setDescription(draft.description);
+        setDate(draft.date);
+        if (draft.account_id) setAccountId(draft.account_id);
+        if (draft.category_gl_id) setCategoryId(draft.category_gl_id);
+        if (draft.notes) setNotes(draft.notes);
+    }
+
+    async function handleAnalyzeDocument() {
+        if (!documentFile) {
+            setScanError("Selecciona una imagen o PDF antes de analizar.");
+            return;
+        }
+
+        setScanError(null);
+        setScanNotice(null);
+        setError(null);
+        setScanPending(true);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", documentFile);
+            formData.append("selected_account_id", accountId);
+            formData.append("selected_direction", direction);
+
+            const response = await fetch("/api/transactions/extract-document", {
+                method: "POST",
+                body: formData,
+            });
+
+            const payload = (await response.json()) as ExtractDocumentResponse;
+
+            if (!response.ok || !payload.success || !payload.extracted) {
+                throw new Error(payload.error || "No se pudo analizar el documento.");
+            }
+
+            const extracted = payload.extracted;
+            applyExtractedDraftToForm(extracted);
+            setExtractedDraft(extracted);
+
+            if (mode === "create" && autoCreateFromDocument && extracted.ready_to_save) {
+                const autoPayload = buildPayloadFromValues({
+                    directionValue: extracted.direction,
+                    amountValue: String(extracted.amount),
+                    descriptionValue: extracted.description,
+                    dateValue: extracted.date,
+                    accountIdValue: extracted.account_id,
+                    categoryIdValue: extracted.category_gl_id || "",
+                    notesValue: extracted.notes || "",
+                    currencyHint: extracted.currency,
+                });
+
+                await persistTransaction(autoPayload);
+                return;
+            }
+
+            const warningText =
+                payload.warnings && payload.warnings.length > 0
+                    ? ` Avisos: ${payload.warnings.join(" ")}`
+                    : "";
+
+            setScanNotice(`Documento analizado y formulario autocompletado.${warningText}`);
+        } catch (scanIssue) {
+            setScanError(
+                scanIssue instanceof Error
+                    ? scanIssue.message
+                    : "No se pudo analizar el documento automáticamente."
+            );
+        } finally {
+            setScanPending(false);
+        }
+    }
+
+    async function handleSubmit(event: FormEvent) {
         event.preventDefault();
         setError(null);
         setIsPending(true);
 
         try {
-            const numericAmount = Number(amount);
-            if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-                throw new Error("Ingresa un monto válido.");
-            }
+            const payload = buildPayloadFromValues({
+                directionValue: direction,
+                amountValue: amount,
+                descriptionValue: description,
+                dateValue: date,
+                accountIdValue: accountId,
+                categoryIdValue: categoryId,
+                savingsGoalIdValue: savingsGoalId,
+                notesValue: notes,
+                currencyHint: selectedAccountCurrency,
+            });
 
-            if (!accountId) {
-                throw new Error("Selecciona una cuenta.");
-            }
-
-            const payload = {
-                date,
-                description: description.trim(),
-                amount: direction === "expense" ? -numericAmount : numericAmount,
-                account_id: accountId,
-                category_gl_id: categoryId || undefined,
-                currency: selectedAccountCurrency,
-                is_transfer: false,
-                counterparty_id: undefined,
-                cost_center_id: undefined,
-                transfer_group_id: undefined,
-                savings_goal_id: direction === "expense" && savingsGoalId ? savingsGoalId : undefined,
-                detraccion_rate: undefined,
-                detraccion_amount: undefined,
-                notes: notes.trim() || undefined,
-                tax_amount: undefined,
-            };
-
-            const result =
-                mode === "edit" && transactionId
-                    ? await updateTransaction(transactionId, payload)
-                    : await createTransaction(payload);
-
-            if (result.error) {
-                throw new Error(result.error);
-            }
-
-            router.push("/dashboard/transactions");
-            router.refresh();
+            await persistTransaction(payload);
         } catch (submissionError) {
             setError(
                 submissionError instanceof Error
@@ -190,6 +339,89 @@ export function TransactionForm({
                     <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
                         {error}
                     </div>
+                ) : null}
+
+                {mode === "create" ? (
+                    <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                        <h2 className="text-base font-semibold text-[#0f2233]">0. Cargar comprobante (opcional)</h2>
+                        <p className="mt-1 text-sm text-surface-500">
+                            Sube boletas, vouchers, capturas de Yape/Plin o estados de cuenta para autocompletar el movimiento.
+                        </p>
+
+                        <div className="mt-4 space-y-3">
+                            <input
+                                ref={documentInputRef}
+                                type="file"
+                                accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+                                onChange={(event) => {
+                                    setDocumentFile(event.target.files?.[0] || null);
+                                    setScanError(null);
+                                    setScanNotice(null);
+                                    setExtractedDraft(null);
+                                }}
+                                className="input-field file:mr-3 file:rounded-lg file:border-0 file:bg-[#e9f2ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0f4c81] hover:file:bg-[#dbe9ff]"
+                            />
+
+                            <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-sm text-surface-600">
+                                Formatos permitidos: JPG, PNG, WEBP, HEIC y PDF (máx. 10 MB).
+                            </div>
+
+                            <label className="inline-flex items-center gap-2 text-sm text-surface-700">
+                                <input
+                                    type="checkbox"
+                                    checked={autoCreateFromDocument}
+                                    onChange={(event) => setAutoCreateFromDocument(event.target.checked)}
+                                    className="h-4 w-4 rounded border border-[#c8d7eb]"
+                                />
+                                Guardar automáticamente si la extracción está lista
+                            </label>
+
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    disabled={scanPending || isPending || !documentFile}
+                                    onClick={handleAnalyzeDocument}
+                                    className="btn-secondary"
+                                >
+                                    {scanPending ? "Analizando comprobante..." : "Analizar y autocompletar"}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={scanPending || isPending}
+                                    onClick={() => {
+                                        setDocumentFile(null);
+                                        setScanError(null);
+                                        setScanNotice(null);
+                                        setExtractedDraft(null);
+                                        if (documentInputRef.current) {
+                                            documentInputRef.current.value = "";
+                                        }
+                                    }}
+                                    className="btn-ghost"
+                                >
+                                    Limpiar archivo
+                                </button>
+                            </div>
+
+                            {scanError ? (
+                                <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
+                                    {scanError}
+                                </div>
+                            ) : null}
+
+                            {scanNotice ? (
+                                <div className="rounded-xl border border-[#d4ead8] bg-[#f3fbf5] px-4 py-3 text-sm text-positive-700">
+                                    {scanNotice}
+                                </div>
+                            ) : null}
+
+                            {extractedDraft ? (
+                                <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3 text-sm text-surface-700">
+                                    Detectado: <strong>{extractedDraft.description}</strong> · {extractedDraft.direction === "income" ? "Ingreso" : "Egreso"} · {extractedDraft.currency} {extractedDraft.amount.toFixed(2)} · Confianza {Math.round(extractedDraft.confidence * 100)}%
+                                </div>
+                            ) : null}
+                        </div>
+                    </section>
                 ) : null}
 
                 <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">

@@ -1,5 +1,6 @@
 import { getAssistantInsights } from "@/app/actions/assistant";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { ScenarioPlanner } from "@/components/assistant/ScenarioPlanner";
 
 function formatMoney(amount: number, currency: string) {
     return new Intl.NumberFormat("es-PE", {
@@ -16,16 +17,6 @@ function formatDate(value: string) {
         month: "short",
         day: "numeric",
     }).format(new Date(value));
-}
-
-function formatHorizonLabel(months: number) {
-    const safeMonths = Math.max(1, Math.round(months));
-    if (safeMonths < 12) return `${safeMonths} meses`;
-    const years = Math.floor(safeMonths / 12);
-    const remainingMonths = safeMonths % 12;
-    const yearLabel = years === 1 ? "año" : "años";
-    if (remainingMonths === 0) return `${years} ${yearLabel}`;
-    return `${years} ${yearLabel} ${remainingMonths} meses`;
 }
 
 export default async function AssistantPage() {
@@ -156,73 +147,7 @@ export default async function AssistantPage() {
                                 </article>
                             </div>
 
-                            {recommendation.user_scenario ? (
-                                <article className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Escenario definido por usuario</h3>
-                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ingreso adicional</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(recommendation.user_scenario.achievable_additional_income, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ingreso total escenario</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(recommendation.user_scenario.scenario_income, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
-                                            <p className="text-surface-500">Ahorro mensual escenario</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(recommendation.user_scenario.scenario_savings_pool, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-white px-3 py-2">
-                                            <p className="text-surface-500">Brecha restante</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {formatMoney(recommendation.user_scenario.scenario_income_gap_to_target, currency)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </article>
-                            ) : null}
-
-                            {recommendation.goals.length > 0 ? (
-                                <article className="mt-4 rounded-xl border border-[#d9e2f0] bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Metas evaluadas</h3>
-                                    <div className="mt-3 overflow-x-auto rounded-lg border border-[#d9e2f0]">
-                                        <table className="w-full min-w-[720px] text-sm">
-                                            <thead className="bg-[#f5f9ff] text-left text-surface-500">
-                                                <tr>
-                                                    <th className="px-3 py-2 font-semibold">Meta</th>
-                                                    <th className="px-3 py-2 font-semibold">Horizonte</th>
-                                                    <th className="px-3 py-2 font-semibold">Aporte actual</th>
-                                                    <th className="px-3 py-2 font-semibold">Aporte requerido</th>
-                                                    <th className="px-3 py-2 font-semibold">Brecha</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-[#e8eef7] bg-white">
-                                                {recommendation.goals.map((goal) => (
-                                                    <tr key={`${insight.id}-goal-${goal.id}`}>
-                                                        <td className="px-3 py-2 font-medium text-[#0f2233]">{goal.name}</td>
-                                                        <td className="px-3 py-2 text-surface-600">{formatHorizonLabel(goal.target_months)}</td>
-                                                        <td className="px-3 py-2 text-surface-600">
-                                                            {formatMoney(goal.projected_monthly_contribution, currency)}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-surface-600">
-                                                            {formatMoney(goal.required_monthly_contribution, currency)}
-                                                        </td>
-                                                        <td className="px-3 py-2 font-semibold text-[#117068]">
-                                                            {formatMoney(goal.gap_monthly_contribution, currency)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </article>
-                            ) : null}
+                            <ScenarioPlanner recommendation={recommendation} />
                         </section>
                     );
                 })

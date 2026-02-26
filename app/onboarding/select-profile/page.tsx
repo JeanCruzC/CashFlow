@@ -22,6 +22,13 @@ type DistributionRule = "50_30_20" | "70_20_10" | "80_20" | "custom";
 type SavingsPriority = "fixed_expenses" | "debt_payments" | "savings_goals";
 type RulePillTone = "needs" | "wants" | "savings" | "debt";
 
+type SubscriptionDraft = {
+    id: string;
+    name: string;
+    monthlyCost: string;
+    billingDay: string;
+};
+
 const TOTAL_STEPS = 9;
 
 const CURRENCIES = ["PEN", "USD", "EUR", "MXN", "COP", "CLP", "ARS"];
@@ -251,6 +258,11 @@ function isFixedExpenseCategory(value: string) {
     return FIXED_EXPENSE_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
+function isSubscriptionCategory(value: string) {
+    const normalized = normalizeCategoryLabel(value);
+    return normalized.includes("suscripcion") || normalized.includes("subscription");
+}
+
 function getRulePillClasses(tone: RulePillTone) {
     if (tone === "needs") return "bg-[#eaf3ff] text-[#1d4ed8]";
     if (tone === "wants") return "bg-[#fff4dc] text-[#a16207]";
@@ -330,6 +342,8 @@ export default function SelectProfilePage() {
 
     const [hasSavingsGoals, setHasSavingsGoals] = useState(false);
     const [savingsGoals, setSavingsGoals] = useState<Array<{ id: string; name: string; targetAmount: string; deadlineDate: string; goalWeight: string }>>([]);
+    const [hasSubscriptions, setHasSubscriptions] = useState(false);
+    const [subscriptions, setSubscriptions] = useState<SubscriptionDraft[]>([]);
 
     const consolidatedIncome = useMemo(() => {
         const base = salaryFrequency === "monthly"
@@ -542,16 +556,40 @@ export default function SelectProfilePage() {
         [budgetBreakdownRows]
     );
 
+    const activeSubscriptions = useMemo(
+        () =>
+            (hasSubscriptions ? subscriptions : [])
+                .map((subscription) => ({
+                    id: subscription.id,
+                    name: subscription.name.trim() || "Suscripcion",
+                    monthlyCost: round2(Math.max(parseAmount(subscription.monthlyCost), 0)),
+                    billingDay: parseDayOfMonth(subscription.billingDay, 1),
+                }))
+                .filter((subscription) => subscription.monthlyCost > 0),
+        [hasSubscriptions, subscriptions]
+    );
+
+    const subscriptionsMonthlyTotal = useMemo(
+        () =>
+            round2(
+                activeSubscriptions.reduce(
+                    (sum, subscription) => sum + subscription.monthlyCost,
+                    0
+                )
+            ),
+        [activeSubscriptions]
+    );
+
     const fixedExpensesBudget = useMemo(
         () =>
             round2(
                 budgetBreakdownRows.reduce((sum, row) => {
-                    return row.isFixed
+                    return row.isFixed && !isSubscriptionCategory(row.categoryName)
                         ? sum + row.amount
                         : sum;
-                }, 0)
+                }, 0) + subscriptionsMonthlyTotal
             ),
-        [budgetBreakdownRows]
+        [budgetBreakdownRows, subscriptionsMonthlyTotal]
     );
 
     const creditCardBreakdownRows = useMemo(
@@ -1106,6 +1144,34 @@ export default function SelectProfilePage() {
             }
         }
 
+        if (step === 5 && hasSubscriptions) {
+            const activeRows = subscriptions.filter(
+                (subscription) =>
+                    subscription.name.trim().length > 0 ||
+                    parseAmount(subscription.monthlyCost) > 0
+            );
+
+            if (activeRows.length === 0) {
+                setError("Registra al menos una suscripcion recurrente o desactiva esa opcion.");
+                return;
+            }
+
+            for (const subscription of activeRows) {
+                if (!subscription.name.trim()) {
+                    setError("Toda suscripcion requiere un nombre para continuar.");
+                    return;
+                }
+                if (parseAmount(subscription.monthlyCost) <= 0) {
+                    setError(`La suscripcion \"${subscription.name}\" requiere un costo mensual mayor a 0.`);
+                    return;
+                }
+                if (!isValidDayOfMonth(subscription.billingDay)) {
+                    setError(`La suscripcion \"${subscription.name}\" requiere un dia de facturacion valido (1 al 31).`);
+                    return;
+                }
+            }
+        }
+
         if (step === 8 && selected === "personal" && distributionRule === "custom" && Math.abs(distributionTotal - 100) > 0.01) {
             setError("La distribución personalizada debe sumar 100%.");
             return;
@@ -1180,6 +1246,16 @@ export default function SelectProfilePage() {
                         deadlineDate: goal.deadlineDate || null,
                     }))
                     .filter((goal) => goal.targetAmount > 0)
+                : undefined;
+
+            const subscriptionsPayload = hasSubscriptions
+                ? subscriptions
+                    .map((subscription) => ({
+                        name: subscription.name.trim() || "Suscripcion",
+                        monthlyCost: parseAmount(subscription.monthlyCost),
+                        billingDay: parseDayOfMonth(subscription.billingDay, 1),
+                    }))
+                    .filter((subscription) => subscription.monthlyCost > 0)
                 : undefined;
 
             const financialProfilePayload = {
@@ -1266,6 +1342,7 @@ export default function SelectProfilePage() {
                             currency,
                         },
                         creditCards: creditCardsPayload,
+                        subscriptions: subscriptionsPayload,
                         savingsGoals: savingsGoalsPayload,
                         customCategories,
                         initialBudgets: initialBudgetsPayload,
@@ -1287,6 +1364,7 @@ export default function SelectProfilePage() {
                             note: "Inicializado desde onboarding",
                         },
                         creditCards: creditCardsPayload,
+                        subscriptions: subscriptionsPayload,
                         savingsGoals: savingsGoalsPayload,
                         customCategories,
                         initialBudgets: initialBudgetsPayload,
@@ -2127,7 +2205,7 @@ export default function SelectProfilePage() {
                                 <div>
                                     <h1 className="text-2xl sm:text-3xl font-semibold text-[#0f2233]">Presupuesto inicial</h1>
                                     <p className="mt-3 text-base text-surface-600 leading-relaxed">
-                                        Define topes mensuales por categoría para activar el control Budget vs Actual.
+                                        Define topes mensuales por categoria y registra suscripciones recurrentes con dia de facturacion.
                                     </p>
                                 </div>
 
@@ -2153,6 +2231,142 @@ export default function SelectProfilePage() {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                <div className="rounded-2xl border border-surface-200 bg-white p-5">
+                                    <label className="flex items-start gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1 h-4 w-4"
+                                            checked={hasSubscriptions}
+                                            onChange={(event) => {
+                                                setHasSubscriptions(event.target.checked);
+                                                if (event.target.checked && subscriptions.length === 0) {
+                                                    setSubscriptions([
+                                                        {
+                                                            id: Date.now().toString(),
+                                                            name: "",
+                                                            monthlyCost: "",
+                                                            billingDay: "1",
+                                                        },
+                                                    ]);
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-sm text-[#0f2233]">
+                                            Registrar suscripciones recurrentes (software, streaming, herramientas, membresias)
+                                        </span>
+                                    </label>
+
+                                    {hasSubscriptions && (
+                                        <div className="mt-4 space-y-4 border-t border-surface-200 pt-4">
+                                            {subscriptions.map((subscription, index) => (
+                                                <div
+                                                    key={subscription.id}
+                                                    className="rounded-xl border border-surface-200 bg-surface-50 p-4"
+                                                >
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <p className="text-sm font-semibold text-[#0f2233]">Suscripcion {index + 1}</p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setSubscriptions((previous) =>
+                                                                    previous.filter((item) => item.id !== subscription.id)
+                                                                )
+                                                            }
+                                                            aria-label={`Eliminar suscripcion ${index + 1}`}
+                                                            className="text-surface-400 hover:text-negative-600"
+                                                        >
+                                                            <TrashIcon />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid gap-3 sm:grid-cols-3">
+                                                        <div className="sm:col-span-2">
+                                                            <label className="label text-xs">Nombre</label>
+                                                            <input
+                                                                className="input-field bg-white"
+                                                                value={subscription.name}
+                                                                onChange={(event) => {
+                                                                    setSubscriptions((previous) => {
+                                                                        const next = [...previous];
+                                                                        next[index].name = event.target.value;
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                                placeholder="Ej. Netflix, Notion, Canva, AWS"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="label text-xs">Dia de facturacion</label>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                max="31"
+                                                                className="input-field bg-white"
+                                                                value={subscription.billingDay}
+                                                                onChange={(event) => {
+                                                                    setSubscriptions((previous) => {
+                                                                        const next = [...previous];
+                                                                        next[index].billingDay = event.target.value;
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                                placeholder="1"
+                                                            />
+                                                        </div>
+                                                        <div className="sm:col-span-3">
+                                                            <label className="label text-xs">Costo mensual ({currency})</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-2.5 text-surface-500 text-sm">{currency}</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    className="input-field bg-white pl-12"
+                                                                    value={subscription.monthlyCost}
+                                                                    onChange={(event) => {
+                                                                        setSubscriptions((previous) => {
+                                                                            const next = [...previous];
+                                                                            next[index].monthlyCost = event.target.value;
+                                                                            return next;
+                                                                        });
+                                                                    }}
+                                                                    placeholder="0.00"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setSubscriptions((previous) => [
+                                                        ...previous,
+                                                        {
+                                                            id: Date.now().toString(),
+                                                            name: "",
+                                                            monthlyCost: "",
+                                                            billingDay: "1",
+                                                        },
+                                                    ])
+                                                }
+                                                className="inline-flex items-center gap-2 rounded-lg border border-surface-300 px-3 py-2 text-sm text-surface-700 hover:bg-white"
+                                            >
+                                                <PlusIcon />
+                                                Agregar suscripcion
+                                            </button>
+
+                                            <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-sm">
+                                                <span className="text-surface-500">Costo mensual total de suscripciones:</span>{" "}
+                                                <span className="font-semibold text-[#0f2233]">
+                                                    {currency} {subscriptionsMonthlyTotal.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2476,6 +2690,19 @@ export default function SelectProfilePage() {
                                                             ? "Sin tarjetas registradas"
                                                             : cardPaymentCalendar
                                                                   .map((card) => `${card.name}: Día ${card.paymentDay}`)
+                                                                  .join(" · ")}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-start justify-between gap-4 text-sm">
+                                                    <span className="text-surface-600">Facturacion suscripciones</span>
+                                                    <span className="text-right font-semibold text-[#0f2233]">
+                                                        {activeSubscriptions.length === 0
+                                                            ? "Sin suscripciones registradas"
+                                                            : activeSubscriptions
+                                                                  .map(
+                                                                      (subscription) =>
+                                                                          `${subscription.name}: Día ${subscription.billingDay}`
+                                                                  )
                                                                   .join(" · ")}
                                                     </span>
                                                 </div>

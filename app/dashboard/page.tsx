@@ -269,6 +269,16 @@ function buildTimelineEvents({
         });
     }
 
+    for (const subscription of cycle.subscriptionSchedules) {
+        pushEvent({
+            date: nextOccurrenceDate(subscription.billingDay, today),
+            title: `Pago suscripcion ${subscription.name}`,
+            subtitle: "Facturacion recurrente",
+            amount: subscription.monthlyCost,
+            tone: "expense",
+        });
+    }
+
     return events
         .sort((a, b) => {
             if (a.date.getTime() === b.date.getTime()) {
@@ -386,6 +396,12 @@ export default async function DashboardPage() {
         nextIncomeDay == null ? null : daysUntilDay(nextIncomeDay, todayDay, daysInMonth);
     const nextCardDelta =
         nextCardDay == null ? null : daysUntilDay(nextCardDay, todayDay, daysInMonth);
+    const nextSubscriptionDay = resolveNextCycleDay(
+        cycle ? cycle.subscriptionSchedules.map((subscription) => subscription.billingDay) : [],
+        todayDay
+    );
+    const nextSubscriptionDelta =
+        nextSubscriptionDay == null ? null : daysUntilDay(nextSubscriptionDay, todayDay, daysInMonth);
 
     const topGoal = savingsGoals[0] || null;
     const topGoalProgress = topGoal ? goalProgress(topGoal.current_amount, topGoal.target_amount) : 0;
@@ -535,6 +551,17 @@ export default async function DashboardPage() {
                                             : ""
                                     }`
                                     : "Proximo pago tarjeta: sin fecha"}
+                            </span>
+                            <span className="rounded-full border border-[#d9e2f0] bg-white/80 px-3 py-1 text-xs font-medium text-[#0d4c7a]">
+                                {nextSubscriptionDay != null
+                                    ? `Proxima suscripcion: dia ${nextSubscriptionDay}${
+                                        nextSubscriptionDelta != null
+                                            ? nextSubscriptionDelta === 0
+                                                ? " · hoy"
+                                                : ` · en ${nextSubscriptionDelta} dias`
+                                            : ""
+                                    }`
+                                    : "Proxima suscripcion: sin fecha"}
                             </span>
                         </div>
                     </>

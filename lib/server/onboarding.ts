@@ -133,6 +133,15 @@ const onboardingSetupSchema = z.object({
             })
         )
         .optional(),
+    subscriptions: z
+        .array(
+            z.object({
+                name: z.string().trim().min(1).max(120),
+                monthlyCost: z.number().finite().min(0),
+                billingDay: z.number().int().min(1).max(31),
+            })
+        )
+        .optional(),
     savingsGoals: z
         .array(
             z.object({
@@ -300,11 +309,18 @@ function estimateTotalCreditCardMinimums(setup: OnboardingSetupInput) {
 
 function estimateTotalExpenseBudget(setup: OnboardingSetupInput) {
     const budgets = setup.initialBudgets || [];
+    const subscriptions = setup.subscriptions || [];
+    const subscriptionsTotal = round2(
+        subscriptions.reduce((sum, subscription) => {
+            if (subscription.monthlyCost <= 0) return sum;
+            return sum + subscription.monthlyCost;
+        }, 0)
+    );
     return round2(
         budgets.reduce((sum, budget) => {
             if (budget.amount <= 0) return sum;
             return sum + budget.amount;
-        }, 0)
+        }, 0) + subscriptionsTotal
     );
 }
 
@@ -480,6 +496,10 @@ const ONBOARDING_BUDGET_CATEGORY_ALIASES: Record<string, string> = {
     alimentos: "Groceries",
     transporte: "Transportation",
     salud: "Healthcare",
+    suscripcion: "Software & Tools",
+    suscripciones: "Software & Tools",
+    subscription: "Software & Tools",
+    subscriptions: "Software & Tools",
     operaciones: "Rent & Facilities",
     sueldos: "Salaries & Benefits",
     marketing: "Marketing & Advertising",
@@ -1014,8 +1034,24 @@ export async function createOrganizationWithOnboarding(
         }
     }
 
-    // Process Initial Budgets
-    if (safeSetup.initialBudgets && safeSetup.initialBudgets.length > 0) {
+    const onboardingBudgetRows = [...(safeSetup.initialBudgets || [])];
+    if (safeSetup.subscriptions && safeSetup.subscriptions.length > 0) {
+        const subscriptionsTotal = round2(
+            safeSetup.subscriptions.reduce((sum, subscription) => {
+                if (subscription.monthlyCost <= 0) return sum;
+                return sum + subscription.monthlyCost;
+            }, 0)
+        );
+        if (subscriptionsTotal > 0) {
+            onboardingBudgetRows.push({
+                categoryName: "Subscriptions",
+                amount: subscriptionsTotal,
+            });
+        }
+    }
+
+    // Process Initial Budgets (including subscriptions total)
+    if (onboardingBudgetRows.length > 0) {
         // We need to fetch the category IDs first because we only have the names from the frontend
         const { data: allCategories, error: fetchCatError } = await supabase
             .from("categories_gl")
@@ -1037,7 +1073,7 @@ export async function createOrganizationWithOnboarding(
                 amount: number;
             }>();
 
-            for (const budget of safeSetup.initialBudgets) {
+            for (const budget of onboardingBudgetRows) {
                 if (budget.amount <= 0) continue;
                 const candidates = resolveBudgetCategoryCandidates(budget.categoryName);
                 const category = candidates
