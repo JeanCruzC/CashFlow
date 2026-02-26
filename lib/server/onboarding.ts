@@ -564,17 +564,49 @@ function mapInitialAccounts(profileType: OrgType, setup: OnboardingSetupInput) {
         is_restricted_cash?: boolean;
     }> = [];
 
+    const baseCurrency =
+        normalizeCurrency(setup.currency) ||
+        normalizeCurrency(setup.firstAccount?.currency) ||
+        "USD";
+
+    const appendPartnerSharedAccount = () => {
+        if (profileType !== "personal") return;
+
+        const partnerContribution = round2(
+            Math.max(setup.financialProfile?.partnerContribution ?? 0, 0)
+        );
+        if (partnerContribution <= 0) return;
+
+        const alreadyExists = accounts.some((account) => {
+            const normalizedName = account.name.trim().toLowerCase();
+            return (
+                normalizedName.includes("cuenta compartida") ||
+                normalizedName.includes("shared account")
+            );
+        });
+
+        if (alreadyExists) return;
+
+        accounts.push({
+            name: "Cuenta compartida (pareja)",
+            account_type: "bank",
+            opening_balance: partnerContribution,
+            currency: baseCurrency,
+        });
+    };
+
     if (setup.firstAccount) {
         accounts.push({
             name: setup.firstAccount.name,
             account_type: setup.firstAccount.accountType,
             opening_balance: setup.firstAccount.openingBalance,
-            currency: normalizeCurrency(setup.firstAccount.currency) || normalizeCurrency(setup.currency) || "USD",
+            currency: normalizeCurrency(setup.firstAccount.currency) || baseCurrency,
         });
+
+        appendPartnerSharedAccount();
         return accounts;
     }
 
-    const baseCurrency = normalizeCurrency(setup.currency) || "USD";
     if (profileType === "personal") {
         accounts.push({
             name: "Cuenta principal",
@@ -582,6 +614,8 @@ function mapInitialAccounts(profileType: OrgType, setup: OnboardingSetupInput) {
             opening_balance: 0,
             currency: baseCurrency,
         });
+
+        appendPartnerSharedAccount();
         return accounts;
     }
 

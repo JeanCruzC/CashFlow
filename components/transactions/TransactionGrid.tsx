@@ -246,7 +246,7 @@ export function TransactionGrid({
                             Acciones
                         </p>
                         <p className="mt-1 text-sm text-surface-600">
-                            Importa, exporta o registra manualmente.
+                            Importa CSV, sube comprobantes con IA o registra manualmente.
                         </p>
 
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -273,6 +273,12 @@ export function TransactionGrid({
                                 className="btn-primary text-sm no-underline hover:text-white"
                             >
                                 Nuevo movimiento
+                            </Link>
+                            <Link
+                                href="/dashboard/transactions/new#documento-movimiento"
+                                className="btn-secondary text-sm no-underline"
+                            >
+                                Cargar comprobante IA
                             </Link>
                         </div>
                     </>

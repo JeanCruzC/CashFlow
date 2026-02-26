@@ -41,7 +41,28 @@ const extractionSchema = z.object({
     confidence: z.number().min(0).max(1).nullable().optional(),
 });
 
+const multiExtractionSchema = z.object({
+    transactions: z.array(extractionSchema).max(120),
+});
+
 type ExtractedObject = z.infer<typeof extractionSchema>;
+
+type ExtractionMode = "single" | "multi";
+
+type ExtractedNormalizedRow = {
+    date: string;
+    description: string;
+    amount: number;
+    direction: "income" | "expense";
+    currency: string;
+    account_id: string;
+    account_name: string | null;
+    category_gl_id: string;
+    category_name: string | null;
+    notes: string;
+    confidence: number;
+    ready_to_save: boolean;
+};
 
 type AccountRow = {
     id: string;
@@ -233,6 +254,56 @@ function buildNotes(source: ExtractedObject, fileName: string) {
     return lines.join(" | ").slice(0, 500);
 }
 
+function resolveExtractionMode(rawMode: string): ExtractionMode {
+    return rawMode === "multi" ? "multi" : "single";
+}
+
+function materializeExtraction(
+    source: ExtractedObject,
+    fileName: string,
+    accounts: AccountRow[],
+    categories: CategoryRow[],
+    fallbackDirection: "income" | "expense",
+    selectedAccountId: string | null,
+    orgCurrency: string,
+    indexLabel?: number
+) {
+    const direction = inferDirection(source, fallbackDirection);
+    const account = pickAccountByHint(accounts, source, selectedAccountId);
+    const category = pickCategoryByHint(categories, source, direction);
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const date = normalizeIsoDate(source.date) || todayIso;
+    const description = fallbackDescription(source, fileName);
+    const amount = Math.max(Number(source.amount || 0), 0);
+    const currency = sanitizeCurrency(source.currency, account?.currency || orgCurrency);
+    const confidence = typeof source.confidence === "number" ? source.confidence : 0.65;
+
+    const warnings: string[] = [];
+    const prefix = indexLabel ? `Movimiento ${indexLabel}: ` : "";
+
+    if (amount <= 0) warnings.push(`${prefix}no se detectó monto exacto.`);
+    if (!normalizeIsoDate(source.date)) warnings.push(`${prefix}se usó la fecha de hoy por falta de fecha clara.`);
+    if (!category) warnings.push(`${prefix}no se encontró categoría exacta.`);
+
+    const normalized: ExtractedNormalizedRow = {
+        date,
+        description,
+        amount,
+        direction,
+        currency,
+        account_id: account?.id || "",
+        account_name: account?.name || null,
+        category_gl_id: category?.id || "",
+        category_name: category?.name || null,
+        notes: buildNotes(source, fileName),
+        confidence,
+        ready_to_save: Boolean(account?.id && description && amount > 0),
+    };
+
+    return { normalized, warnings };
+}
+
 function getGoogleApiKey() {
     return (
         process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
@@ -259,6 +330,8 @@ export async function POST(request: Request) {
         const file = formData.get("file");
         const selectedAccountIdRaw = String(formData.get("selected_account_id") || "").trim();
         const selectedDirectionRaw = String(formData.get("selected_direction") || "expense").trim();
+        const extractionModeRaw = String(formData.get("extraction_mode") || "single").trim();
+        const extractionMode = resolveExtractionMode(extractionModeRaw);
 
         if (!file || !(file instanceof File)) {
             return NextResponse.json({ error: "Archivo no válido." }, { status: 400 });
@@ -336,7 +409,7 @@ export async function POST(request: Request) {
         const genAI = new GoogleGenerativeAI(googleApiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const extractionPrompt = `
+        const singleExtractionPrompt = `
 Analiza el archivo adjunto (comprobante Yape/Plin, boleta, recibo o estado bancario) y extrae UNA transacción principal.
 
 Responde SOLO JSON, sin markdown, con esta estructura exacta:
@@ -362,6 +435,41 @@ Reglas:
 - confidence entre 0 y 1.
 `;
 
+        const multiExtractionPrompt = `
+Analiza el archivo adjunto (estado de cuenta bancario o documento con múltiples operaciones) y extrae TODOS los movimientos detectables.
+
+Responde SOLO JSON, sin markdown, con esta estructura exacta:
+{
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD | null",
+      "description": "string | null",
+      "amount": number | null,
+      "direction": "income" | "expense" | null,
+      "currency": "ISO-4217 | null",
+      "account_hint": "string | null",
+      "category_hint": "string | null",
+      "counterparty": "string | null",
+      "notes": "string | null",
+      "confidence": number | null
+    }
+  ]
+}
+
+Reglas:
+- Incluye hasta 60 movimientos máximo.
+- amount debe ser positivo (sin signo).
+- date en formato YYYY-MM-DD cuando sea visible; de lo contrario null.
+- direction = income si el dinero entra al usuario, expense si sale.
+- account_hint puede incluir banco o medio de pago visible.
+- category_hint puede ser tipo de gasto/ingreso.
+- confidence entre 0 y 1.
+- Si no hay movimientos claros, responde {"transactions": []}.
+`;
+
+        const extractionPrompt =
+            extractionMode === "multi" ? multiExtractionPrompt : singleExtractionPrompt;
+
         const response = await model.generateContent([
             extractionPrompt,
             {
@@ -374,41 +482,52 @@ Reglas:
 
         const rawText = response.response.text();
         const parsedJson = JSON.parse(extractJsonObject(rawText));
-        const extracted = extractionSchema.parse(parsedJson);
 
-        const direction = inferDirection(extracted, fallbackDirection);
-        const account = pickAccountByHint(accounts, extracted, selectedAccountId);
-        const category = pickCategoryByHint(categories, extracted, direction);
-        const todayIso = new Date().toISOString().slice(0, 10);
+        const extractedRows: ExtractedObject[] = (() => {
+            if (extractionMode === "multi") {
+                const normalized = Array.isArray(parsedJson)
+                    ? { transactions: parsedJson }
+                    : parsedJson;
+                const parsed = multiExtractionSchema.parse(normalized);
+                return parsed.transactions;
+            }
 
-        const date = normalizeIsoDate(extracted.date) || todayIso;
-        const description = fallbackDescription(extracted, file.name);
-        const amount = Math.max(Number(extracted.amount || 0), 0);
-        const currency = sanitizeCurrency(extracted.currency, account?.currency || orgCurrency);
+            const parsed = extractionSchema.parse(parsedJson);
+            return [parsed];
+        })();
 
+        const normalizedRows: ExtractedNormalizedRow[] = [];
         const warnings: string[] = [];
-        if (amount <= 0) warnings.push("No se detectó monto exacto. Revisa antes de guardar.");
-        if (!normalizeIsoDate(extracted.date)) warnings.push("Se usó la fecha de hoy por falta de fecha clara en el documento.");
-        if (!category) warnings.push("No se encontró categoría exacta; selecciona una manualmente si aplica.");
 
-        const confidence = typeof extracted.confidence === "number" ? extracted.confidence : 0.65;
+        extractedRows.forEach((source, index) => {
+            const { normalized, warnings: rowWarnings } = materializeExtraction(
+                source,
+                file.name,
+                accounts,
+                categories,
+                fallbackDirection,
+                selectedAccountId,
+                orgCurrency,
+                extractedRows.length > 1 ? index + 1 : undefined
+            );
+
+            normalizedRows.push(normalized);
+            warnings.push(...rowWarnings);
+        });
+
+        if (normalizedRows.length === 0) {
+            warnings.push("No se detectaron movimientos claros en el documento.");
+        }
+
+        const readyToSaveCount = normalizedRows.filter((row) => row.ready_to_save).length;
 
         return NextResponse.json({
             success: true,
-            extracted: {
-                date,
-                description,
-                amount,
-                direction,
-                currency,
-                account_id: account?.id || "",
-                account_name: account?.name || null,
-                category_gl_id: category?.id || "",
-                category_name: category?.name || null,
-                notes: buildNotes(extracted, file.name),
-                confidence,
-                ready_to_save: Boolean(account?.id && description && amount > 0),
-            },
+            mode: extractionMode,
+            extracted: normalizedRows[0] || null,
+            extracted_items: normalizedRows,
+            total_detected: normalizedRows.length,
+            ready_to_save_count: readyToSaveCount,
             warnings,
         });
     } catch (error) {

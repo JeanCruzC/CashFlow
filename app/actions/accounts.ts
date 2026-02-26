@@ -6,6 +6,15 @@ import { requireOrgActorContext, requireOrgContext } from "@/lib/server/context"
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
 
+function isMissingTableError(error: unknown) {
+    if (!error || typeof error !== "object") return false;
+    const value = error as { code?: unknown; message?: unknown; details?: unknown };
+    const code = typeof value.code === "string" ? value.code : "";
+    const message = typeof value.message === "string" ? value.message.toLowerCase() : "";
+    const details = typeof value.details === "string" ? value.details.toLowerCase() : "";
+    return code === "42P01" || message.includes("does not exist") || details.includes("does not exist");
+}
+
 export async function getAccounts() {
     const { supabase, orgId } = await requireOrgContext();
 
@@ -73,4 +82,23 @@ export async function getAccountBalances(): Promise<Record<string, number>> {
     }
 
     return balanceMap;
+}
+
+export async function getPartnerContribution(): Promise<number> {
+    const { supabase, orgId } = await requireOrgContext();
+
+    const { data, error } = await supabase
+        .from("org_financial_profile")
+        .select("partner_contribution")
+        .eq("org_id", orgId)
+        .maybeSingle();
+
+    if (error) {
+        if (!isMissingTableError(error)) {
+            logError("Error fetching partner contribution", error, { orgId });
+        }
+        return 0;
+    }
+
+    return Math.max(Number(data?.partner_contribution || 0), 0);
 }

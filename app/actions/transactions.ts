@@ -157,6 +157,60 @@ export async function createTransaction(input: TransactionInput) {
     return { success: true };
 }
 
+export async function createTransactionsBatch(inputs: TransactionInput[]) {
+    if (!Array.isArray(inputs) || inputs.length === 0) {
+        return { error: "No hay movimientos para registrar." };
+    }
+
+    if (inputs.length > 200) {
+        return { error: "Máximo 200 movimientos por carga." };
+    }
+
+    const { supabase, user, orgId } = await requireOrgActorContext();
+
+    try {
+        assertRateLimit({
+            key: `create-transaction-batch:${user.id}`,
+            limit: 20,
+            windowMs: 60_000,
+        });
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Límite de solicitudes excedido" };
+    }
+
+    const rows = [] as Array<TransactionInput & { org_id: string; created_by: string }>;
+
+    for (let index = 0; index < inputs.length; index += 1) {
+        const validation = transactionSchema.safeParse(inputs[index]);
+        if (!validation.success) {
+            return {
+                error: `Movimiento ${index + 1} inválido: ${validation.error.issues[0]?.message || validation.error.message}`,
+            };
+        }
+
+        rows.push({
+            ...validation.data,
+            org_id: orgId,
+            created_by: user.id,
+        });
+    }
+
+    const { error } = await supabase.from("transactions").insert(rows);
+
+    if (error) {
+        logError("Error creating transaction batch", error, {
+            orgId,
+            userId: user.id,
+            rows: rows.length,
+        });
+        return { error: "No se pudieron crear los movimientos." };
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/transactions");
+    return { success: true, inserted: rows.length };
+}
+
 export async function updateTransaction(id: string, input: TransactionInput) {
     const safeId = sanitizeUuid(id);
     if (!safeId) {

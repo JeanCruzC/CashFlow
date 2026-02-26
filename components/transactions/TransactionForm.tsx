@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
-import { createTransaction, updateTransaction } from "@/app/actions/transactions";
+import { createTransaction, createTransactionsBatch, updateTransaction } from "@/app/actions/transactions";
 import { Select } from "@/components/ui/Select";
 import { Account, CategoryGL } from "@/lib/types/finance";
 
@@ -46,7 +46,11 @@ interface ExtractDocumentResponse {
     success?: boolean;
     error?: string;
     warnings?: string[];
+    mode?: "single" | "multi";
     extracted?: ExtractedTransactionDraft;
+    extracted_items?: ExtractedTransactionDraft[];
+    total_detected?: number;
+    ready_to_save_count?: number;
 }
 
 function toInputDate(value?: string) {
@@ -88,7 +92,10 @@ export function TransactionForm({
     const [scanError, setScanError] = useState<string | null>(null);
     const [scanNotice, setScanNotice] = useState<string | null>(null);
     const [autoCreateFromDocument, setAutoCreateFromDocument] = useState(true);
+    const [multiMovementMode, setMultiMovementMode] = useState(false);
+    const [batchPending, setBatchPending] = useState(false);
     const [extractedDraft, setExtractedDraft] = useState<ExtractedTransactionDraft | null>(null);
+    const [extractedItems, setExtractedItems] = useState<ExtractedTransactionDraft[]>([]);
 
     const selectedAccountCurrency = useMemo(() => {
         const accountCurrency = accounts.find((account) => account.id === accountId)?.currency;
@@ -107,6 +114,11 @@ export function TransactionForm({
                 return !["revenue", "other_income", "income"].includes(category.kind);
             }),
         [categories, direction]
+    );
+
+    const readyExtractedItems = useMemo(
+        () => extractedItems.filter((item) => item.ready_to_save),
+        [extractedItems]
     );
 
     function resolveCurrencyByAccountId(accountIdValue: string, fallbackCurrency?: string | null) {
@@ -178,6 +190,35 @@ export function TransactionForm({
         router.refresh();
     }
 
+    async function persistExtractedBatch(drafts: ExtractedTransactionDraft[]) {
+        const payloads = drafts
+            .filter((draft) => draft.ready_to_save)
+            .map((draft) =>
+                buildPayloadFromValues({
+                    directionValue: draft.direction,
+                    amountValue: String(draft.amount),
+                    descriptionValue: draft.description,
+                    dateValue: draft.date,
+                    accountIdValue: draft.account_id,
+                    categoryIdValue: draft.category_gl_id || "",
+                    notesValue: draft.notes || "",
+                    currencyHint: draft.currency,
+                })
+            );
+
+        if (payloads.length === 0) {
+            throw new Error("No hay movimientos listos para guardar. Revisa los datos detectados.");
+        }
+
+        const result = await createTransactionsBatch(payloads);
+        if (result.error) {
+            throw new Error(result.error);
+        }
+
+        router.push("/dashboard/transactions");
+        router.refresh();
+    }
+
     function applyExtractedDraftToForm(draft: ExtractedTransactionDraft) {
         setDirection(draft.direction);
         setAmount(String(draft.amount));
@@ -186,6 +227,24 @@ export function TransactionForm({
         if (draft.account_id) setAccountId(draft.account_id);
         if (draft.category_gl_id) setCategoryId(draft.category_gl_id);
         if (draft.notes) setNotes(draft.notes);
+    }
+
+    async function handleSaveDetectedBatch() {
+        setScanError(null);
+        setError(null);
+        setBatchPending(true);
+
+        try {
+            await persistExtractedBatch(extractedItems);
+        } catch (batchIssue) {
+            setScanError(
+                batchIssue instanceof Error
+                    ? batchIssue.message
+                    : "No se pudieron guardar los movimientos detectados."
+            );
+        } finally {
+            setBatchPending(false);
+        }
     }
 
     async function handleAnalyzeDocument() {
@@ -197,6 +256,7 @@ export function TransactionForm({
         setScanError(null);
         setScanNotice(null);
         setError(null);
+        setExtractedItems([]);
         setScanPending(true);
 
         try {
@@ -204,6 +264,7 @@ export function TransactionForm({
             formData.append("file", documentFile);
             formData.append("selected_account_id", accountId);
             formData.append("selected_direction", direction);
+            formData.append("extraction_mode", multiMovementMode ? "multi" : "single");
 
             const response = await fetch("/api/transactions/extract-document", {
                 method: "POST",
@@ -216,23 +277,42 @@ export function TransactionForm({
                 throw new Error(payload.error || "No se pudo analizar el documento.");
             }
 
-            const extracted = payload.extracted;
+            const extractedItemsFromApi =
+                payload.extracted_items && payload.extracted_items.length > 0
+                    ? payload.extracted_items
+                    : payload.extracted
+                        ? [payload.extracted]
+                        : [];
+
+            if (extractedItemsFromApi.length === 0) {
+                throw new Error("No se detectaron movimientos claros en el documento.");
+            }
+
+            const extracted = extractedItemsFromApi[0];
             applyExtractedDraftToForm(extracted);
             setExtractedDraft(extracted);
+            setExtractedItems(extractedItemsFromApi);
 
-            if (mode === "create" && autoCreateFromDocument && extracted.ready_to_save) {
-                const autoPayload = buildPayloadFromValues({
-                    directionValue: extracted.direction,
-                    amountValue: String(extracted.amount),
-                    descriptionValue: extracted.description,
-                    dateValue: extracted.date,
-                    accountIdValue: extracted.account_id,
-                    categoryIdValue: extracted.category_gl_id || "",
-                    notesValue: extracted.notes || "",
-                    currencyHint: extracted.currency,
-                });
+            const readyItems = extractedItemsFromApi.filter((item) => item.ready_to_save);
 
-                await persistTransaction(autoPayload);
+            if (mode === "create" && autoCreateFromDocument && readyItems.length > 0) {
+                if (readyItems.length === 1) {
+                    const autoPayload = buildPayloadFromValues({
+                        directionValue: readyItems[0].direction,
+                        amountValue: String(readyItems[0].amount),
+                        descriptionValue: readyItems[0].description,
+                        dateValue: readyItems[0].date,
+                        accountIdValue: readyItems[0].account_id,
+                        categoryIdValue: readyItems[0].category_gl_id || "",
+                        notesValue: readyItems[0].notes || "",
+                        currencyHint: readyItems[0].currency,
+                    });
+
+                    await persistTransaction(autoPayload);
+                    return;
+                }
+
+                await persistExtractedBatch(readyItems);
                 return;
             }
 
@@ -241,7 +321,14 @@ export function TransactionForm({
                     ? ` Avisos: ${payload.warnings.join(" ")}`
                     : "";
 
-            setScanNotice(`Documento analizado y formulario autocompletado.${warningText}`);
+            if (extractedItemsFromApi.length > 1) {
+                const readyCount = payload.ready_to_save_count ?? readyItems.length;
+                setScanNotice(
+                    `Documento analizado: ${extractedItemsFromApi.length} movimientos detectados, ${readyCount} listos para guardar.${warningText}`
+                );
+            } else {
+                setScanNotice(`Documento analizado y formulario autocompletado.${warningText}`);
+            }
         } catch (scanIssue) {
             setScanError(
                 scanIssue instanceof Error
@@ -342,7 +429,7 @@ export function TransactionForm({
                 ) : null}
 
                 {mode === "create" ? (
-                    <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+                    <section id="documento-movimiento" className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
                         <h2 className="text-base font-semibold text-[#0f2233]">0. Cargar comprobante (opcional)</h2>
                         <p className="mt-1 text-sm text-surface-500">
                             Sube boletas, vouchers, capturas de Yape/Plin o estados de cuenta para autocompletar el movimiento.
@@ -358,6 +445,7 @@ export function TransactionForm({
                                     setScanError(null);
                                     setScanNotice(null);
                                     setExtractedDraft(null);
+                                    setExtractedItems([]);
                                 }}
                                 className="input-field file:mr-3 file:rounded-lg file:border-0 file:bg-[#e9f2ff] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0f4c81] hover:file:bg-[#dbe9ff]"
                             />
@@ -376,10 +464,20 @@ export function TransactionForm({
                                 Guardar automáticamente si la extracción está lista
                             </label>
 
+                            <label className="inline-flex items-center gap-2 text-sm text-surface-700">
+                                <input
+                                    type="checkbox"
+                                    checked={multiMovementMode}
+                                    onChange={(event) => setMultiMovementMode(event.target.checked)}
+                                    className="h-4 w-4 rounded border border-[#c8d7eb]"
+                                />
+                                Documento con varios movimientos (estado de cuenta)
+                            </label>
+
                             <div className="flex flex-wrap gap-2">
                                 <button
                                     type="button"
-                                    disabled={scanPending || isPending || !documentFile}
+                                    disabled={scanPending || isPending || batchPending || !documentFile}
                                     onClick={handleAnalyzeDocument}
                                     className="btn-secondary"
                                 >
@@ -387,12 +485,13 @@ export function TransactionForm({
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={scanPending || isPending}
+                                    disabled={scanPending || isPending || batchPending}
                                     onClick={() => {
                                         setDocumentFile(null);
                                         setScanError(null);
                                         setScanNotice(null);
                                         setExtractedDraft(null);
+                                        setExtractedItems([]);
                                         if (documentInputRef.current) {
                                             documentInputRef.current.value = "";
                                         }
@@ -401,6 +500,18 @@ export function TransactionForm({
                                 >
                                     Limpiar archivo
                                 </button>
+                                {extractedItems.length > 1 ? (
+                                    <button
+                                        type="button"
+                                        disabled={scanPending || isPending || batchPending || readyExtractedItems.length === 0}
+                                        onClick={handleSaveDetectedBatch}
+                                        className="btn-primary"
+                                    >
+                                        {batchPending
+                                            ? "Guardando movimientos..."
+                                            : `Cargar ${readyExtractedItems.length} movimientos`}
+                                    </button>
+                                ) : null}
                             </div>
 
                             {scanError ? (
@@ -418,6 +529,60 @@ export function TransactionForm({
                             {extractedDraft ? (
                                 <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3 text-sm text-surface-700">
                                     Detectado: <strong>{extractedDraft.description}</strong> · {extractedDraft.direction === "income" ? "Ingreso" : "Egreso"} · {extractedDraft.currency} {extractedDraft.amount.toFixed(2)} · Confianza {Math.round(extractedDraft.confidence * 100)}%
+                                </div>
+                            ) : null}
+
+                            {extractedItems.length > 1 ? (
+                                <div className="rounded-xl border border-[#d9e2f0] bg-white px-4 py-3">
+                                    <p className="text-sm font-semibold text-[#0f2233]">
+                                        Movimientos detectados ({extractedItems.length})
+                                    </p>
+                                    <p className="mt-1 text-xs text-surface-500">
+                                        Revisa los detectados. Puedes ajustar el primero en el formulario o cargar todos los listos.
+                                    </p>
+
+                                    <div className="mt-3 max-h-64 overflow-auto rounded-lg border border-[#e8eef7]">
+                                        <table className="w-full min-w-[760px] text-xs">
+                                            <thead className="bg-[#f5f9ff] text-left text-surface-500">
+                                                <tr>
+                                                    <th className="px-3 py-2">Fecha</th>
+                                                    <th className="px-3 py-2">Descripción</th>
+                                                    <th className="px-3 py-2">Tipo</th>
+                                                    <th className="px-3 py-2 text-right">Monto</th>
+                                                    <th className="px-3 py-2">Cuenta</th>
+                                                    <th className="px-3 py-2">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-[#edf2f9] bg-white">
+                                                {extractedItems.map((item, index) => (
+                                                    <tr key={`${item.date}-${item.description}-${index}`}>
+                                                        <td className="px-3 py-2 text-surface-600">{item.date}</td>
+                                                        <td className="px-3 py-2 text-[#0f2233]">{item.description}</td>
+                                                        <td className="px-3 py-2 text-surface-600">
+                                                            {item.direction === "income" ? "Ingreso" : "Egreso"}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right font-semibold text-[#0f2233]">
+                                                            {item.currency} {item.amount.toFixed(2)}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-surface-600">
+                                                            {item.account_name || "Sin cuenta"}
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <span
+                                                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
+                                                                    item.ready_to_save
+                                                                        ? "border-[#bfdfca] bg-[#eef9f1] text-positive-700"
+                                                                        : "border-[#f1d3cf] bg-[#fff5f4] text-negative-600"
+                                                                }`}
+                                                            >
+                                                                {item.ready_to_save ? "Listo" : "Revisar"}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             ) : null}
                         </div>
@@ -580,14 +745,14 @@ export function TransactionForm({
                     <button
                         type="button"
                         onClick={() => router.back()}
-                        disabled={isPending}
+                        disabled={isPending || batchPending}
                         className="btn-secondary"
                     >
                         Cancelar
                     </button>
                     <button
                         type="submit"
-                        disabled={isPending}
+                        disabled={isPending || batchPending}
                         className="btn-primary min-w-[180px]"
                     >
                         {isPending ? "Guardando..." : submitLabel}

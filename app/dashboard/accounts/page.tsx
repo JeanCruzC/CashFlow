@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAccounts, getAccountBalances } from "@/app/actions/accounts";
+import { getAccounts, getAccountBalances, getPartnerContribution } from "@/app/actions/accounts";
 import { getOrgSettings } from "@/app/actions/settings";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
@@ -28,6 +28,13 @@ function balanceTone(value: number) {
     return "text-surface-600";
 }
 
+function normalizeLabel(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
 function accountPriority(account: Account, balance: number): PriorityLevel {
     if ((account.account_type === "credit_card" || account.account_type === "loan") && balance < 0) {
         return "critical";
@@ -39,10 +46,11 @@ function accountPriority(account: Account, balance: number): PriorityLevel {
 }
 
 export default async function AccountsPage() {
-    const [accounts, balanceMap, orgSettings] = await Promise.all([
+    const [accounts, balanceMap, orgSettings, partnerContribution] = await Promise.all([
         getAccounts() as Promise<Account[]>,
         getAccountBalances(),
         getOrgSettings(),
+        getPartnerContribution(),
     ]);
 
     const locale = orgSettings?.preferred_locale === "en" ? "en-US" : "es-PE";
@@ -50,26 +58,54 @@ export default async function AccountsPage() {
     const formatMoney = (value: number, currency = baseCurrency) =>
         new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
 
+    const hasSharedPartnerAccount = accounts.some((account) => {
+        const normalizedName = normalizeLabel(account.name);
+        return normalizedName.includes("cuenta compartida") || normalizedName.includes("shared account");
+    });
+
+    const accountRows =
+        partnerContribution > 0 && !hasSharedPartnerAccount
+            ? [
+                ...accounts,
+                {
+                    id: "virtual-partner-shared-account",
+                    org_id: accounts[0]?.org_id || "virtual",
+                    name: "Cuenta compartida (pareja)",
+                    account_type: "bank",
+                    currency: baseCurrency,
+                    opening_balance: partnerContribution,
+                    credit_limit: null,
+                    interest_rate_apr: null,
+                    payment_day: null,
+                    card_payment_strategy: null,
+                    minimum_payment_amount: null,
+                    is_restricted_cash: false,
+                    is_active: true,
+                    created_at: new Date().toISOString(),
+                } satisfies Account,
+            ]
+            : accounts;
+
     const getRealBalance = (account: Account) => {
         const txnSum = balanceMap[account.id] || 0;
         return Number(account.opening_balance) + txnSum;
     };
 
-    const liquidAccounts = accounts.filter(
+    const liquidAccounts = accountRows.filter(
         (account) => account.account_type === "cash" || account.account_type === "bank"
     );
-    const debtAccounts = accounts.filter(
+    const debtAccounts = accountRows.filter(
         (account) =>
             account.account_type === "credit_card" || account.account_type === "loan"
     );
-    const investmentAccounts = accounts.filter(
+    const investmentAccounts = accountRows.filter(
         (account) => account.account_type === "investment"
     );
 
-    const assets = accounts
+    const assets = accountRows
         .filter((account) => getRealBalance(account) >= 0)
         .reduce((sum, account) => sum + getRealBalance(account), 0);
-    const liabilities = accounts
+    const liabilities = accountRows
         .filter((account) => getRealBalance(account) < 0)
         .reduce((sum, account) => sum + Math.abs(getRealBalance(account)), 0);
     const netWorth = assets - liabilities;
@@ -277,7 +313,7 @@ export default async function AccountsPage() {
                     Vista tabular densa con prioridad operativa para revisión diaria.
                 </p>
 
-                {accounts.length === 0 ? (
+                {accountRows.length === 0 ? (
                     <div className="mt-4 rounded-xl border border-dashed border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
                         Todavía no tienes cuentas activas.
                     </div>
@@ -296,7 +332,7 @@ export default async function AccountsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {accounts.map((account) => {
+                                    {accountRows.map((account) => {
                                         const balance = getRealBalance(account);
                                         const priority = accountPriority(account, balance);
 
