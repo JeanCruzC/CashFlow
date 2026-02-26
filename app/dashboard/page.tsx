@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getDashboardKPIs } from "@/app/actions/dashboard";
 import { CashFlowChart } from "@/components/ui/CashFlowChart";
+import { HoverMetricCard } from "@/components/ui/HoverMetricCard";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import { SpendingMixChart } from "@/components/ui/SpendingMixChart";
 
 type Locale = "es" | "en";
@@ -185,109 +187,142 @@ export default async function DashboardPage() {
         ? goalProgress(topGoal.current_amount, topGoal.target_amount)
         : 0;
 
+    const fixedRatio = cycleTotal > 0 ? (fixedExpenses / cycleTotal) * 100 : 0;
+    const variableRatio = cycleTotal > 0 ? (variableExpenses / cycleTotal) * 100 : 0;
+    const cardRatio = cycleTotal > 0 ? (cardPaymentsTotal / cycleTotal) * 100 : 0;
+    const savingsRatio = cycleTotal > 0 ? (aiSavings / cycleTotal) * 100 : 0;
+
+    const cardFull = cycle?.fullCardPayments || 0;
+    const cardMinFixed = cycle?.revolvingMinimumPayments || 0;
+    const prioritiesLabel = savingsPlan?.savingsPriorities.length
+        ? savingsPlan.savingsPriorities
+            .map((priority) => savingsPriorityLabel(priority).replace(/^./, (char) => char.toLowerCase()))
+            .join(" · ")
+        : "No hay prioridades configuradas";
+
+    const incomeBadgeLabel = nextIncomeDay
+        ? `Proximo ingreso: dia ${nextIncomeDay}${
+            nextIncomeDelta != null
+                ? nextIncomeDelta === 0
+                    ? " · hoy"
+                    : ` · en ${nextIncomeDelta} dias`
+                : ""
+        }`
+        : "Proximo ingreso: sin fecha";
+
+    const cardBadgeLabel = nextCardDay
+        ? `Proximo pago tarjeta: dia ${nextCardDay}${
+            nextCardDelta != null
+                ? nextCardDelta === 0
+                    ? " · hoy"
+                    : ` · en ${nextCardDelta} dias`
+                : ""
+        }`
+        : "Proximo pago tarjeta: sin fecha";
+
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="relative overflow-hidden rounded-3xl border border-[#d9e2f0] bg-[radial-gradient(circle_at_18%_0%,#eaf4ff_0%,#f8fbff_46%,#ffffff_100%)] p-6 shadow-card md:p-8">
-                <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#cbe2ff_0%,rgba(203,226,255,0)_70%)]" />
-                <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[radial-gradient(circle,#d4f0ea_0%,rgba(212,240,234,0)_70%)]" />
-
-                <div className="relative grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
-                            Panorama simple · {format.dayMonth.format(today)}
-                        </p>
-                        <h2 className="mt-2 text-4xl font-semibold tracking-tight text-[#0f2233] md:text-5xl">
-                            Asi estas hoy
-                        </h2>
-                        <p className="mt-2 max-w-xl text-sm text-surface-600">
-                            Mostramos lo esencial: disponible actual, gastos clave, tarjetas y metas.
-                        </p>
-
-                        <p className="mt-6 text-5xl font-semibold text-[#0f2233] md:text-6xl">
-                            {format.moneyCompact.format(availableNow)}
-                        </p>
-                        <p className="mt-2 text-sm font-medium text-surface-600">
-                            Dinero actual en banco y efectivo.
-                        </p>
-
-                        <div className="mt-5 flex flex-wrap gap-2">
-                            <span className="rounded-full border border-[#c7dbf2] bg-white/80 px-3 py-1 text-xs font-medium text-[#0d4c7a]">
-                                Proximo ingreso: {nextIncomeDay ? `dia ${nextIncomeDay}` : "sin fecha"}
-                                {nextIncomeDelta != null
-                                    ? nextIncomeDelta === 0
-                                        ? " · hoy"
-                                        : ` · en ${nextIncomeDelta} dias`
-                                    : ""}
-                            </span>
-                            <span className="rounded-full border border-[#f2d4cc] bg-white/80 px-3 py-1 text-xs font-medium text-[#a54432]">
-                                Proximo pago tarjeta: {nextCardDay ? `dia ${nextCardDay}` : "sin fecha"}
-                                {nextCardDelta != null
-                                    ? nextCardDelta === 0
-                                        ? " · hoy"
-                                        : ` · en ${nextCardDelta} dias`
-                                    : ""}
-                            </span>
-                            {topGoal ? (
-                                <span className="rounded-full border border-[#d8e8c8] bg-white/80 px-3 py-1 text-xs font-medium text-[#46631f]">
-                                    Meta activa: {topGoal.name}
-                                </span>
-                            ) : null}
-                        </div>
-
-                        <div className="mt-6 flex flex-wrap gap-2">
-                            <Link
-                                href="/dashboard/transactions/new"
-                                className="btn-primary text-sm no-underline hover:text-white"
-                            >
-                                + Nuevo movimiento
-                            </Link>
-                            <Link
-                                href="/dashboard/transactions"
-                                className="btn-secondary text-sm no-underline"
-                            >
-                                Ver movimientos
-                            </Link>
-                        </div>
-                    </div>
-
-                    <article className="rounded-2xl border border-[#d9e2f0] bg-white/90 p-5 shadow-card backdrop-blur-sm">
+            <ModuleHero
+                eyebrow={`Panorama simple · ${format.dayMonth.format(today)}`}
+                title="Asi estas hoy"
+                description="Mostramos lo esencial: disponible actual, gastos clave, tarjetas y metas."
+                actions={
+                    <>
+                        <Link
+                            href="/dashboard/transactions/new"
+                            className="btn-primary text-sm no-underline hover:text-white"
+                        >
+                            + Nuevo movimiento
+                        </Link>
+                        <Link
+                            href="/dashboard/transactions"
+                            className="btn-secondary text-sm no-underline"
+                        >
+                            Ver movimientos
+                        </Link>
+                    </>
+                }
+                rightPanel={
+                    <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
                             Tu ciclo mensual
                         </p>
 
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {[
-                                {
-                                    label: "Gastos fijos",
-                                    value: fixedExpenses,
-                                    tone: "text-[#0f2233]",
-                                },
-                                {
-                                    label: "Gastos variables",
-                                    value: variableExpenses,
-                                    tone: "text-[#0f2233]",
-                                },
-                                {
-                                    label: "Pagos de tarjeta",
-                                    value: cardPaymentsTotal,
-                                    tone: "text-negative-600",
-                                },
-                                {
-                                    label: "Ahorro IA",
-                                    value: aiSavings,
-                                    tone: "text-[#117068]",
-                                },
-                            ].map((item) => (
-                                <div
-                                    key={item.label}
-                                    className="rounded-xl border border-[#d9e2f0] bg-[#fbfdff] px-3 py-3"
-                                >
-                                    <p className="text-xs text-surface-500">{item.label}</p>
-                                    <p className={`mt-1 text-lg font-semibold ${item.tone}`}>
-                                        {format.moneyCompact.format(item.value)}
-                                    </p>
-                                </div>
-                            ))}
+                            <HoverMetricCard
+                                label="Gastos fijos"
+                                value={format.moneyCompact.format(fixedExpenses)}
+                                details={[
+                                    {
+                                        label: "Total planificado",
+                                        value: format.money.format(fixedExpenses),
+                                    },
+                                    {
+                                        label: "Peso en el ciclo",
+                                        value: `${format.percent.format(fixedRatio)}%`,
+                                    },
+                                ]}
+                                footer="Incluye rubros recurrentes de vivienda, servicios y compromisos no movibles."
+                            />
+                            <HoverMetricCard
+                                label="Gastos variables"
+                                value={format.moneyCompact.format(variableExpenses)}
+                                details={[
+                                    {
+                                        label: "Total planificado",
+                                        value: format.money.format(variableExpenses),
+                                    },
+                                    {
+                                        label: "Peso en el ciclo",
+                                        value: `${format.percent.format(variableRatio)}%`,
+                                    },
+                                ]}
+                                footer="Incluye consumo flexible del mes: compras, ocio, traslados y ajustes diarios."
+                            />
+                            <HoverMetricCard
+                                label="Pagos de tarjeta"
+                                value={format.moneyCompact.format(cardPaymentsTotal)}
+                                valueClassName="text-negative-600"
+                                details={[
+                                    {
+                                        label: "Pago total",
+                                        value: format.money.format(cardFull),
+                                    },
+                                    {
+                                        label: "Pago minimo/fijo",
+                                        value: format.money.format(cardMinFixed),
+                                    },
+                                    {
+                                        label: "Tarjetas activas",
+                                        value: String(sortedCards.length),
+                                    },
+                                    {
+                                        label: "Peso en el ciclo",
+                                        value: `${format.percent.format(cardRatio)}%`,
+                                    },
+                                ]}
+                                footer="Detalle calculado segun dia de pago y estrategia configurada por tarjeta."
+                            />
+                            <HoverMetricCard
+                                label="Ahorro IA"
+                                value={format.moneyCompact.format(aiSavings)}
+                                valueClassName="text-[#117068]"
+                                details={[
+                                    {
+                                        label: "Pool mensual sugerido",
+                                        value: format.money.format(aiSavings),
+                                    },
+                                    {
+                                        label: "Porcentaje de ahorro",
+                                        value: `${format.percent.format(savingsPlan?.savingsPct || 0)}%`,
+                                    },
+                                    {
+                                        label: "Peso en el ciclo",
+                                        value: `${format.percent.format(savingsRatio)}%`,
+                                    },
+                                ]}
+                                footer={prioritiesLabel}
+                            />
                         </div>
 
                         <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
@@ -304,30 +339,30 @@ export default async function DashboardPage() {
                                 </span>
                             </div>
                         </div>
+                    </>
+                }
+            >
+                <p className="mt-6 text-5xl font-semibold text-[#0f2233] md:text-6xl">
+                    {format.moneyCompact.format(availableNow)}
+                </p>
+                <p className="mt-2 text-sm font-medium text-surface-600">
+                    Dinero actual en banco y efectivo.
+                </p>
 
-                        {savingsPlan ? (
-                            <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-white px-3 py-3">
-                                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                                    Distribucion IA de ahorro
-                                </p>
-                                <p className="mt-1 text-sm text-surface-600">
-                                    {format.percent.format(savingsPlan.savingsPct)}% del ingreso sugerido a ahorro.
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {savingsPlan.savingsPriorities.map((priority) => (
-                                        <span
-                                            key={priority}
-                                            className="rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-medium text-[#0d4c7a]"
-                                        >
-                                            {savingsPriorityLabel(priority)}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : null}
-                    </article>
+                <div className="mt-5 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-[#c7dbf2] bg-white/80 px-3 py-1 text-xs font-medium text-[#0d4c7a]">
+                        {incomeBadgeLabel}
+                    </span>
+                    <span className="rounded-full border border-[#f2d4cc] bg-white/80 px-3 py-1 text-xs font-medium text-[#a54432]">
+                        {cardBadgeLabel}
+                    </span>
+                    {topGoal ? (
+                        <span className="rounded-full border border-[#d8e8c8] bg-white/80 px-3 py-1 text-xs font-medium text-[#46631f]">
+                            Meta activa: {topGoal.name}
+                        </span>
+                    ) : null}
                 </div>
-            </section>
+            </ModuleHero>
 
             <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">

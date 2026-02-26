@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { deleteTransaction } from "@/app/actions/transactions";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import { Transaction } from "@/lib/types/finance";
 
 interface TransactionWithJoins extends Transaction {
@@ -216,39 +217,14 @@ export function TransactionGrid({
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
-                            Ciclo mensual · Registrar
-                        </p>
-                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">Libro de movimientos</h1>
-                        <p className="mt-2 text-sm text-surface-600">
-                            Registro operativo de ingresos y egresos. Esta data alimenta el panorama,
-                            el control presupuestal y la proyección.
-                        </p>
-
-                        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
-                                <p className="text-xs text-surface-500">Movimientos</p>
-                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">{totalCount}</p>
-                            </article>
-                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
-                                <p className="text-xs text-surface-500">Filtros activos</p>
-                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">{activeFilterCount}</p>
-                            </article>
-                            <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
-                                <p className="text-xs text-surface-500">Rango visible</p>
-                                <p className="mt-1 text-lg font-semibold text-[#0f2233]">
-                                    {showingFrom}-{showingTo}
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-
-                    <aside className="rounded-2xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+            <ModuleHero
+                eyebrow="Ciclo mensual · Registrar"
+                title="Libro de movimientos"
+                description="Registro operativo de ingresos y egresos. Esta data alimenta el panorama, el control presupuestal y la proyeccion."
+                rightPanel={
+                    <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Acciones rápidas
+                            Acciones rapidas
                         </p>
                         <p className="mt-1 text-sm text-surface-600">
                             Importa, exporta o registra manualmente en segundos.
@@ -280,9 +256,26 @@ export function TransactionGrid({
                                 Nuevo movimiento
                             </Link>
                         </div>
-                    </aside>
+                    </>
+                }
+            >
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
+                        <p className="text-xs text-surface-500">Movimientos</p>
+                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{totalCount}</p>
+                    </article>
+                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
+                        <p className="text-xs text-surface-500">Filtros activos</p>
+                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{activeFilterCount}</p>
+                    </article>
+                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
+                        <p className="text-xs text-surface-500">Rango visible</p>
+                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">
+                            {showingFrom}-{showingTo}
+                        </p>
+                    </article>
                 </div>
-            </section>
+            </ModuleHero>
 
             {error ? (
                 <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">

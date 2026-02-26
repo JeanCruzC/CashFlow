@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getForecastOverview } from "@/app/actions/forecast";
 import { ForecastAssumptionsForm } from "@/components/forecast/ForecastAssumptionsForm";
 import { ForecastChart } from "@/components/ui/ForecastChart";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 
 interface ForecastPageProps {
     searchParams: Promise<{ month?: string; horizon?: string }>;
@@ -79,40 +80,54 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
 
     return (
         <div className="space-y-7 animate-fade-in">
-            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-7 shadow-card">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                            Proyección financiera
+            <ModuleHero
+                eyebrow="Ciclo mensual · Proyectar"
+                title={isPersonal ? "Pronostico de cashflow personal" : "Pronostico operativo del negocio"}
+                description={
+                    isPersonal
+                        ? "Calculamos una proyeccion de ingresos y gastos con base en tu historial real."
+                        : "Combinamos historial y supuestos para estimar revenue, costos, margen y EBIT."
+                }
+                rightPanel={
+                    <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Parametros de simulacion
                         </p>
-                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">
-                            {isPersonal ? "Pronóstico de cashflow personal" : "Pronóstico operativo del negocio"}
-                        </h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            {isPersonal
-                                ? "Calculamos una proyección de ingresos y gastos con base en tu historial real."
-                                : "Combinamos historial y supuestos para estimar revenue, costos, margen y EBIT."}
-                        </p>
-                    </div>
-                    <form method="get" className="flex items-center gap-2">
-                        <select className="input-field w-36 text-sm" name="horizon" defaultValue={String(horizon)}>
-                            <option value="3">3 meses</option>
-                            <option value="6">6 meses</option>
-                            <option value="12">12 meses</option>
-                        </select>
-                        <select className="input-field w-52 text-sm" name="month" defaultValue={month}>
-                            {monthOptions.map((option) => (
-                                <option key={option} value={option}>
-                                    {monthLabel(option)}
-                                </option>
-                            ))}
-                        </select>
-                        <button type="submit" className="btn-secondary text-sm">
-                            Aplicar
-                        </button>
-                    </form>
-                </div>
-            </section>
+                        <form method="get" className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <select className="input-field w-full text-sm" name="horizon" defaultValue={String(horizon)}>
+                                    <option value="3">3 meses</option>
+                                    <option value="6">6 meses</option>
+                                    <option value="12">12 meses</option>
+                                </select>
+                                <select className="input-field w-full text-sm" name="month" defaultValue={month}>
+                                    {monthOptions.map((option) => (
+                                        <option key={option} value={option}>
+                                            {monthLabel(option)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button type="submit" className="btn-secondary w-full text-sm">
+                                Actualizar proyeccion
+                            </button>
+                        </form>
+
+                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-500">Modelo</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {formatModelName(forecast.model.selected_model)}
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Horizonte</span>
+                                <span className="font-semibold text-[#0f2233]">{forecast.horizon_months} meses</span>
+                            </div>
+                        </div>
+                    </>
+                }
+            />
 
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-4">

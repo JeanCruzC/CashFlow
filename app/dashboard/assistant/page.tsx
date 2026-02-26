@@ -1,4 +1,5 @@
 import { getAssistantInsights } from "@/app/actions/assistant";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 
 function formatMoney(amount: number, currency: string) {
     return new Intl.NumberFormat("es-PE", {
@@ -33,34 +34,29 @@ export default async function AssistantPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr] xl:items-start">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-surface-400">
-                            Soporte operativo · Asistente
-                        </p>
-                        <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Recomendaciones financieras</h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            Guarda recomendaciones de ingreso, ahorro y metas para revisar escenarios,
-                            comparar brechas y decidir ajustes concretos de tu plan mensual.
-                        </p>
-                    </div>
-
-                    <article className="rounded-2xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
+            <ModuleHero
+                eyebrow="Soporte operativo · Asistente"
+                title="Recomendaciones financieras"
+                description="Guarda recomendaciones de ingreso, ahorro y metas para revisar escenarios, comparar brechas y decidir ajustes concretos de tu plan mensual."
+                rightPanel={
+                    <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Estado del módulo
+                            Estado del modulo
                         </p>
-                        <p className="mt-1 text-2xl font-semibold text-[#0f2233]">
-                            {insights.length} recomendaciones
-                        </p>
-                        <p className="mt-1 text-sm text-surface-600">
-                            {latest
-                                ? `Última actualización: ${formatDate(latest.created_at)}`
-                                : "Sin recomendaciones guardadas todavía."}
-                        </p>
-                    </article>
-                </div>
-            </section>
+                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-500">Recomendaciones</span>
+                                <span className="font-semibold text-[#0f2233]">{insights.length}</span>
+                            </div>
+                            <div className="mt-2 text-xs text-surface-600">
+                                {latest
+                                    ? `Ultima actualizacion: ${formatDate(latest.created_at)}`
+                                    : "Sin recomendaciones guardadas todavia."}
+                            </div>
+                        </div>
+                    </>
+                }
+            />
 
             {insights.length === 0 ? (
                 <section className="rounded-2xl border border-[#d9e2f0] bg-white px-6 py-10 text-sm text-surface-500 shadow-card">

@@ -3,6 +3,7 @@ import { getBudgetOverview } from "@/app/actions/budgets";
 import { getCategories } from "@/app/actions/categories";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
 import { BudgetBars } from "@/components/ui/BudgetBars";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 
 function getRecentMonths(count = 6) {
     const current = new Date();
@@ -99,42 +100,69 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">Control mensual</p>
-                        <h2 className="mt-2 text-2xl font-semibold text-[#0f2233]">Presupuesto operativo</h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            Define topes por categoría y compáralos contra la ejecución real para {monthLabel(overview.month)}.
+            <ModuleHero
+                eyebrow="Ciclo mensual · Controlar"
+                title="Presupuesto operativo"
+                description={`Define topes por categoria y comparalos contra la ejecucion real para ${monthLabel(overview.month)}.`}
+                actions={
+                    <>
+                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                            Registrar movimiento
+                        </Link>
+                        <Link href="/dashboard/categories" className="btn-secondary text-sm no-underline">
+                            Revisar clasificacion
+                        </Link>
+                    </>
+                }
+                rightPanel={
+                    <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Mes activo
                         </p>
-                    </div>
-                    <form className="flex items-center gap-2" method="get">
-                        <select className="input-field w-56 text-sm" name="month" defaultValue={month}>
-                            {monthOptions.map((option) => (
-                                <option key={option} value={option}>
-                                    {monthLabel(option)}
-                                </option>
-                            ))}
-                        </select>
-                        <button type="submit" className="btn-secondary text-sm">
-                            Aplicar
-                        </button>
-                    </form>
-                </div>
-                <div className="mt-4">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-200">
-                        <div
-                            className={`h-full rounded-full transition-all ${
-                                usageRate >= 100 ? "bg-negative-500" : "bg-[#117068]"
-                            }`}
-                            style={{ width: `${usageRate}%` }}
-                        />
-                    </div>
-                    <p className="mt-2 text-xs text-surface-500">
-                        Uso total del presupuesto: <span className="font-semibold text-[#0f2233]">{Math.round(usageRate)}%</span>
-                    </p>
-                </div>
-            </section>
+                        <form className="mt-3 flex items-center gap-2" method="get">
+                            <select className="input-field w-full text-sm" name="month" defaultValue={month}>
+                                {monthOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                        {monthLabel(option)}
+                                    </option>
+                                ))}
+                            </select>
+                            <button type="submit" className="btn-secondary text-sm">
+                                Aplicar
+                            </button>
+                        </form>
+
+                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-500">Tope total</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {currencyFormatter.format(overview.totalBudget)}
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Ejecucion</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {currencyFormatter.format(overview.totalActual)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-4">
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-200">
+                                <div
+                                    className={`h-full rounded-full transition-all ${
+                                        usageRate >= 100 ? "bg-negative-500" : "bg-[#117068]"
+                                    }`}
+                                    style={{ width: `${usageRate}%` }}
+                                />
+                            </div>
+                            <p className="mt-2 text-xs text-surface-500">
+                                Uso total del presupuesto: <span className="font-semibold text-[#0f2233]">{Math.round(usageRate)}%</span>
+                            </p>
+                        </div>
+                    </>
+                }
+            />
 
             <section className="grid gap-4 md:grid-cols-3">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">

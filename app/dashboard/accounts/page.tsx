@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAccounts, getAccountBalances } from "@/app/actions/accounts";
 import { getOrgSettings } from "@/app/actions/settings";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import { Account } from "@/lib/types/finance";
 
 function accountTypeLabel(type: Account["account_type"]) {
@@ -65,28 +66,47 @@ export default async function AccountsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                            Soporte operativo · Balance
-                        </p>
-                        <h2 className="mt-2 text-2xl font-semibold text-[#0f2233]">Mapa de cuentas</h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            Vista consolidada de liquidez, deudas e inversiones para decidir pagos,
-                            transferencias y capacidad de ahorro.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+            <ModuleHero
+                eyebrow="Soporte operativo · Balance"
+                title="Mapa de cuentas"
+                description="Vista consolidada de liquidez, deudas e inversiones para decidir pagos, transferencias y capacidad de ahorro."
+                actions={
+                    <>
                         <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
                             Administrar estructura
                         </Link>
                         <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
                             Registrar movimiento
                         </Link>
-                    </div>
-                </div>
-            </section>
+                    </>
+                }
+                rightPanel={
+                    <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Resumen rapido
+                        </p>
+                        <div className="mt-4 space-y-2 text-sm">
+                            <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-surface-500">Activos</span>
+                                    <span className="font-semibold text-positive-600">{formatMoney(assets)}</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between">
+                                    <span className="text-surface-500">Pasivos</span>
+                                    <span className="font-semibold text-negative-600">{formatMoney(liabilities)}</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between">
+                                    <span className="text-surface-500">Patrimonio</span>
+                                    <span className="font-semibold text-[#0f2233]">{formatMoney(netWorth)}</span>
+                                </div>
+                            </div>
+                            <p className="text-xs text-surface-500">
+                                Deuda sobre activos: <span className="font-semibold text-[#0f2233]">{leverageRatio.toFixed(1)}%</span>
+                            </p>
+                        </div>
+                    </>
+                }
+            />
 
             <section className="grid gap-4 md:grid-cols-3">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">

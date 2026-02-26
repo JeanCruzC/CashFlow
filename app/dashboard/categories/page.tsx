@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCategories, getOrgType } from "@/app/actions/categories";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import { CategoryGL } from "@/lib/types/finance";
 
 const KIND_ORDER = [
@@ -108,27 +109,44 @@ export default async function CategoriesPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                            Soporte operativo · Clasificación
-                        </p>
-                        <h2 className="mt-2 text-2xl font-semibold text-[#0f2233]">Arquitectura de categorías</h2>
-                        <p className="mt-2 max-w-3xl text-sm text-surface-600">
-                            Una buena clasificación reduce errores en presupuesto y mejora la precisión del pronóstico.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+            <ModuleHero
+                eyebrow="Soporte operativo · Clasificacion"
+                title="Arquitectura de categorias"
+                description="Una buena clasificacion reduce errores en presupuesto y mejora la precision del pronostico."
+                actions={
+                    <>
                         <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
-                            Administrar categorías
+                            Administrar categorias
                         </Link>
                         <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
                             Registrar movimiento
                         </Link>
-                    </div>
-                </div>
-            </section>
+                    </>
+                }
+                rightPanel={
+                    <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Estado de clasificacion
+                        </p>
+                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-500">Workspace</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {orgType === "business" ? "Empresa" : "Personal"}
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Grupos activos</span>
+                                <span className="font-semibold text-[#0f2233]">{sortedKinds.length}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Categorias activas</span>
+                                <span className="font-semibold text-[#0f2233]">{totalCategories}</span>
+                            </div>
+                        </div>
+                    </>
+                }
+            />
 
             <section className="grid gap-4 md:grid-cols-3">
                 <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">

@@ -2,6 +2,7 @@ import { getOrgSettings } from "@/app/actions/settings";
 import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { CategoryCreateForm } from "@/components/categories/CategoryCreateForm";
 import { OrgSettingsForm } from "@/components/settings/OrgSettingsForm";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import Link from "next/link";
 
 export default async function SettingsPage() {
@@ -23,14 +24,34 @@ export default async function SettingsPage() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <section className="rounded-3xl border border-surface-200 bg-white px-6 py-7 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-surface-400">Ajustes</p>
-                <h2 className="mt-2 text-3xl font-semibold text-[#0f2233]">Centro de configuración</h2>
-                <p className="mt-2 max-w-3xl text-sm text-surface-500">
-                    Define país, moneda, idioma, base contable y parámetros tributarios para
-                    mantener consistencia en reportes y automatizaciones. También centraliza la alta de cuentas y categorías.
-                </p>
-            </section>
+            <ModuleHero
+                eyebrow="Soporte operativo · Configuracion"
+                title="Centro de configuracion"
+                description="Define pais, moneda, idioma, base contable y parametros tributarios para mantener consistencia en reportes y automatizaciones."
+                rightPanel={
+                    <>
+                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
+                            Datos base
+                        </p>
+                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-surface-500">Perfil</span>
+                                <span className="font-semibold text-[#0f2233]">
+                                    {settings.type === "business" ? "Empresa" : "Personal"}
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Moneda</span>
+                                <span className="font-semibold text-[#0f2233]">{settings.currency}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                                <span className="text-surface-500">Idioma</span>
+                                <span className="font-semibold text-[#0f2233]">{settings.preferred_locale}</span>
+                            </div>
+                        </div>
+                    </>
+                }
+            />
 
             <section className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card">
                 <h3 className="text-lg font-semibold text-[#10283b]">Parámetros base de la organización</h3>
