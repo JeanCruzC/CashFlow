@@ -4,6 +4,7 @@ import { getCategories } from "@/app/actions/categories";
 import { BudgetCopyForm } from "@/components/budget/BudgetCopyForm";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
 import { BudgetBars } from "@/components/ui/BudgetBars";
+import { HoverMetricCard } from "@/components/ui/HoverMetricCard";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 
 function getRecentMonths(count = 6) {
@@ -94,6 +95,7 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
     const sourceOptions = monthOptions
         .filter((option) => option !== month)
         .map((option) => ({ value: option, label: monthLabel(option) }));
+    const averageBudgetPerCategory = overview.rows.length > 0 ? overview.totalBudget / overview.rows.length : null;
     const chartRows = overview.rows
         .map((row) => ({
             category: friendlyCategoryName(row.category),
@@ -141,11 +143,21 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                         </form>
 
                         <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
-                            <div className="flex items-center justify-between">
+                            <div className="group relative flex items-center justify-between">
                                 <span className="text-surface-500">Plan total</span>
-                                <span className="font-semibold text-[#0f2233]">
-                                    {currencyFormatter.format(overview.totalBudget)}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-[#0f2233]">
+                                        {currencyFormatter.format(overview.totalBudget)}
+                                    </span>
+                                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#9fb4c9] bg-white text-[10px] font-semibold leading-none text-[#0f2233]">
+                                        i
+                                    </span>
+                                </div>
+
+                                <div className="pointer-events-none absolute right-0 top-full z-20 mt-2 w-[min(18rem,calc(100vw-3.5rem))] rounded-xl border border-[#d9e2f0] bg-white p-3 text-xs text-surface-600 opacity-0 shadow-[0_10px_30px_rgba(15,34,51,0.14)] transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                                    <p className="font-semibold text-[#0f2233]">¿Qué muestra este importe?</p>
+                                    <p className="mt-1">Es la suma de topes de todas las categorías del mes, no tu saldo disponible de hoy.</p>
+                                </div>
                             </div>
                             <div className="mt-2 flex items-center justify-between">
                                 <span className="text-surface-500">Gastado</span>
@@ -173,30 +185,58 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
             />
 
             <section className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Plan total del mes</p>
-                    <p className="mt-2 text-3xl font-semibold text-[#0f2233]">
-                        {currencyFormatter.format(overview.totalBudget)}
-                    </p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Gastado registrado</p>
-                    <p className="mt-2 text-3xl font-semibold text-[#0f2233]">
-                        {currencyFormatter.format(overview.totalActual)}
-                    </p>
-                </article>
-                <article
-                    className={`rounded-2xl border p-5 shadow-card ${
-                        remaining >= 0 ? "border-[#bfe1d8] bg-[#eef9f5]" : "border-[#f3dec1] bg-[#fff6ea]"
-                    }`}
-                >
-                    <p className="text-xs font-medium text-surface-500">
-                        {remaining >= 0 ? "Disponible dentro del plan" : "Exceso sobre el plan"}
-                    </p>
-                    <p className={`mt-2 text-3xl font-semibold ${remaining >= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}>
-                        {currencyFormatter.format(Math.abs(remaining))}
-                    </p>
-                </article>
+                <HoverMetricCard
+                    label="Plan total del mes"
+                    value={currencyFormatter.format(overview.totalBudget)}
+                    valueClassName="text-3xl font-semibold text-[#0f2233]"
+                    note="Este valor suma límites por categoría; no es tu saldo de hoy."
+                    details={[
+                        { label: "Mes evaluado", value: monthLabel(overview.month) },
+                        { label: "Categorías con plan", value: String(overview.rows.length) },
+                        {
+                            label: "Promedio por categoría",
+                            value:
+                                averageBudgetPerCategory == null
+                                    ? "Sin categorías aún"
+                                    : currencyFormatter.format(averageBudgetPerCategory),
+                        },
+                        { label: "Moneda", value: overview.currency || "USD" },
+                    ]}
+                />
+
+                <HoverMetricCard
+                    label="Gastado registrado"
+                    value={currencyFormatter.format(overview.totalActual)}
+                    valueClassName="text-3xl font-semibold text-[#0f2233]"
+                    details={[
+                        { label: "Uso del plan", value: `${Math.round(usageRate)}%` },
+                        { label: "Categorías pasadas", value: String(overBudgetCategories) },
+                        {
+                            label: "Categorías dentro del plan",
+                            value: String(Math.max(overview.rows.length - overBudgetCategories, 0)),
+                        },
+                        {
+                            label: remaining >= 0 ? "Todavía disponible" : "Exceso acumulado",
+                            value: currencyFormatter.format(Math.abs(remaining)),
+                        },
+                    ]}
+                />
+
+                <HoverMetricCard
+                    label={remaining >= 0 ? "Disponible dentro del plan" : "Exceso sobre el plan"}
+                    value={currencyFormatter.format(Math.abs(remaining))}
+                    valueClassName={`text-3xl font-semibold ${remaining >= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}
+                    note={remaining >= 0 ? "Vas por debajo del límite total del mes." : "Ya superaste el límite total del mes."}
+                    details={[
+                        { label: "Mes evaluado", value: monthLabel(overview.month) },
+                        { label: "Límite mensual", value: currencyFormatter.format(overview.totalBudget) },
+                        { label: "Gastado real", value: currencyFormatter.format(overview.totalActual) },
+                        {
+                            label: "Estado",
+                            value: remaining >= 0 ? "Aún dentro del plan" : "Fuera del plan",
+                        },
+                    ]}
+                />
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">

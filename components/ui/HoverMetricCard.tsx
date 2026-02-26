@@ -24,6 +24,7 @@ export function HoverMetricCard({
     footer,
     tooltipSide = "top",
 }: HoverMetricCardProps) {
+    const hasTooltipContent = details.length > 0 || Boolean(footer);
     const tooltipPositionClasses =
         tooltipSide === "bottom"
             ? "left-0 top-full mt-2"
@@ -34,11 +35,21 @@ export function HoverMetricCard({
             className="group relative rounded-xl border border-[#d9e2f0] bg-[#fbfdff] px-3 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0d4c7a]/30"
             tabIndex={0}
         >
-            <p className="text-xs text-surface-500">{label}</p>
+            <div className="flex items-center gap-1.5">
+                <p className="text-xs text-surface-500">{label}</p>
+                {hasTooltipContent ? (
+                    <span
+                        aria-label="Información adicional"
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#9fb4c9] bg-white text-[10px] font-semibold leading-none text-[#0f2233]"
+                    >
+                        i
+                    </span>
+                ) : null}
+            </div>
             <p className={`mt-1 text-lg font-semibold ${valueClassName}`}>{value}</p>
             {note ? <p className="mt-1 text-[11px] text-surface-500">{note}</p> : null}
 
-            {(details.length > 0 || footer) && (
+            {hasTooltipContent && (
                 <div
                     className={`pointer-events-none absolute z-30 w-[min(22rem,calc(100vw-2.5rem))] max-w-[22rem] rounded-xl border border-[#d9e2f0] bg-white p-3 shadow-[0_10px_30px_rgba(15,34,51,0.14)] opacity-0 translate-y-1 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 ${tooltipPositionClasses}`}
                 >
