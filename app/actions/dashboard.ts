@@ -185,9 +185,31 @@ const FIXED_BUDGET_KEYWORDS = [
     "prestamo",
 ];
 
+const SAVINGS_BUDGET_KEYWORDS = [
+    "ahorro",
+    "ahorros",
+    "meta",
+    "metas",
+    "savings",
+    "saving",
+    "goal",
+    "goals",
+    "fondo de emergencia",
+    "emergency fund",
+    "inversion",
+    "inversiones",
+    "investment",
+    "investments",
+];
+
 function isLikelyFixedBudgetCategory(name: string) {
     const normalized = normalizeCategoryLabel(name);
     return FIXED_BUDGET_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function isLikelySavingsBudgetCategory(name: string) {
+    const normalized = normalizeCategoryLabel(name);
+    return SAVINGS_BUDGET_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
 function mapTransactions(raw: Array<Record<string, unknown>>): Transaction[] {
@@ -507,6 +529,12 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         if (amount <= 0) continue;
 
         const categoryName = (row.category?.name || "Sin categoria").trim() || "Sin categoria";
+        const isSavingsCategory =
+            orgType === "personal" &&
+            row.category != null &&
+            isLikelySavingsBudgetCategory(row.category.name);
+        if (isSavingsCategory) continue;
+
         const isFixedCategory = row.category
             ? orgType === "business"
                 ? Boolean(row.category.fixed_cost)
@@ -531,6 +559,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             if (orgType === "business") {
                 return row.category.fixed_cost ? sum + row.amount : sum;
             }
+            if (isLikelySavingsBudgetCategory(row.category.name)) return sum;
             return isLikelyFixedBudgetCategory(row.category.name) ? sum + row.amount : sum;
         }, 0)
     );
@@ -541,6 +570,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
                 if (row.category.fixed_cost) return sum;
                 return sum + row.amount;
             }
+            if (isLikelySavingsBudgetCategory(row.category.name)) return sum;
             return isLikelyFixedBudgetCategory(row.category.name) ? sum : sum + row.amount;
         }, 0)
     );
