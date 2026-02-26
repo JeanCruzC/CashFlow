@@ -81,17 +81,17 @@ export default async function ForecastPage({ searchParams }: ForecastPageProps) 
     return (
         <div className="space-y-7 animate-fade-in">
             <ModuleHero
-                eyebrow="Ciclo mensual · Proyectar"
-                title={isPersonal ? "Pronostico de cashflow personal" : "Pronostico operativo del negocio"}
+                eyebrow="Flujo diario · Proximo mes"
+                title={isPersonal ? "Escenario del proximo ciclo" : "Escenario operativo del proximo ciclo"}
                 description={
                     isPersonal
-                        ? "Calculamos una proyeccion de ingresos y gastos con base en tu historial real."
-                        : "Combinamos historial y supuestos para estimar revenue, costos, margen y EBIT."
+                        ? "Usamos fechas y movimientos reales para estimar como podria cerrar el siguiente mes."
+                        : "Usamos historial y supuestos para estimar revenue, costos, margen y EBIT del siguiente ciclo."
                 }
                 rightPanel={
                     <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Parametros de simulacion
+                            Parametros
                         </p>
                         <form method="get" className="mt-3 space-y-2">
                             <div className="flex items-center gap-2">

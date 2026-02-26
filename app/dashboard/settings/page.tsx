@@ -25,9 +25,9 @@ export default async function SettingsPage() {
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Soporte operativo · Configuracion"
-                title="Centro de configuracion"
-                description="Define pais, moneda, idioma, base contable y parametros tributarios para mantener consistencia en reportes y automatizaciones."
+                eyebrow="Configuracion base"
+                title="Datos principales del workspace"
+                description="Define pais, moneda, idioma y estructura base para que el control por fechas funcione de forma consistente."
                 rightPanel={
                     <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">

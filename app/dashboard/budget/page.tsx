@@ -101,9 +101,9 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Ciclo mensual · Controlar"
-                title="Presupuesto operativo"
-                description={`Define topes por categoria y comparalos contra la ejecucion real para ${monthLabel(overview.month)}.`}
+                eyebrow="Flujo diario · Plan mensual"
+                title="Plan del mes"
+                description={`Define topes por categoria y compara contra lo registrado para ${monthLabel(overview.month)}.`}
                 actions={
                     <>
                         <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
@@ -117,7 +117,7 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
                 rightPanel={
                     <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Mes activo
+                            Periodo del plan
                         </p>
                         <form className="mt-3 flex items-center gap-2" method="get">
                             <select className="input-field w-full text-sm" name="month" defaultValue={month}>

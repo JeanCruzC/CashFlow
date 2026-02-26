@@ -67,9 +67,9 @@ export default async function AccountsPage() {
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Soporte operativo · Balance"
-                title="Mapa de cuentas"
-                description="Vista consolidada de liquidez, deudas e inversiones para decidir pagos, transferencias y capacidad de ahorro."
+                eyebrow="Configuracion · Cuentas"
+                title="Tus cuentas y saldos"
+                description="Aqui ves cuanto tienes hoy por cuenta, cuanto debes y que cuentas forman tu estructura financiera."
                 actions={
                     <>
                         <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">

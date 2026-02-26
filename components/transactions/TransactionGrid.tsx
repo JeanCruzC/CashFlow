@@ -218,16 +218,16 @@ export function TransactionGrid({
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Ciclo mensual · Registrar"
-                title="Libro de movimientos"
-                description="Registro operativo de ingresos y egresos. Esta data alimenta el panorama, el control presupuestal y la proyeccion."
+                eyebrow="Flujo diario · Registro por fecha"
+                title="Diario financiero"
+                description="Cada ingreso, gasto y pago se registra por fecha para que el control sea claro y facil de seguir."
                 rightPanel={
                     <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Acciones rapidas
+                            Acciones
                         </p>
                         <p className="mt-1 text-sm text-surface-600">
-                            Importa, exporta o registra manualmente en segundos.
+                            Importa, exporta o registra manualmente.
                         </p>
 
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export function TransactionGrid({
 
             <section className="rounded-2xl border border-[#d9e2f0] bg-white p-4 shadow-card">
                 <p className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
-                    Filtros del libro
+                    Filtros por fecha y tipo
                 </p>
 
                 <form className="mt-3 flex flex-col gap-3 sm:flex-row" onSubmit={handleSearchSubmit}>

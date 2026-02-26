@@ -110,9 +110,9 @@ export default async function CategoriesPage() {
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Soporte operativo · Clasificacion"
-                title="Arquitectura de categorias"
-                description="Una buena clasificacion reduce errores en presupuesto y mejora la precision del pronostico."
+                eyebrow="Configuracion · Categorias"
+                title="Clasificacion de movimientos"
+                description="Ordena tus categorias para que cada registro por fecha quede claro y bien clasificado."
                 actions={
                     <>
                         <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">

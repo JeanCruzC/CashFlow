@@ -35,9 +35,9 @@ export default async function AssistantPage() {
     return (
         <div className="space-y-6 animate-fade-in">
             <ModuleHero
-                eyebrow="Soporte operativo · Asistente"
-                title="Recomendaciones financieras"
-                description="Guarda recomendaciones de ingreso, ahorro y metas para revisar escenarios, comparar brechas y decidir ajustes concretos de tu plan mensual."
+                eyebrow="Configuracion · Recomendaciones"
+                title="Sugerencias guardadas"
+                description="Aqui quedan tus recomendaciones de ingreso, ahorro y metas para revisarlas cuando ajustes tu plan."
                 rightPanel={
                     <>
                         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">

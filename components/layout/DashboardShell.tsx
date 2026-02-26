@@ -15,52 +15,52 @@ type NavItem = {
 const CYCLE_NAV: NavItem[] = [
     {
         href: "/dashboard",
-        label: "Panorama",
-        description: "Estado actual de tu ciclo mensual",
+        label: "Hoy",
+        description: "Dinero real, agenda y estado diario",
     },
     {
         href: "/dashboard/transactions",
-        label: "Registrar",
-        description: "Ingresos y gastos del día",
+        label: "Registro por fecha",
+        description: "Ingresa y revisa movimientos dia a dia",
     },
     {
         href: "/dashboard/budget",
-        label: "Controlar",
-        description: "Plan vs ejecución",
+        label: "Plan mensual",
+        description: "Define topes y compara contra lo real",
     },
     {
         href: "/dashboard/forecast",
-        label: "Proyectar",
-        description: "Escenarios del siguiente cierre",
+        label: "Proximo mes",
+        description: "Simula como cierra el siguiente ciclo",
     },
 ];
 
 const SUPPORT_NAV: NavItem[] = [
     {
         href: "/dashboard/accounts",
-        label: "Balance y cuentas",
-        description: "Activos, pasivos y estructura bancaria",
+        label: "Cuentas",
+        description: "Saldos, deudas y estructura bancaria",
     },
     {
         href: "/dashboard/categories",
-        label: "Clasificación",
-        description: "Categorías y rubros contables",
+        label: "Categorias",
+        description: "Ordena ingresos, gastos y rubros",
     },
     {
         href: "/dashboard/assistant",
-        label: "Asistente",
-        description: "Recomendaciones y planes guardados",
+        label: "Recomendaciones",
+        description: "Planes guardados y sugerencias IA",
     },
     {
         href: "/dashboard/settings",
-        label: "Configuración",
-        description: "Alta de cuentas, categorías y parámetros",
+        label: "Configuracion base",
+        description: "Datos del perfil, cuentas y categorias",
     },
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-    { title: "Ciclo mensual", items: CYCLE_NAV },
-    { title: "Soporte operativo", items: SUPPORT_NAV },
+    { title: "Flujo diario", items: CYCLE_NAV },
+    { title: "Configuracion", items: SUPPORT_NAV },
 ];
 
 function isActivePath(pathname: string, href: string) {

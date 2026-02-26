@@ -751,7 +751,7 @@ export async function getRecentTransactions() {
         .select("*, accounts(name), categories_gl(name)")
         .eq("org_id", orgId)
         .order("date", { ascending: false })
-        .limit(6);
+        .limit(20);
     if (error) {
         logError("Error fetching recent transactions", error, { orgId });
         return [];
