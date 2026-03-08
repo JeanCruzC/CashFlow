@@ -18,10 +18,11 @@ export function ModuleHero({
     children,
 }: ModuleHeroProps) {
     return (
-        <section className="relative overflow-hidden rounded-2xl border border-[#b9c7da] bg-white p-6 shadow-card md:p-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#1b4679_0%,#2f6db1_55%,#0d7a6d_100%)]" />
-            <div className="pointer-events-none absolute -right-40 -top-36 h-80 w-80 rounded-full bg-[radial-gradient(circle,#e5edf8_0%,rgba(229,237,248,0)_72%)]" />
-            <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-[radial-gradient(circle,#edf3fa_0%,rgba(237,243,250,0)_70%)]" />
+        <section className="relative overflow-hidden rounded-[2rem] border border-[#d3c4b1] bg-[linear-gradient(135deg,#fffaf4_0%,#ffffff_42%,#f7f1e8_100%)] p-6 shadow-card md:p-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#1c5b6e_0%,#2d7a72_45%,#c86e2e_100%)]" />
+            <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full bg-[radial-gradient(circle,#f4dfc8_0%,rgba(244,223,200,0)_70%)]" />
+            <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-[radial-gradient(circle,#dce7e1_0%,rgba(220,231,225,0)_72%)]" />
+            <div className="pointer-events-none absolute inset-y-0 right-[22%] hidden w-px bg-[linear-gradient(180deg,rgba(28,91,110,0)_0%,rgba(28,91,110,0.15)_25%,rgba(200,110,46,0.16)_100%)] xl:block" />
 
             <div
                 className={`relative grid gap-6 ${
@@ -29,13 +30,13 @@ export function ModuleHero({
                 }`}
             >
                 <div>
-                    <p className="inline-flex rounded-full border border-[#c5d2e3] bg-[#f3f7fc] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#3a4f68]">
+                    <p className="inline-flex rounded-full border border-[#dccbb2] bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#6a5640]">
                         {eyebrow}
                     </p>
-                    <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#10233f] md:text-4xl">
+                    <h2 className="mt-4 font-display text-3xl tracking-tight text-[#1d2732] md:text-5xl">
                         {title}
                     </h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#405067]">{description}</p>
+                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#516067] md:text-[15px]">{description}</p>
 
                     {children}
 
@@ -43,7 +44,7 @@ export function ModuleHero({
                 </div>
 
                 {rightPanel ? (
-                    <aside className="rounded-xl border border-[#c5d2e3] bg-[#f4f7fb] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]">
+                    <aside className="rounded-[1.6rem] border border-[#d7c8b4] bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(248,242,233,0.96)_100%)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_36px_rgba(43,57,68,0.08)] backdrop-blur-sm">
                         {rightPanel}
                     </aside>
                 ) : null}

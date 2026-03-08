@@ -98,6 +98,29 @@ export interface DashboardKPIs {
             name: string;
             amount: number;
         }>;
+        scheduleReview: {
+            summary: {
+                needsAttention: number;
+                overdue: number;
+                confirmed: number;
+                upcoming: number;
+            };
+            items: Array<{
+                id: string;
+                kind: "income" | "expense";
+                title: string;
+                subtitle: string;
+                amount: number;
+                dueDate: string;
+                nextDate: string | null;
+                status: "confirmed" | "due_today" | "upcoming" | "overdue";
+                matchedDate: string | null;
+                matchedAmount: number | null;
+                note: string;
+                ctaLabel: string;
+                ctaHref: string;
+            }>;
+        };
     };
     personal?: PersonalDashboardKPIs;
     business?: BusinessDashboardKPIs;
@@ -146,6 +169,316 @@ function clampDay(value: number | null | undefined, fallback: number) {
     if (value == null) return fallback;
     if (!Number.isFinite(value)) return fallback;
     return Math.min(31, Math.max(1, Math.round(value)));
+}
+
+function startOfDayDate(value: Date) {
+    const copy = new Date(value);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
+}
+
+function addDays(value: Date, days: number) {
+    const copy = new Date(value);
+    copy.setDate(copy.getDate() + days);
+    return copy;
+}
+
+function toIsoDate(value: Date) {
+    return value.toISOString().slice(0, 10);
+}
+
+function buildMonthDate(base: Date, day: number) {
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    return startOfDayDate(new Date(year, month, Math.min(clampDay(day, 1), daysInMonth)));
+}
+
+function buildNextMonthDate(base: Date, day: number) {
+    const year = base.getFullYear();
+    const month = base.getMonth() + 1;
+    const nextYear = month > 11 ? year + 1 : year;
+    const normalizedMonth = month > 11 ? 0 : month;
+    const daysInMonth = new Date(nextYear, normalizedMonth + 1, 0).getDate();
+    return startOfDayDate(new Date(nextYear, normalizedMonth, Math.min(clampDay(day, 1), daysInMonth)));
+}
+
+function differenceInDays(later: Date, earlier: Date) {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    return Math.round((startOfDayDate(later).getTime() - startOfDayDate(earlier).getTime()) / msPerDay);
+}
+
+function normalizeMatchText(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+type ReviewEventSeed = {
+    id: string;
+    kind: "income" | "expense";
+    title: string;
+    subtitle: string;
+    amount: number;
+    dueDate: Date;
+    expectedDay: number;
+    matchTokens: string[];
+};
+
+function buildPersonalScheduleReview({
+    today,
+    cycle,
+    financialProfile,
+    transactions,
+}: {
+    today: Date;
+    cycle: NonNullable<DashboardKPIs["personalCycle"]>;
+    financialProfile: OrgFinancialProfile | null | undefined;
+    transactions: Transaction[];
+}) {
+    const todayStart = startOfDayDate(today);
+    const reviewSeeds: ReviewEventSeed[] = [];
+
+    const pushReviewSeed = (seed: Omit<ReviewEventSeed, "id">) => {
+        reviewSeeds.push({
+            ...seed,
+            id: `${seed.title}-${toIsoDate(seed.dueDate)}-${reviewSeeds.length}`,
+        });
+    };
+
+    const addIncomeSeed = (args: {
+        title: string;
+        subtitle: string;
+        amount: number | null | undefined;
+        expectedDay: number;
+        tokens: string[];
+    }) => {
+        const amount = round2(Math.max(Number(args.amount || 0), 0));
+        if (amount <= 0) return;
+        pushReviewSeed({
+            kind: "income",
+            title: args.title,
+            subtitle: args.subtitle,
+            amount,
+            dueDate: buildMonthDate(today, args.expectedDay),
+            expectedDay: clampDay(args.expectedDay, 1),
+            matchTokens: args.tokens,
+        });
+    };
+
+    const salaryFrequency = financialProfile?.salary_frequency || "monthly";
+    if (salaryFrequency === "biweekly") {
+        addIncomeSeed({
+            title: "Deposito de sueldo",
+            subtitle: "Titular · 1ra quincena",
+            amount: financialProfile?.first_fortnight_amount,
+            expectedDay: financialProfile?.salary_payment_day_2 || cycle.incomePaymentDays[0] || 15,
+            tokens: ["sueldo", "quincena", "pago"],
+        });
+        addIncomeSeed({
+            title: "Deposito de sueldo",
+            subtitle: "Titular · 2da quincena",
+            amount: financialProfile?.second_fortnight_amount,
+            expectedDay: financialProfile?.salary_payment_day_1 || cycle.incomePaymentDays[1] || 30,
+            tokens: ["sueldo", "quincena", "pago"],
+        });
+    } else if (cycle.incomePaymentDays[0]) {
+        addIncomeSeed({
+            title: "Deposito de sueldo",
+            subtitle: "Titular",
+            amount: financialProfile?.monthly_income_net,
+            expectedDay: cycle.incomePaymentDays[0],
+            tokens: ["sueldo", "pago", "deposito"],
+        });
+    }
+
+    const hasPartnerIncome = Number(financialProfile?.partner_contribution || 0) > 0;
+    if (hasPartnerIncome) {
+        const partnerFrequency = financialProfile?.partner_salary_frequency || "monthly";
+        if (partnerFrequency === "biweekly") {
+            addIncomeSeed({
+                title: "Deposito compartido",
+                subtitle: "Pareja/coparticipe · 1ra quincena",
+                amount: financialProfile?.partner_first_fortnight_amount,
+                expectedDay:
+                    financialProfile?.partner_salary_payment_day_2 || cycle.partnerIncomePaymentDays[0] || 15,
+                tokens: ["pareja", "aporte", "compartido"],
+            });
+            addIncomeSeed({
+                title: "Deposito compartido",
+                subtitle: "Pareja/coparticipe · 2da quincena",
+                amount: financialProfile?.partner_second_fortnight_amount,
+                expectedDay:
+                    financialProfile?.partner_salary_payment_day_1 || cycle.partnerIncomePaymentDays[1] || 30,
+                tokens: ["pareja", "aporte", "compartido"],
+            });
+        } else if (cycle.partnerIncomePaymentDays[0]) {
+            addIncomeSeed({
+                title: "Deposito compartido",
+                subtitle: "Pareja/coparticipe",
+                amount: financialProfile?.partner_contribution,
+                expectedDay: cycle.partnerIncomePaymentDays[0],
+                tokens: ["pareja", "aporte", "compartido"],
+            });
+        }
+    }
+
+    for (const card of cycle.cardSchedules) {
+        const amount = round2(Math.max(card.expectedPayment, 0));
+        if (amount <= 0) continue;
+        pushReviewSeed({
+            kind: "expense",
+            title: `Pago tarjeta ${card.name}`,
+            subtitle: card.strategy === "full" ? "Pago total" : card.strategy === "minimum" ? "Pago minimo" : "Pago fijo",
+            amount,
+            dueDate: buildMonthDate(today, card.paymentDay),
+            expectedDay: clampDay(card.paymentDay, 30),
+            matchTokens: [card.name, "tarjeta", "pago"],
+        });
+    }
+
+    for (const subscription of cycle.subscriptionSchedules) {
+        const amount = round2(Math.max(subscription.monthlyCost, 0));
+        if (amount <= 0) continue;
+        pushReviewSeed({
+            kind: "expense",
+            title: `Pago suscripcion ${subscription.name}`,
+            subtitle: "Cobro recurrente",
+            amount,
+            dueDate: buildMonthDate(today, subscription.billingDay),
+            expectedDay: clampDay(subscription.billingDay, 1),
+            matchTokens: [subscription.name, "suscripcion", "membresia"],
+        });
+    }
+
+    const reviewWindowStart = addDays(buildMonthDate(today, 1), -10);
+    const reviewWindowEnd = addDays(buildNextMonthDate(today, 1), 7);
+    const reviewTransactions = transactions
+        .filter((transaction) => {
+            const txDate = startOfDayDate(new Date(transaction.date));
+            return txDate >= reviewWindowStart && txDate <= reviewWindowEnd;
+        })
+        .map((transaction) => ({
+            ...transaction,
+            absoluteAmount: round2(Math.abs(Number(transaction.amount || 0))),
+            normalizedDescription: normalizeMatchText(transaction.description || ""),
+            txDate: startOfDayDate(new Date(transaction.date)),
+        }));
+
+    const usedTransactionIds = new Set<string>();
+    const items = reviewSeeds
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+        .map((seed) => {
+            const tolerance = Math.max(5, round2(seed.amount * 0.12));
+            const directionMatches = (transactionAmount: number) =>
+                seed.kind === "income" ? transactionAmount > 0 : transactionAmount < 0;
+
+            const candidates = reviewTransactions
+                .filter((transaction) => !usedTransactionIds.has(transaction.id))
+                .filter((transaction) => directionMatches(transaction.amount))
+                .filter((transaction) => Math.abs(transaction.absoluteAmount - seed.amount) <= tolerance)
+                .filter((transaction) => {
+                    const diff = differenceInDays(transaction.txDate, seed.dueDate);
+                    return diff >= -10 && diff <= 7;
+                })
+                .map((transaction) => {
+                    const tokenHit = seed.matchTokens.some((token) => {
+                        const normalizedToken = normalizeMatchText(token);
+                        return normalizedToken.length >= 3 && transaction.normalizedDescription.includes(normalizedToken);
+                    })
+                        ? 1
+                        : 0;
+                    const dayPenalty = Math.abs(differenceInDays(transaction.txDate, seed.dueDate)) * 100;
+                    const amountPenalty = Math.abs(transaction.absoluteAmount - seed.amount);
+                    return {
+                        transaction,
+                        score: dayPenalty + amountPenalty - tokenHit * 25,
+                    };
+                })
+                .sort((a, b) => a.score - b.score);
+
+            const match = candidates[0]?.transaction || null;
+            if (match) {
+                usedTransactionIds.add(match.id);
+            }
+
+            const nextDate = buildNextMonthDate(seed.dueDate, seed.expectedDay);
+            const baseHref = `/dashboard/transactions/new?date=${encodeURIComponent(toIsoDate(seed.dueDate))}&description=${encodeURIComponent(seed.title)}&amount=${encodeURIComponent(seed.amount.toFixed(2))}&direction=${seed.kind}`;
+
+            if (match) {
+                const dayDelta = differenceInDays(match.txDate, seed.dueDate);
+                const note =
+                    dayDelta === 0
+                        ? `Confirmado el ${toIsoDate(match.txDate)}.`
+                        : dayDelta > 0
+                            ? `Confirmado el ${toIsoDate(match.txDate)} con ${dayDelta} dias de retraso.`
+                            : `Confirmado el ${toIsoDate(match.txDate)} antes de la fecha prevista.`;
+
+                return {
+                    id: seed.id,
+                    kind: seed.kind,
+                    title: seed.title,
+                    subtitle: seed.subtitle,
+                    amount: seed.amount,
+                    dueDate: toIsoDate(seed.dueDate),
+                    nextDate: null,
+                    status: "confirmed" as const,
+                    matchedDate: toIsoDate(match.txDate),
+                    matchedAmount: match.absoluteAmount,
+                    note,
+                    ctaLabel: "Ver registro",
+                    ctaHref: "/dashboard/transactions",
+                };
+            }
+
+            const dayGap = differenceInDays(todayStart, seed.dueDate);
+            const status: "due_today" | "overdue" | "upcoming" =
+                dayGap === 0 ? "due_today" : dayGap > 0 ? "overdue" : "upcoming";
+            const note =
+                status === "due_today"
+                    ? "Toca confirmarlo hoy para que el saldo real y la agenda no se desalineen."
+                    : status === "overdue"
+                        ? `No hay movimiento confirmado. Se reprograma al ${toIsoDate(nextDate)} hasta que registres el real.`
+                        : `Programado para ${toIsoDate(seed.dueDate)}. Si lo registras a tiempo, se confirmara automaticamente.`;
+
+            return {
+                id: seed.id,
+                kind: seed.kind,
+                title: seed.title,
+                subtitle: seed.subtitle,
+                amount: seed.amount,
+                dueDate: toIsoDate(seed.dueDate),
+                nextDate: status === "overdue" ? toIsoDate(nextDate) : null,
+                status,
+                matchedDate: null,
+                matchedAmount: null,
+                note,
+                ctaLabel: seed.kind === "income" ? "Registrar ingreso" : "Registrar pago",
+                ctaHref: baseHref,
+            };
+        })
+        .sort((a, b) => {
+            const rank: Record<"overdue" | "due_today" | "upcoming" | "confirmed", number> = {
+                overdue: 0,
+                due_today: 1,
+                upcoming: 2,
+                confirmed: 3,
+            };
+            const statusDelta = rank[a.status as keyof typeof rank] - rank[b.status as keyof typeof rank];
+            if (statusDelta !== 0) return statusDelta;
+            return a.dueDate.localeCompare(b.dueDate);
+        });
+
+    return {
+        summary: {
+            needsAttention: items.filter((item) => item.status === "overdue" || item.status === "due_today").length,
+            overdue: items.filter((item) => item.status === "overdue").length,
+            confirmed: items.filter((item) => item.status === "confirmed").length,
+            upcoming: items.filter((item) => item.status === "upcoming").length,
+        },
+        items,
+    };
 }
 
 function parseIsoDate(value: unknown) {
@@ -669,6 +1002,38 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
                 : [clampDay(financialProfile?.partner_salary_payment_day_1, 30)]
             : [];
 
+    const scheduleReview = buildPersonalScheduleReview({
+        today: new Date(),
+        cycle: {
+            startDate: onboardingStartDate,
+            cycleDay: 1,
+            incomePaymentDays,
+            partnerIncomePaymentDays,
+            cardSchedules: creditCardSchedules,
+            subscriptionSchedules: onboardingSubscriptions,
+            fixedPlanned,
+            variablePlanned,
+            fullCardPayments,
+            revolvingMinimumPayments,
+            operationalCommitment,
+            plannedSavings,
+            projectedFreeCash,
+            fixedBreakdown,
+            variableBreakdown,
+            scheduleReview: {
+                summary: {
+                    needsAttention: 0,
+                    overdue: 0,
+                    confirmed: 0,
+                    upcoming: 0,
+                },
+                items: [],
+            },
+        },
+        financialProfile,
+        transactions,
+    });
+
     const cycleDay = clampDay(
         onboardingStartDate
             ? Number.parseInt(onboardingStartDate.slice(-2), 10)
@@ -760,6 +1125,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             projectedFreeCash,
             fixedBreakdown,
             variableBreakdown,
+            scheduleReview,
         },
         personal: {
             netCashFlow: personal.netCashFlow,

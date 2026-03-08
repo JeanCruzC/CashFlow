@@ -103,7 +103,7 @@ export function TransactionForm({
     }, [accountId, accounts, initialValues?.currency]);
 
     const pageTitle = mode === "edit" ? "Editar movimiento" : "Registrar movimiento";
-    const submitLabel = mode === "edit" ? "Guardar cambios" : "Guardar movimiento";
+    const submitLabel = mode === "edit" ? "Guardar cambios" : "Crear transacción";
 
     const filteredCategories = useMemo(
         () =>
@@ -659,7 +659,7 @@ export function TransactionForm({
                                 value={description}
                                 onChange={(event) => setDescription(event.target.value)}
                                 className="input-field"
-                                placeholder="Ej. Compra de supermercado / Cobro de servicio"
+                                placeholder="Ej. Compra de supermercado o cobro de servicio"
                             />
                         </div>
 
