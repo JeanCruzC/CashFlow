@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,17 +6,17 @@
 
 @layer base {
   :root {
-    --background: #EEF2F6;
-    --foreground: #142136;
-    --sidebar-bg: #0F2037;
+    --background: #F5EFE6;
+    --foreground: #1E2B33;
+    --sidebar-bg: #162A32;
     --card-bg: #FFFFFF;
-    --border: #BCC9DA;
-    --muted: #4A5A6E;
-    --brand-primary: #1B4679;
-    --brand-accent: #0D7A6D;
-    --surface-tint: #EAF0F7;
+    --border: #D0C4B1;
+    --muted: #5F6D73;
+    --brand-primary: #1C5B6E;
+    --brand-accent: #C86E2E;
+    --surface-tint: #F7F1E8;
     --font-body: "IBM Plex Sans", system-ui, sans-serif;
-    --font-display: "IBM Plex Sans", system-ui, sans-serif;
+    --font-display: "Fraunces", Georgia, serif;
   }
 
   .dark {
@@ -36,7 +36,7 @@
   }
 
   body {
-    background-color: var(--background);
+    background: radial-gradient(circle at top left, #fff8ef 0%, var(--background) 38%, #efe7da 100%);
     color: var(--foreground);
   }
 
@@ -47,19 +47,19 @@
 
 @layer components {
   .card {
-    @apply bg-[var(--card-bg)] rounded-xl border border-[#bcc9da] shadow-card transition-all duration-200;
+    @apply bg-[var(--card-bg)] rounded-xl border border-[#d0c4b1] shadow-card transition-all duration-200;
   }
 
   .card:hover {
-    @apply border-[#8fa5c2] shadow-card-hover;
+    @apply border-[#b89f7c] shadow-card-hover;
   }
 
   .btn-primary {
-    @apply bg-brand-700 hover:bg-brand-800 text-white font-semibold px-4 py-2.5 rounded-lg border border-brand-800 transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-[#c86e2e] hover:bg-[#b76125] text-white font-semibold px-4 py-2.5 rounded-xl border border-[#a9551d] transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#d8864a] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-surface-100 text-surface-700 font-semibold px-4 py-2.5 rounded-lg border border-surface-300 transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
+    @apply bg-white hover:bg-[#f7f1e8] text-[#26414d] font-semibold px-4 py-2.5 rounded-xl border border-[#d0c4b1] transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1c5b6e] focus:ring-offset-2;
   }
 
   .btn-ghost {
@@ -71,7 +71,7 @@
   }
 
   .input-field {
-    @apply w-full px-3.5 py-2.5 rounded-lg border border-surface-300 bg-white text-[var(--foreground)] placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600 transition-colors duration-200;
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-[#d0c4b1] bg-white text-[var(--foreground)] placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-[#1c5b6e] focus:border-[#1c5b6e] transition-colors duration-200;
   }
 
   .label {
@@ -107,6 +107,83 @@
   }
 }
 
+@layer components {
+
+  /* ── Status badge pills ── */
+  .status-confirmed {
+    border-radius: 9999px;
+    border: 1px solid rgba(82, 197, 133, 0.4);
+    background: rgba(82, 197, 133, 0.1);
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #1A7A50;
+  }
+
+  .status-due-today {
+    border-radius: 9999px;
+    border: 1px solid rgba(235, 198, 109, 0.5);
+    background: rgba(235, 198, 109, 0.15);
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #A77C24;
+    animation: pulseAttention 2s ease-in-out infinite;
+  }
+
+  .status-overdue {
+    border-radius: 9999px;
+    border: 1px solid rgba(234, 138, 138, 0.5);
+    background: rgba(234, 138, 138, 0.12);
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #A93636;
+    animation: pulseAttention 1.5s ease-in-out infinite;
+  }
+
+  .status-upcoming {
+    @apply rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700;
+  }
+
+  /* ── Action buttons inline ── */
+  .btn-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 12px;
+    border: 1px solid rgba(82, 197, 133, 0.4);
+    background: rgba(82, 197, 133, 0.1);
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1A7A50;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-confirm:hover {
+    background: #239A66;
+    color: white;
+    box-shadow: 0 4px 12px rgba(35, 154, 102, 0.3);
+  }
+
+  .btn-skip {
+    @apply inline-flex items-center gap-1.5 rounded-xl border border-surface-300 bg-surface-50 px-3 py-1.5 text-xs font-semibold text-surface-600 transition-all duration-200 hover:bg-negative-500 hover:text-white hover:border-negative-500 hover:shadow-md cursor-pointer;
+  }
+
+  /* ── KPI strip card (compact) ── */
+  .kpi-strip-card {
+    @apply relative overflow-hidden rounded-2xl border p-4 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5;
+  }
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -137,7 +214,7 @@
   .enterprise-table-shell {
     border: 1px solid #bcc9da;
     border-radius: 1rem;
-    background: #ffffff;
+    background: #fffdf9;
     box-shadow: 0 2px 8px rgba(15, 35, 62, 0.08);
   }
 
@@ -158,26 +235,26 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background: #dbe5f2;
-    color: #33475f;
+    background: #efe4d4;
+    color: #4a4f4b;
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 700;
-    border-bottom: 1px solid #bcc9da;
+    border-bottom: 1px solid #d0c4b1;
     padding: 0.62rem 0.75rem;
     white-space: nowrap;
   }
 
   .enterprise-table tbody td {
-    border-bottom: 1px solid #d2dce9;
+    border-bottom: 1px solid #e2d7c6;
     padding: 0.58rem 0.75rem;
-    color: #2f4158;
+    color: #3e4a4e;
     vertical-align: middle;
   }
 
   .enterprise-table tbody tr:nth-child(odd) td {
-    background: #f7fafd;
+    background: #fffaf2;
   }
 
   .enterprise-table tbody tr:nth-child(even) td {
@@ -185,7 +262,7 @@
   }
 
   .enterprise-table tbody tr:hover td {
-    background: #e9f0f9;
+    background: #f6ecdf;
   }
 
   .enterprise-col-key-header {
@@ -231,6 +308,18 @@
   [class*="bg-[#fbfdff]"],
   [class*="bg-[#f5f9ff]"] {
     background-color: #f3f7fc !important;
+  }
+}
+
+@keyframes pulseAttention {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(234, 138, 138, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(234, 138, 138, 0.25);
   }
 }
 

@@ -10,6 +10,7 @@ type NavItem = {
     href: string;
     label: string;
     description: string;
+    icon: string;
 };
 
 const CYCLE_NAV: NavItem[] = [
@@ -17,21 +18,25 @@ const CYCLE_NAV: NavItem[] = [
         href: "/dashboard",
         label: "Hoy",
         description: "Dinero real, agenda y estado diario",
+        icon: "📊",
     },
     {
         href: "/dashboard/transactions",
         label: "Registro por fecha",
         description: "Ingresa y revisa movimientos dia a dia",
+        icon: "📝",
     },
     {
         href: "/dashboard/budget",
         label: "Plan mensual",
         description: "Define topes y compara contra lo real",
+        icon: "🎯",
     },
     {
         href: "/dashboard/forecast",
         label: "Proximo mes",
         description: "Simula como cierra el siguiente ciclo",
+        icon: "🔮",
     },
 ];
 
@@ -40,21 +45,25 @@ const SUPPORT_NAV: NavItem[] = [
         href: "/dashboard/accounts",
         label: "Cuentas",
         description: "Saldos, deudas y estructura bancaria",
+        icon: "🏦",
     },
     {
         href: "/dashboard/categories",
         label: "Categorias",
         description: "Ordena ingresos, gastos y rubros",
+        icon: "🏷️",
     },
     {
         href: "/dashboard/assistant",
         label: "Recomendaciones",
         description: "Planes guardados y sugerencias IA",
+        icon: "🤖",
     },
     {
         href: "/dashboard/settings",
         label: "Configuracion base",
         description: "Datos del perfil, cuentas y categorias",
+        icon: "⚙️",
     },
 ];
 
@@ -174,27 +183,25 @@ export default function DashboardShell({
     }
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(180deg,#eef2f6_0%,#e9eef5_52%,#f3f6fa_100%)]">
+        <div className="min-h-screen bg-[linear-gradient(180deg,#f8f1e7_0%,#f5efe6_42%,#efe7da_100%)]">
             <div
-                className={`fixed inset-0 z-40 bg-[#0f2233]/45 transition-opacity lg:hidden ${
-                    mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
+                className={`fixed inset-0 z-40 bg-[#1b2c34]/45 transition-opacity lg:hidden ${mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+                    }`}
                 onClick={() => setMobileOpen(false)}
             />
 
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-[18.75rem] transform border-r border-[#1f3553] bg-[linear-gradient(180deg,#122744_0%,#0f2037_62%,#0c1a2e_100%)] transition-transform duration-300 lg:translate-x-0 ${
-                    mobileOpen ? "translate-x-0" : "-translate-x-full"
-                }`}
+                className={`fixed inset-y-0 left-0 z-50 w-[18.75rem] transform border-r border-[#28414b] bg-[linear-gradient(180deg,#182f37_0%,#12262f_55%,#102029_100%)] transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+                    }`}
             >
-                <div className="border-b border-[#244063] px-5 py-5">
+                <div className="border-b border-[#28414b] px-5 py-5">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#315a88] bg-[linear-gradient(145deg,#2f6db1,#1b4679)] text-sm font-bold text-white shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d28a55] bg-[linear-gradient(145deg,#d2803d,#a95726)] text-sm font-bold text-white shadow-sm">
                             CF
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-[#e8f1ff]">CashFlow</p>
-                            <p className="text-xs text-[#8fa6c4]">Panel financiero operativo</p>
+                            <p className="font-display text-base text-[#fff4e6]">CashFlow</p>
+                            <p className="text-xs text-[#9eb4bd]">Panel financiero operativo</p>
                         </div>
                     </div>
                 </div>
@@ -202,7 +209,7 @@ export default function DashboardShell({
                 <nav className="h-[calc(100%-15rem)] overflow-y-auto px-4 py-4 scrollbar-thin">
                     {NAV_GROUPS.map((group) => (
                         <div key={group.title} className="mb-6">
-                            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8fa6c4]">
+                            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8ca4ae]">
                                 {group.title}
                             </p>
                             <div className="space-y-1.5">
@@ -216,14 +223,16 @@ export default function DashboardShell({
                                             prefetch
                                             onMouseEnter={() => prefetchOnIntent(item.href)}
                                             onFocus={() => prefetchOnIntent(item.href)}
-                                            className={`block rounded-xl border px-3 py-2.5 no-underline transition-colors ${
-                                                active
-                                                    ? "border-[#72a0d7] bg-[#17365c] text-[#e8f1ff]"
-                                                    : "border-transparent text-[#b8c8de] hover:border-[#30527f] hover:bg-[#142b4b] hover:text-white"
-                                            }`}
+                                            className={`block rounded-xl border px-3 py-2.5 no-underline transition-colors ${active
+                                                ? "border-[#d5a06e] bg-[#243d45] text-[#fff4e7] shadow-[0_8px_18px_rgba(0,0,0,0.16)]"
+                                                : "border-transparent text-[#bccfd6] hover:border-[#35545d] hover:bg-[#1a3139] hover:text-white"
+                                                }`}
                                         >
-                                            <p className="text-sm font-semibold">{item.label}</p>
-                                            <p className={`mt-0.5 text-xs ${active ? "text-[#b8cbe3]" : "text-[#8fa6c4]"}`}>{item.description}</p>
+                                            <p className="text-sm font-semibold">
+                                                <span className="mr-2" role="img" aria-hidden="true">{item.icon}</span>
+                                                {item.label}
+                                            </p>
+                                            <p className={`mt-0.5 pl-7 text-xs ${active ? "text-[#f1d5bb]" : "text-[#8fa6c4]"}`}>{item.description}</p>
                                         </Link>
                                     );
                                 })}
@@ -232,10 +241,10 @@ export default function DashboardShell({
                     ))}
                 </nav>
 
-                <div className="absolute bottom-0 left-0 right-0 border-t border-[#244063] bg-[#0d1c31] px-4 py-3">
+                <div className="absolute bottom-0 left-0 right-0 border-t border-[#28414b] bg-[#102029] px-4 py-3">
                     <button
                         onClick={handleLogout}
-                        className="w-full rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-[#f3a8a8] transition-colors hover:border-[#734747] hover:bg-[#371f24] hover:text-[#ffd2d2]"
+                        className="w-full rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-[#efb3a6] transition-colors hover:border-[#754943] hover:bg-[#372320] hover:text-[#ffe0d7]"
                     >
                         Cerrar sesión
                     </button>
@@ -243,22 +252,22 @@ export default function DashboardShell({
             </aside>
 
             <div className="lg:pl-[18.75rem]">
-                <header className="sticky top-0 z-30 border-b border-[#c4cfdd] bg-white px-4 py-3 md:px-6">
+                <header className="sticky top-0 z-30 border-b border-[#d8ccb9] bg-[rgba(255,249,241,0.92)] px-4 py-3 backdrop-blur md:px-6">
                     <div className="mx-auto flex w-full max-w-[108rem] items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
                             <button
                                 type="button"
                                 onClick={() => setMobileOpen((prev) => !prev)}
-                                className="mt-0.5 rounded-lg border border-[#c4cfdd] px-2 py-1 text-sm text-surface-700 hover:bg-surface-100 lg:hidden"
+                                className="mt-0.5 rounded-lg border border-[#d5c8b5] px-2 py-1 text-sm text-surface-700 hover:bg-[#f4ebde] lg:hidden"
                                 aria-label="Abrir menú de navegación"
                             >
                                 {mobileOpen ? "✕" : "☰"}
                             </button>
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7e6b55]">
                                     Tu workspace
                                 </p>
-                                <h1 className="text-lg font-bold text-[#10233f]">{current.label}</h1>
+                                <h1 className="font-display text-2xl text-[#1d2732]">{current.label}</h1>
                                 <p className="text-xs text-surface-600">{current.description}</p>
                             </div>
                         </div>
@@ -284,7 +293,7 @@ export default function DashboardShell({
                                         )}
                                     </select>
                                 ) : (
-                                    <div className="flex h-10 items-center rounded-xl border border-[#c4cfdd] bg-[#f4f7fb] px-3 text-sm font-medium text-[#10233f]">
+                                    <div className="flex h-10 items-center rounded-xl border border-[#d5c8b5] bg-[#f9f2e8] px-3 text-sm font-medium text-[#1d2732]">
                                         {activeWorkspace
                                             ? `${activeWorkspace.name} · ${activeWorkspace.type === "business" ? "Empresa" : "Personal"}`
                                             : "Workspace actual"}
