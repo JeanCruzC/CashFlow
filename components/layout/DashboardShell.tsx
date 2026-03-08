@@ -2,15 +2,25 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { type ChangeEvent, type ReactNode, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveWorkspace, WorkspaceSummary } from "@/app/actions/workspaces";
+import {
+    LayoutDashboard,
+    CalendarRange,
+    Target,
+    TrendingUp,
+    Landmark,
+    Tags,
+    Sparkles,
+    Settings,
+} from "lucide-react";
 
 type NavItem = {
     href: string;
     label: string;
     description: string;
-    icon: string;
+    icon: ReactNode;
 };
 
 const CYCLE_NAV: NavItem[] = [
@@ -18,25 +28,25 @@ const CYCLE_NAV: NavItem[] = [
         href: "/dashboard",
         label: "Hoy",
         description: "Dinero real, agenda y estado diario",
-        icon: "📊",
+        icon: <LayoutDashboard size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/transactions",
         label: "Registro por fecha",
         description: "Ingresa y revisa movimientos dia a dia",
-        icon: "📝",
+        icon: <CalendarRange size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/budget",
         label: "Plan mensual",
         description: "Define topes y compara contra lo real",
-        icon: "🎯",
+        icon: <Target size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/forecast",
         label: "Proximo mes",
         description: "Simula como cierra el siguiente ciclo",
-        icon: "🔮",
+        icon: <TrendingUp size={16} strokeWidth={2} />,
     },
 ];
 
@@ -45,25 +55,25 @@ const SUPPORT_NAV: NavItem[] = [
         href: "/dashboard/accounts",
         label: "Cuentas",
         description: "Saldos, deudas y estructura bancaria",
-        icon: "🏦",
+        icon: <Landmark size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/categories",
         label: "Categorias",
         description: "Ordena ingresos, gastos y rubros",
-        icon: "🏷️",
+        icon: <Tags size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/assistant",
         label: "Recomendaciones",
         description: "Planes guardados y sugerencias IA",
-        icon: "🤖",
+        icon: <Sparkles size={16} strokeWidth={2} />,
     },
     {
         href: "/dashboard/settings",
         label: "Configuracion base",
         description: "Datos del perfil, cuentas y categorias",
-        icon: "⚙️",
+        icon: <Settings size={16} strokeWidth={2} />,
     },
 ];
 
@@ -228,11 +238,13 @@ export default function DashboardShell({
                                                 : "border-transparent text-[#bccfd6] hover:border-[#35545d] hover:bg-[#1a3139] hover:text-white"
                                                 }`}
                                         >
-                                            <p className="text-sm font-semibold">
-                                                <span className="mr-2" role="img" aria-hidden="true">{item.icon}</span>
-                                                {item.label}
-                                            </p>
-                                            <p className={`mt-0.5 pl-7 text-xs ${active ? "text-[#f1d5bb]" : "text-[#8fa6c4]"}`}>{item.description}</p>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className={`flex-shrink-0 ${active ? "opacity-100" : "opacity-60"}`}>{item.icon}</span>
+                                                <div>
+                                                    <p className="text-sm font-semibold">{item.label}</p>
+                                                    <p className={`mt-0.5 text-xs ${active ? "text-[#f1d5bb]" : "text-[#8fa6c4]"}`}>{item.description}</p>
+                                                </div>
+                                            </div>
                                         </Link>
                                     );
                                 })}
