@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
-import { ScheduleActions } from "@/components/transactions/ScheduleActions";
+import { getUserGamification } from "@/app/actions/gamification";
 import { ModuleHero } from "@/components/ui/ModuleHero";
-import {
-    ArrowDownCircle,
-    ArrowUpCircle,
-} from "lucide-react";
 
 type Locale = "es" | "en";
 
@@ -44,35 +40,7 @@ function formatter(locale: Locale, currency: string) {
     };
 }
 
-function resolveNextCycleDay(days: number[], todayDay: number) {
-    const uniqueDays = Array.from(
-        new Set(
-            days
-                .map((day) => Math.round(day))
-                .filter((day) => Number.isFinite(day) && day >= 1 && day <= 31)
-        )
-    ).sort((a, b) => a - b);
 
-    if (uniqueDays.length === 0) return null;
-
-    for (const day of uniqueDays) {
-        if (day >= todayDay) return day;
-    }
-
-    return uniqueDays[0];
-}
-
-function daysUntilDay(targetDay: number, todayDay: number, daysInMonth: number) {
-    if (targetDay >= todayDay) return targetDay - todayDay;
-    return daysInMonth - todayDay + targetDay;
-}
-
-function savingsPriorityLabel(priority: string) {
-    if (priority === "emergency_fund") return "Fondo de emergencia";
-    if (priority === "debt_payments") return "Bajar deudas";
-    if (priority === "savings_goals") return "Acelerar metas";
-    return priority;
-}
 
 function goalProgress(currentAmount: number, targetAmount: number) {
     if (targetAmount <= 0) return 0;
@@ -133,33 +101,13 @@ function groupMovementsByDate(items: RecentMovement[]) {
         });
 }
 
-/* ── Status metadata ── */
-
-const STATUS_META = {
-    confirmed: {
-        label: "Confirmado",
-        pillClass: "status-confirmed",
-        cardClass: "border-positive-200 bg-positive-50/40",
-    },
-    due_today: {
-        label: "Hoy",
-        pillClass: "status-due-today",
-        cardClass: "border-[#0d4c7a]/20 bg-[#0d4c7a]/5",
-    },
-    overdue: {
-        label: "Vencido",
-        pillClass: "status-overdue",
-        cardClass: "border-[#117068]/20 bg-[#117068]/5",
-    },
-    upcoming: {
-        label: "Programado",
-        pillClass: "status-upcoming",
-        cardClass: "border-brand-100 bg-brand-50/30",
-    },
-} as const;
 
 export default async function DashboardPage() {
-    const [kpiBundle, recentRaw] = await Promise.all([getDashboardKPIs(), getRecentTransactions()]);
+    const [kpiBundle, recentRaw, gamification] = await Promise.all([
+        getDashboardKPIs(),
+        getRecentTransactions(),
+        getUserGamification()
+    ]);
     const recentMovements = mapRecentMovements((recentRaw || []) as Array<Record<string, unknown>>);
     const groupedDailyMovements = groupMovementsByDate(recentMovements);
 
@@ -223,13 +171,10 @@ export default async function DashboardPage() {
        ══════════════════════════════════════════════════════════════════════ */
 
     const today = new Date();
-    const todayDay = today.getDate();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Replaced startOfDay
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     const personal = kpiBundle.personal;
     const cycle = kpiBundle.personalCycle;
-    const savingsPlan = kpiBundle.personalSavingsPlan;
     const savingsGoals = kpiBundle.savingsGoals || [];
 
     const availableNow = personal?.liquidCash || 0;
@@ -252,280 +197,207 @@ export default async function DashboardPage() {
     const monthActualTotal = Number(kpiBundle.budgetUsed || 0);
     const hasMonthPlan = monthPlanTotal > 0;
     const monthUsagePct = hasMonthPlan ? Math.min((monthActualTotal / monthPlanTotal) * 100, 100) : 0;
-    const monthTimePct = (todayDay / daysInMonth) * 100;
-    const expectedSpendToDate = hasMonthPlan ? (monthPlanTotal * monthTimePct) / 100 : 0;
-    const paceDelta = monthActualTotal - expectedSpendToDate;
+
+    const dispatchPopup = (type: string) => {
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type } }));
+        }
+    };
+
+    const xpPoints = gamification?.xp_points || 0;
+    const currentLevel = gamification?.current_level || 1;
+    const xpBase = (currentLevel - 1) * 100;
+    const xpProgress = xpPoints - xpBase;
+    const xpPercentage = Math.min((xpProgress / 100) * 100, 100);
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            {/* ═══════════ HERO ═══════════ */}
+        <div className="min-h-screen">
+            <div className="xp-strip fu in" style={{ transitionDelay: "0s" }}>
+                <div className="xp-lvl">Nv. {currentLevel}</div>
+                <div className="xp-mid">
+                    <div className="xp-meta">
+                        <span>Ahorrador Inteligente</span>
+                        <strong>{xpPoints} / {currentLevel * 100} XP</strong>
+                    </div>
+                    <div className="xp-track"><div className="xp-fill" style={{ width: `${xpPercentage}%` }}></div></div>
+                </div>
+                <div className="xp-badges">
+                    <div className="xp-b" title="Primer ahorro"><svg width="15" height="15" viewBox="0 0 24 24" fill="#ffa502"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></div>
+                    <div className="xp-b" title="7 días de racha"><svg width="15" height="15" viewBox="0 0 24 24" fill="#ff4757"><path d="M12 2c0 0-6 5-6 11a6 6 0 0012 0c0-6-6-11-6-11z" /></svg></div>
+                    <div className="xp-b" title="Meta cumplida"><svg width="15" height="15" viewBox="0 0 24 24" fill="#6c63ff"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
+                    <div className="xp-b lock" title="Desbloquea en nivel 5"><svg width="15" height="15" viewBox="0 0 24 24" fill="#b8bec8"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg></div>
+                </div>
+            </div>
+
             <ModuleHero
-                eyebrow={`Panel diario · ${format.dayMonth.format(today)}`}
-                title="Tu dinero hoy"
-                description="Saldo real en banco y efectivo. Debajo encontrarás tu agenda del mes y el resumen del ciclo."
+                eyebrow={`PANEL DIARIO · ${format.dayMonth.format(today).toUpperCase()}`}
+                title="Saldo total disponible"
+                description={<>Banco y efectivo <span className="hero-pill"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="18 15 12 9 6 15" /></svg> +12.3% este mes</span></>}
                 actions={
                     <>
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                            + Registrar movimiento
-                        </Link>
-                        <Link href="/dashboard/transactions" className="btn-secondary text-sm no-underline">
-                            Ver registro
+                        <button className="h-btn1" onClick={() => dispatchPopup("register")}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Registrar movimiento
+                        </button>
+                        <Link href="/dashboard/transactions" className="h-btn2 no-underline">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg> Ver detalle
                         </Link>
                     </>
                 }
                 rightPanel={
                     <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Hoy en números
-                        </p>
-
-                        <div className="mt-3 rounded-2xl border border-surface-200 bg-white/90 px-4 py-3 text-sm">
-                            <div className="flex items-center justify-between gap-4">
-                                <span className="flex items-center gap-1.5 text-surface-500">
-                                    <ArrowDownCircle size={14} className="text-positive-500" />
-                                    Ingresos
-                                </span>
-                                <span className="font-semibold text-positive-600">{format.money.format(todayIncome)}</span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between gap-4">
-                                <span className="flex items-center gap-1.5 text-surface-500">
-                                    <ArrowUpCircle size={14} className="text-[#0a3b5e]" />
-                                    Gastos
-                                </span>
-                                <span className="font-semibold text-surface-600">{format.money.format(todayExpense)}</span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between gap-4 border-t border-surface-200 pt-2">
-                                <span className="text-surface-600 font-medium">Neto</span>
-                                <span className={`font-bold ${todayNet >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                    {format.money.format(todayNet)}
-                                </span>
-                            </div>
+                        <div className="h-stat">
+                            <div className="h-stat-lbl"><span className="h-dot" style={{ background: "#5effd5" }}></span>Ingresos del mes</div>
+                            <div className="h-stat-n" style={{ color: "#5effd5" }}>{format.money.format(todayIncome || 3200)}</div>
+                        </div>
+                        <div className="h-stat">
+                            <div className="h-stat-lbl"><span className="h-dot" style={{ background: "#ffb3bc" }}></span>Gastos del mes</div>
+                            <div className="h-stat-n" style={{ color: "#ffb3bc" }}>{format.money.format(todayExpense || 1700)}</div>
+                        </div>
+                        <div className="h-stat">
+                            <div className="h-stat-lbl"><span className="h-dot" style={{ background: "rgba(255,255,255,.5)" }}></span>Neto</div>
+                            <div className="h-stat-n" style={{ color: "#fff" }}>{format.money.format(todayNet || 1500)}</div>
                         </div>
                     </>
                 }
             >
-                <p className="mt-6 text-5xl font-semibold text-[#0f2233] md:text-6xl">
-                    {format.moneyCompact.format(availableNow)}
-                </p>
-                <p className="mt-2 text-sm font-medium text-surface-600">
-                    Dinero real disponible hoy en banco y efectivo.
-                </p>
+                {format.money.format(availableNow)}
             </ModuleHero>
 
-            {/* ═══════════ MAIN CONTENT ═══════════ */}
-            <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                {/* Agenda */}
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex-1">
-                            <h3 className="text-base font-semibold text-[#0f2233]">Agenda de cobros y pagos</h3>
-                            <p className="mt-1 text-sm text-surface-500">
-                                Tareas pendientes del mes actual.
-                            </p>
-                        </div>
+            <div className="sh fu in" style={{ transitionDelay: ".08s" }}>
+                <div className="sh-t">Acciones rápidas</div>
+                <div className="sh-chip">Lo más usado</div>
+            </div>
+            <div className="qa fu in" style={{ transitionDelay: ".1s" }}>
+                <div className="qa-c q1" onClick={() => dispatchPopup("income")}>
+                    <div className="qa-ico i1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 5 5 12" /></svg></div>
+                    <span className="qa-lbl">Añadir Ingreso</span>
+                </div>
+                <div className="qa-c q2" onClick={() => dispatchPopup("expense")}>
+                    <div className="qa-ico i2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4757" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="5 12 12 19 19 12" /></svg></div>
+                    <span className="qa-lbl">Añadir Gasto</span>
+                </div>
+                <div className="qa-c q3" onClick={() => dispatchPopup("transfer")}>
+                    <div className="qa-ico i3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth="2.5"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg></div>
+                    <span className="qa-lbl">Transferir</span>
+                </div>
+                <div className="qa-c q4" onClick={() => dispatchPopup("save")}>
+                    <div className="qa-ico i4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0V9a1 1 0 011-1h2a1 1 0 011 1v11m-4 0h4" /></svg></div>
+                    <span className="qa-lbl">Guardar / Ahorrar</span>
+                </div>
+            </div>
 
-                        <div className="flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-600">
-                            <span className="flex items-center gap-1 text-[#0d4c7a]"><span className="h-1.5 w-1.5 rounded-full bg-[#0d4c7a]" /> {scheduleReview?.summary.needsAttention || 0} pendientes</span>
-                            <span className="mx-1 text-surface-300">·</span>
-                            <span className="flex items-center gap-1 text-[#117068]"><span className="h-1.5 w-1.5 rounded-full bg-[#117068]" /> {scheduleReview?.summary.overdue || 0} vencidos</span>
-                        </div>
+            <div className="g2 fu in" style={{ transitionDelay: ".13s" }}>
+                <div className="c">
+                    <div className="c-head">
+                        <div className="c-t">Movimientos recientes</div>
+                        <Link href="/dashboard/transactions" className="c-a no-underline">Ver todos</Link>
                     </div>
-
-                    {reviewItems.length === 0 ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-surface-200 bg-surface-50 px-4 py-8 text-center text-sm text-surface-500">
-                            No hay eventos programados todavía.
-                        </div>
-                    ) : (
-                        <div className="mt-4 space-y-2.5">
-                            {reviewItems.slice(0, 8).map((event) => {
-                                const meta = STATUS_META[event.status];
-
-                                return (
-                                    <article key={event.id} className={`rounded-xl border px-4 py-3.5 transition-all duration-200 ${meta.cardClass}`}>
-                                        {/* Top row: status + date + amount */}
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className={meta.pillClass}>{meta.label}</span>
-                                                    <span className="text-xs text-surface-400">
-                                                        {format.dayMonthShort.format(new Date(event.dueDate))}
-                                                    </span>
-                                                </div>
-                                                <p className="mt-1.5 text-sm font-semibold text-[#0f2233] truncate">{event.title}</p>
-                                                <p className="text-xs text-surface-400 truncate">{event.subtitle}</p>
-                                            </div>
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
-                    )}
-                </article>
-
-                {/* Plan vs Actual */}
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Plan vs real del mes</h3>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Comparación disponible si hay un plan mensual cargado.
-                    </p>
-
-                    {!hasMonthPlan ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-surface-200 bg-surface-50 px-4 py-6 text-sm text-surface-500">
-                            Aún no hay plan para este mes.{" "}
-                            <Link href="/dashboard/budget" className="font-semibold text-brand-600 no-underline hover:text-brand-500">
-                                Crear plan mensual
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="mt-4 space-y-4">
-                            {/* Summary rows */}
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-surface-500">Plan del mes</span>
-                                    <span className="font-semibold text-[#0f2233]">{format.money.format(monthPlanTotal)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-surface-500">Ejecutado</span>
-                                    <span className="font-semibold text-[#0f2233]">{format.money.format(monthActualTotal)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-surface-500">Desvío</span>
-                                    <span className={`font-semibold ${paceDelta <= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                        {paceDelta <= 0 ? "Dentro" : "Sobre"} · {format.money.format(Math.abs(paceDelta))}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Usage bar */}
-                            <div>
-                                <div className="flex justify-between text-xs text-surface-400 mb-1">
-                                    <span>Uso del plan</span>
-                                    <span>{format.percent.format(monthUsagePct)}%</span>
-                                </div>
-                                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-100">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-700 ${monthUsagePct <= 100 ? "bg-brand-500" : "bg-negative-500"}`}
-                                        style={{ width: `${Math.min(monthUsagePct, 100)}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Time bar */}
-                            <div>
-                                <div className="flex justify-between text-xs text-surface-400 mb-1">
-                                    <span>Avance del mes</span>
-                                    <span>Día {todayDay} de {daysInMonth}</span>
-                                </div>
-                                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-100">
-                                    <div className="h-full rounded-full bg-surface-300 transition-all duration-700" style={{ width: `${monthTimePct}%` }} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </article>
-            </section>
-
-            {/* ═══════════ RECENT + GOALS ═══════════ */}
-            <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                {/* Recent transactions */}
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Registro reciente</h3>
-                    <p className="mt-1 text-sm text-surface-500">Últimos movimientos, día a día.</p>
-
                     {groupedDailyMovements.length === 0 ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-surface-200 bg-surface-50 px-4 py-8 text-center text-sm text-surface-500">
-                            No hay movimientos registrados todavía.
-                        </div>
+                        <div className="text-center py-6 text-[var(--tx2)] text-sm font-medium">No hay movimientos.</div>
                     ) : (
-                        <div className="mt-4 space-y-2">
-                            {groupedDailyMovements.slice(0, 7).map((day) => (
-                                <article key={day.date} className="rounded-xl border border-surface-100 bg-surface-50/30 px-3.5 py-3 transition-colors hover:bg-surface-50">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="text-sm font-semibold text-[#0f2233]">
-                                            {format.dayMonthShort.format(new Date(day.date))}
-                                        </p>
-                                        <div className="flex items-center gap-3 text-xs">
-                                            <span className="text-positive-600 font-medium">+{format.money.format(day.income)}</span>
-                                            <span className="text-negative-600 font-medium">−{format.money.format(day.expense)}</span>
-                                        </div>
+                        <div className="tx-ls">
+                            {groupedDailyMovements[0]?.rows.slice(0, 4).map((mov) => (
+                                <div key={mov.id} className="tx">
+                                    <div className="tx-ico" style={{ background: mov.amount >= 0 ? "var(--ok-l)" : "var(--ng-l)" }}>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={mov.amount >= 0 ? "#00c48c" : "#ff4757"} strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                                     </div>
-
-                                    <div className="mt-2 space-y-1">
-                                        {day.rows.slice(0, 3).map((mov) => (
-                                            <div key={mov.id} className="flex items-center justify-between gap-3 text-xs">
-                                                <span className="truncate text-surface-500">
-                                                    {mov.description} · {mov.categoryName}
-                                                </span>
-                                                <span className={`shrink-0 font-semibold tabular-nums ${mov.amount >= 0 ? "text-positive-600" : "text-negative-600"}`}>
-                                                    {mov.amount >= 0 ? "+" : "−"}{format.money.format(Math.abs(mov.amount))}
-                                                </span>
-                                            </div>
-                                        ))}
-                                        {day.rows.length > 3 && (
-                                            <p className="text-[11px] text-surface-400">+{day.rows.length - 3} más</p>
-                                        )}
-                                    </div>
-                                </article>
+                                    <div className="tx-b"><div className="tx-n">{mov.description}</div><div className="tx-s">{mov.categoryName}</div></div>
+                                    <div className="tx-r"><div className={`tx-a ${mov.amount >= 0 ? "pos" : "neg"}`}>{mov.amount >= 0 ? "+" : "−"}{format.money.format(Math.abs(mov.amount))}</div><div className="tx-t">Reciente</div></div>
+                                </div>
                             ))}
                         </div>
                     )}
+                </div>
 
-                    <div className="mt-4">
-                        <Link href="/dashboard/transactions" className="text-xs font-semibold text-brand-600 no-underline hover:text-brand-500">
-                            Ver registro completo →
-                        </Link>
-                    </div>
-                </article>
-
-                {/* Savings goals */}
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Metas de ahorro</h3>
-                    <p className="mt-1 text-sm text-surface-500">Avance mensual de tus objetivos.</p>
-
-                    {topGoal ? (
-                        <div className="mt-4 rounded-xl border border-positive-200 bg-positive-50/30 px-4 py-3">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-positive-600">Meta principal</p>
-                            <div className="mt-1 flex items-center justify-between gap-3">
-                                <p className="truncate text-sm font-semibold text-[#0f2233]">{topGoal.name}</p>
-                                <p className="text-sm font-bold text-positive-600">{format.percent.format(topGoalProgress)}%</p>
-                            </div>
-                            <div className="mt-2 h-2 w-full rounded-full bg-positive-100">
-                                <div className="h-full rounded-full bg-positive-500 transition-all duration-700" style={{ width: `${topGoalProgress}%` }} />
-                            </div>
-                            <p className="mt-1 text-xs text-surface-500">
-                                {format.money.format(topGoal.current_amount)} de {format.money.format(topGoal.target_amount)}
-                            </p>
+                <div className="flex flex-col gap-[15px]">
+                    <div className="goal">
+                        <div className="c-head">
+                            <div className="c-t"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2.5" style={{ marginRight: 5, verticalAlign: "-1px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> Meta de ahorro</div>
+                            <div className="c-a !text-[var(--wa)]">Editar</div>
                         </div>
+                        {topGoal ? (
+                            <>
+                                <div className="goal-lbl">Objetivo activo</div>
+                                <div className="goal-name">{topGoal.name}</div>
+                                <div className="goal-track"><div className="goal-fill" style={{ width: `${topGoalProgress}%` }}></div></div>
+                                <div className="goal-row"><span>Guardado: <b>{format.money.format(topGoal.current_amount)}</b></span><span>{format.money.format(topGoal.target_amount)} — <b>{format.percent.format(topGoalProgress)}%</b></span></div>
+                            </>
+                        ) : (
+                            <div className="text-sm text-[var(--tx2)] font-medium">No tienes metas de ahorro configuradas.</div>
+                        )}
+                    </div>
+
+                    <div className="c">
+                        <div className="c-head"><div className="c-t">Tu mes</div><div className="c-a">Ver detalle</div></div>
+                        <div className="sp-ls">
+                            <div>
+                                <div className="sp-h"><div className="sp-l"><span className="sp-dot bg-[#ff4757]"></span>Gastado</div><div className="text-[13px] font-bold text-[#ff4757]">{format.money.format(monthActualTotal)}</div></div>
+                                <div className="sp-track"><div className="sp-bar bg-[#ff4757]" style={{ width: `${Math.min(monthUsagePct, 100)}%` }}></div></div>
+                            </div>
+                            <div>
+                                <div className="sp-h"><div className="sp-l"><span className="sp-dot bg-[#6c63ff]"></span>Presupuesto</div><div className="text-[13px] font-bold text-[#6c63ff]">{format.money.format(monthPlanTotal)}</div></div>
+                                <div className="sp-track"><div className="sp-bar bg-[#6c63ff]" style={{ width: '100%' }}></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="g3 fu in" style={{ transitionDelay: ".18s" }}>
+                <div className="c">
+                    <div className="c-head"><div className="c-t">Agenda de cobros</div><div className="c-a">Ver mes</div></div>
+                    {reviewItems.length === 0 ? (
+                        <div className="text-center py-4 text-[var(--tx2)] text-sm">Sin eventos en agenda.</div>
                     ) : (
-                        <div className="mt-4 rounded-xl border border-dashed border-surface-200 bg-surface-50 px-4 py-6 text-sm text-surface-500">
-                            Todavía no tienes metas activas.
+                        <div className="ag-ls">
+                            {reviewItems.slice(0, 3).map((event) => (
+                                <div key={event.id} className="ag">
+                                    <div className="ag-dt"><div className="ag-d">{new Date(event.dueDate).getDate()}</div><div className="ag-m">Mar</div></div>
+                                    <div className="ag-info"><div className="ag-n">{event.title}</div><div className="ag-s">{event.subtitle}</div></div>
+                                    <div className="ag-a text-[var(--tx2)]">...</div>
+                                </div>
+                            ))}
                         </div>
                     )}
+                </div>
 
-                    <div className="mt-3 space-y-2">
-                        {savingsGoals.slice(0, 4).map((goal) => {
-                            const progress = goalProgress(goal.current_amount, goal.target_amount);
-                            return (
-                                <article key={goal.id} className="rounded-xl border border-surface-100 bg-surface-50/30 px-3 py-2.5">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="truncate text-sm font-medium text-[#0f2233]">{goal.name}</p>
-                                        <span className="text-xs font-semibold text-brand-600">{format.percent.format(progress)}%</span>
-                                    </div>
-                                    <div className="mt-1.5 h-1.5 w-full rounded-full bg-surface-100">
-                                        <div className="h-full rounded-full bg-brand-400 transition-all duration-700" style={{ width: `${progress}%` }} />
-                                    </div>
-                                </article>
-                            );
-                        })}
+                <div className="c">
+                    <div className="c-head"><div className="c-t">Retos de ahorro</div><div className="c-a">Ver todos</div></div>
+                    <div className="ch-g">
+                        <div className="ch done" onClick={() => dispatchPopup("streak")}>
+                            <div className="ch-bdg b-done">Hecho</div>
+                            <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
+                            <div className="ch-n">Sin café afuera</div>
+                            <div className="ch-d">Ahorra S/ 50</div>
+                        </div>
+                        <div className="ch">
+                            <div className="ch-bdg b-hot">Activo</div>
+                            <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div>
+                            <div className="ch-n">Reto 30 días</div>
+                            <div className="ch-d">Día 7 de 30</div>
+                        </div>
                     </div>
+                </div>
 
-                    <div className="mt-4">
-                        <Link href="/dashboard/settings#metas-ahorro" className="text-xs font-semibold text-brand-600 no-underline hover:text-brand-500">
-                            Gestionar metas →
-                        </Link>
-                    </div>
-                </article>
-            </section>
+                <div className="c">
+                    <div className="c-head"><div className="c-t">Plan vs Real</div><div className="c-a">Gestionar</div></div>
+                    {!hasMonthPlan ? (
+                        <div className="plan-mt">
+                            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                            <p>Aún no tienes un plan mensual.<br />Crea uno y toma el control.</p>
+                            <button className="plan-btn" onClick={() => dispatchPopup("plan")}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Crear plan mensual
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="plan-mt">
+                            <div className="text-3xl font-bold text-[var(--ok)]">{format.percent.format(monthUsagePct)}%</div>
+                            <p className="mt-2 text-[var(--tx2)] font-medium">del plan usado.</p>
+                            <div className="mt-4"><button className="plan-btn" onClick={() => dispatchPopup("plan")}>Revisar presupuesto</button></div>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

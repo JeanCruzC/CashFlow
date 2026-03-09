@@ -284,24 +284,26 @@ export function TransactionGrid({
                     </>
                 }
             >
-                <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
-                        <p className="text-xs text-surface-500">Movimientos</p>
-                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{totalCount}</p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-[var(--acc)]/5 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Movimientos</p>
+                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">{totalCount}</p>
                     </article>
-                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
-                        <p className="text-xs text-surface-500">Filtros activos</p>
-                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">{activeFilterCount}</p>
+                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
+                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-[#00c48c]/5 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Filtros activos</p>
+                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">{activeFilterCount}</p>
                     </article>
-                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
-                        <p className="text-xs text-surface-500">Rango visible</p>
-                        <p className="mt-1 text-lg font-semibold text-[#0f2233]">
+                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Rango visible</p>
+                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">
                             {showingFrom}-{showingTo}
                         </p>
                     </article>
-                    <article className="rounded-xl border border-[#d9e2f0] bg-white/75 px-3 py-2">
-                        <p className="text-xs text-surface-500">Modo prioridad</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <article className="c !p-4 flex flex-col justify-center">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Modo prioridad</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                             <PriorityPill level="critical" label={`C ${prioritySummary.critical}`} />
                             <PriorityPill level="followup" label={`S ${prioritySummary.followup}`} />
                             <PriorityPill level="info" label={`I ${prioritySummary.info}`} />
@@ -321,8 +323,8 @@ export function TransactionGrid({
                 </div>
             ) : null}
 
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-4 shadow-card">
-                <p className="px-1 text-xs font-semibold uppercase tracking-[0.12em] text-surface-500">
+            <section className="c !p-5">
+                <p className="px-1 text-xs font-bold uppercase tracking-widest text-[var(--acc)]">
                     Filtros por fecha y tipo
                 </p>
 
@@ -447,14 +449,14 @@ export function TransactionGrid({
 
                                     return (
                                         <tr key={row.id}>
-                                            <td className="enterprise-col-key text-surface-600">
+                                            <td className="enterprise-col-key text-[var(--tx2)] font-medium">
                                                 {new Date(row.date).toLocaleDateString("es-PE")}
                                             </td>
-                                            <td className="font-medium text-[#10233f]">{row.description}</td>
-                                            <td className="text-surface-600">{row.accounts?.name || "-"}</td>
-                                            <td className="text-surface-600">{row.categories_gl?.name || "Sin categoria"}</td>
+                                            <td className="font-bold text-[var(--tx1)]">{row.description}</td>
+                                            <td className="text-[var(--tx2)] font-medium">{row.accounts?.name || "-"}</td>
+                                            <td className="text-[var(--tx2)] font-medium">{row.categories_gl?.name || "Sin categoria"}</td>
                                             <td
-                                                className={`text-right font-semibold ${row.amount >= 0 ? "text-positive-600" : "text-surface-600"
+                                                className={`text-right font-black tracking-tight ${row.amount >= 0 ? "text-[var(--ok)]" : "text-[var(--tx1)]"
                                                     }`}
                                             >
                                                 {row.amount >= 0 ? "+" : "-"}
@@ -467,14 +469,14 @@ export function TransactionGrid({
                                                 <div className="flex items-center justify-end gap-3 text-sm">
                                                     <Link
                                                         href={`/dashboard/transactions/${row.id}/edit`}
-                                                        className="font-medium text-[#1b4679] no-underline hover:text-[#0d7a6d]"
+                                                        className="font-bold text-[var(--acc)] no-underline hover:opacity-70 transition-opacity"
                                                     >
                                                         Editar
                                                     </Link>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDelete(row.id)}
-                                                        className="font-medium text-surface-500 hover:text-surface-700"
+                                                        className="font-bold text-[var(--tx2)] hover:text-[#ff4757] transition-colors"
                                                     >
                                                         Eliminar
                                                     </button>

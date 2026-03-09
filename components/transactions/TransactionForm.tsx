@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { createTransaction, createTransactionsBatch, updateTransaction } from "@/app/actions/transactions";
+import { processGamificationAction } from "@/app/actions/gamification";
 import { Select } from "@/components/ui/Select";
 import { Account, CategoryGL } from "@/lib/types/finance";
 
@@ -186,8 +187,30 @@ export function TransactionForm({
             throw new Error(result.error);
         }
 
-        router.push("/dashboard/transactions");
-        router.refresh();
+        let leveledUp = false;
+        try {
+            const gamificationResult = await processGamificationAction("transaction");
+            if (gamificationResult?.leveledUp) {
+                leveledUp = true;
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("showLevelUpPopup", { detail: { level: gamificationResult.current_level } }));
+                }
+            } else {
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type: "streak" } }));
+                }
+            }
+        } catch (e) {
+            console.error("Gamification error", e);
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type: "streak" } }));
+            }
+        }
+
+        setTimeout(() => {
+            router.push("/dashboard/transactions");
+            router.refresh();
+        }, leveledUp ? 4000 : 1800);
     }
 
     async function persistExtractedBatch(drafts: ExtractedTransactionDraft[]) {
@@ -215,8 +238,30 @@ export function TransactionForm({
             throw new Error(result.error);
         }
 
-        router.push("/dashboard/transactions");
-        router.refresh();
+        let leveledUp = false;
+        try {
+            const gamificationResult = await processGamificationAction("transaction");
+            if (gamificationResult?.leveledUp) {
+                leveledUp = true;
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("showLevelUpPopup", { detail: { level: gamificationResult.current_level } }));
+                }
+            } else {
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type: "streak" } }));
+                }
+            }
+        } catch (e) {
+            console.error("Gamification error", e);
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type: "streak" } }));
+            }
+        }
+
+        setTimeout(() => {
+            router.push("/dashboard/transactions");
+            router.refresh();
+        }, leveledUp ? 4000 : 1800);
     }
 
     function applyExtractedDraftToForm(draft: ExtractedTransactionDraft) {
@@ -387,43 +432,44 @@ export function TransactionForm({
     }
 
     return (
-        <div className="mx-auto max-w-4xl space-y-4 animate-fade-in">
+        <div className="mx-auto max-w-4xl space-y-5 animate-fade-in pb-10">
             <Link
                 href="/dashboard/transactions"
-                className="inline-flex items-center gap-1 text-sm text-surface-500 no-underline hover:text-[#0f2233]"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--tx2)] no-underline hover:text-[var(--acc)] transition-colors"
             >
-                ← Volver al libro de movimientos
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+                Volver al libro de movimientos
             </Link>
 
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
+            <section className="c !p-6">
                 <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                            Ciclo mensual · Registrar
+                        <p className="inline-flex rounded-full bg-[var(--acc)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[var(--acc)]">
+                            Nuevo Movimiento
                         </p>
-                        <h1 className="mt-2 text-3xl font-semibold text-[#0f2233]">{pageTitle}</h1>
-                        <p className="mt-2 text-sm text-surface-600">
-                            Captura un movimiento real para actualizar automáticamente panorama,
-                            control presupuestal y proyección.
+                        <h1 className="mt-3 text-3xl font-bold text-[var(--tx1)]">{pageTitle}</h1>
+                        <p className="mt-2 text-sm text-[var(--tx2)]">
+                            Registra este movimiento para ganar experiencia y mantener tu racha activa.
                         </p>
                     </div>
 
-                    <article className="rounded-xl border border-[#d9e2f0] bg-[#f7fbff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Reglas rápidas
+                    <article className="rounded-xl border border-[var(--l)] bg-[var(--bg)] p-4 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx1)]">
+                                Tip del Cerdito
+                            </p>
+                        </div>
+                        <p className="text-sm font-medium text-[var(--tx2)]">
+                            Sé específico en tu descripción. Esto te ayudará a obtener mejores analíticas a fin de mes.
                         </p>
-                        <ul className="mt-2 space-y-1 text-sm text-surface-600">
-                            <li>1. Usa descripción específica y corta.</li>
-                            <li>2. Selecciona la cuenta correcta de origen/destino.</li>
-                            <li>3. Revisa categoría para mejorar tus reportes.</li>
-                        </ul>
                     </article>
                 </div>
             </section>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 {error ? (
-                    <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
+                    <div className="rounded-xl bg-[#ff4757]/10 border border-[#ff4757]/20 px-4 py-3 text-sm font-medium text-[#ff4757]">
                         {error}
                     </div>
                 ) : null}
@@ -570,8 +616,8 @@ export function TransactionForm({
                                                         <td className="px-3 py-2">
                                                             <span
                                                                 className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${item.ready_to_save
-                                                                        ? "border-[#bfdfca] bg-[#eef9f1] text-positive-700"
-                                                                        : "border-[#f1d3cf] bg-[#fff5f4] text-negative-600"
+                                                                    ? "border-[#bfdfca] bg-[#eef9f1] text-positive-700"
+                                                                    : "border-[#f1d3cf] bg-[#fff5f4] text-negative-600"
                                                                     }`}
                                                             >
                                                                 {item.ready_to_save ? "Listo" : "Revisar"}
@@ -588,22 +634,19 @@ export function TransactionForm({
                     </section>
                 ) : null}
 
-                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h2 className="text-base font-semibold text-[#0f2233]">1. Tipo y monto</h2>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Define si es ingreso o egreso, y el importe exacto en la moneda de la cuenta.
-                    </p>
+                <section className="c !p-6">
+                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">1. Tipo y monto</div></div>
 
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <div className="mt-4 grid gap-5 md:grid-cols-2">
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Tipo de movimiento</label>
-                            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-1.5">
+                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Tipo de movimiento</label>
+                            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--l)] bg-[var(--bg)] p-1.5 transition-all">
                                 <button
                                     type="button"
                                     onClick={() => setDirection("expense")}
-                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${direction === "expense"
-                                            ? "bg-white text-[#0f2233] shadow-sm ring-1 ring-[#c8d7eb]"
-                                            : "text-surface-500 hover:text-[#0f2233]"
+                                    className={`rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${direction === "expense"
+                                        ? "bg-[#ff4757] text-white shadow-md transform scale-[1.02]"
+                                        : "text-[var(--tx2)] hover:text-[var(--tx1)]"
                                         }`}
                                 >
                                     Egreso
@@ -611,9 +654,9 @@ export function TransactionForm({
                                 <button
                                     type="button"
                                     onClick={() => setDirection("income")}
-                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${direction === "income"
-                                            ? "bg-white text-positive-600 shadow-sm"
-                                            : "text-surface-500 hover:text-[#0f2233]"
+                                    className={`rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${direction === "income"
+                                        ? "bg-[#00c48c] text-white shadow-md transform scale-[1.02]"
+                                        : "text-[var(--tx2)] hover:text-[var(--tx1)]"
                                         }`}
                                 >
                                     Ingreso
@@ -622,9 +665,9 @@ export function TransactionForm({
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Monto</label>
+                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Monto exacto</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-wide text-surface-400">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold tracking-wide text-[var(--tx3)]">
                                     {selectedAccountCurrency}
                                 </span>
                                 <input
@@ -633,7 +676,7 @@ export function TransactionForm({
                                     required
                                     value={amount}
                                     onChange={(event) => setAmount(event.target.value)}
-                                    className="input-field pl-16"
+                                    className="w-full rounded-xl border border-[var(--l)] bg-white pl-14 pr-4 py-3 text-lg font-bold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -641,46 +684,41 @@ export function TransactionForm({
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h2 className="text-base font-semibold text-[#0f2233]">2. Datos del movimiento</h2>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Describe el hecho contable y define fecha + cuenta de impacto.
-                    </p>
+                <section className="c !p-6">
+                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">2. Datos del movimiento</div></div>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 space-y-5">
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Descripción</label>
+                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Descripción</label>
                             <input
                                 type="text"
                                 required
                                 value={description}
                                 onChange={(event) => setDescription(event.target.value)}
-                                className="input-field"
+                                className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-semibold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
                                 placeholder="Ej. Compra de supermercado o cobro de servicio"
                             />
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-5 sm:grid-cols-2">
                             <div>
-                                <label className="mb-1.5 block text-sm font-medium text-surface-700">Fecha</label>
+                                <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Fecha</label>
                                 <input
                                     type="date"
                                     required
                                     value={date}
                                     onChange={(event) => setDate(event.target.value)}
-                                    className="input-field"
+                                    className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-semibold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
                                 />
                             </div>
 
                             <Select
-                                label="Cuenta"
+                                label="Cuenta involucrada"
                                 value={accountId}
                                 onChange={(event) => setAccountId(event.target.value)}
                                 required
                             >
-                                <option value="" disabled>
-                                    Selecciona una cuenta
-                                </option>
+                                <option value="" disabled>Selecciona una cuenta</option>
                                 {accounts.map((account) => (
                                     <option key={account.id} value={account.id}>
                                         {account.name} ({account.currency})
@@ -691,19 +729,16 @@ export function TransactionForm({
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h2 className="text-base font-semibold text-[#0f2233]">3. Clasificación y contexto</h2>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Asigna categoría, meta de ahorro y observaciones para mejorar análisis posterior.
-                    </p>
+                <section className="c !p-6">
+                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">3. Clasificación (Opcional pero adictiva)</div></div>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-4 space-y-5">
                         <Select
                             label="Categoría"
                             value={categoryId}
                             onChange={(event) => setCategoryId(event.target.value)}
                         >
-                            <option value="">Sin categoría</option>
+                            <option value="">Sin categoría asignada</option>
                             {filteredCategories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                     {category.name}
@@ -713,7 +748,7 @@ export function TransactionForm({
 
                         {direction === "expense" && savingsGoals && savingsGoals.length > 0 ? (
                             <Select
-                                label="Asignar a meta de ahorro (opcional)"
+                                label="Impulsar meta de ahorro"
                                 value={savingsGoalId}
                                 onChange={(event) => setSavingsGoalId(event.target.value)}
                             >
@@ -727,12 +762,12 @@ export function TransactionForm({
                         ) : null}
 
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-surface-700">Notas (opcional)</label>
+                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Notas para tu Yo del futuro</label>
                             <textarea
                                 value={notes}
                                 onChange={(event) => setNotes(event.target.value)}
-                                className="input-field min-h-[96px]"
-                                placeholder="Detalle adicional para auditoría o seguimiento"
+                                className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-medium text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10 min-h-[96px]"
+                                placeholder="Escribe aquí un detalle para recordar esto después..."
                             />
                         </div>
                     </div>

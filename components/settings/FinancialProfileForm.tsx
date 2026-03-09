@@ -97,7 +97,7 @@ export function FinancialProfileForm({ initialData }: { initialData: FinancialPr
                 setSuccessMsg("¡Perfil financiero actualizado con éxito!");
                 setTimeout(() => setSuccessMsg(""), 3000);
             }
-        } catch (err) {
+        } catch {
             setErrorMsg("Ocurrió un error inesperado al guardar el perfil.");
         } finally {
             setLoading(false);
