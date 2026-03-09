@@ -13,30 +13,38 @@ export interface GamificationState {
 const XP_PER_LEVEL = 100;
 
 export async function getUserGamification(): Promise<GamificationState | null> {
-    const supabase = await createClient();
+    try {
+        const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-    const { data, error } = await supabase
-        .from("user_gamification")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-    if (error || !data) {
-        // Create initial if not exists
-        const { data: newData, error: insertError } = await supabase
+        const { data, error } = await supabase
             .from("user_gamification")
-            .insert({ user_id: user.id })
-            .select()
+            .select("*")
+            .eq("user_id", user.id)
             .single();
 
-        if (insertError || !newData) return null;
-        return newData;
-    }
+        if (error || !data) {
+            // Create initial if not exists
+            const { data: newData, error: insertError } = await supabase
+                .from("user_gamification")
+                .insert({ user_id: user.id })
+                .select()
+                .single();
 
-    return data;
+            if (insertError || !newData) {
+                console.error("Supabase user_gamification table missing or insert failed:", insertError);
+                return null;
+            }
+            return newData;
+        }
+
+        return data;
+    } catch (error) {
+        console.error("Unhandled exception in getUserGamification:", error);
+        return null;
+    }
 }
 
 export async function processGamificationAction(actionType: 'transaction' | 'goal_reached' | 'login') {
