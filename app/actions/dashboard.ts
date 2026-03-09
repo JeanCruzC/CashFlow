@@ -844,9 +844,9 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         logError("Error fetching transactions for dashboard", transactionsResult.error, { orgId });
         throw new Error("No se pudo cargar el dashboard");
     }
-    if (forecastResult.error) {
+    if (forecastResult.error && !isMissingTableError(forecastResult.error)) {
         logError("Error fetching forecast assumptions for dashboard", forecastResult.error, { orgId });
-        throw new Error("No se pudo cargar el dashboard");
+        // Don't throw - use null forecast data instead
     }
     if (savingsGoalsResult.error) {
         logError("Error fetching savings goals", savingsGoalsResult.error, { orgId });
@@ -855,8 +855,11 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     if (financialProfileResult.error && !isMissingTableError(financialProfileResult.error)) {
         logError("Error fetching org financial profile", financialProfileResult.error, { orgId });
     }
-    if (onboardingStateResult.error) {
+    if (onboardingStateResult.error && !isMissingTableError(onboardingStateResult.error)) {
         logError("Error fetching onboarding state", onboardingStateResult.error, { orgId });
+    }
+    if (dismissedEventsResult.error && !isMissingTableError(dismissedEventsResult.error)) {
+        logError("Error fetching dismissed events", dismissedEventsResult.error, { orgId });
     }
 
     const accounts = mapAccounts((accountsResult.data || []) as Array<Record<string, unknown>>);
@@ -880,7 +883,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null;
     const onboardingStartDate = extractOnboardingStartDate(onboardingAnswers);
     const onboardingSubscriptions = extractOnboardingSubscriptions(onboardingAnswers);
-    const dismissedKeys = new Set((dismissedEventsResult.data || []).map((row) => String(row.event_key)));
+    const dismissedKeys: Set<string> = new Set((dismissedEventsResult.data || []).map((row: Record<string, unknown>) => String(row.event_key)));
     const summary = {
         accounts: accounts.length,
         categories: categories.length,

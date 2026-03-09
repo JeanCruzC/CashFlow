@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
 import { getUserGamification } from "@/app/actions/gamification";
 import { ModuleHero } from "@/components/ui/ModuleHero";
+import { ActionButton, ActionDiv } from "@/components/dashboard/DashboardClientActions";
 
 type Locale = "es" | "en";
 
@@ -103,13 +104,47 @@ function groupMovementsByDate(items: RecentMovement[]) {
 
 
 export default async function DashboardPage() {
-    const [kpiBundle, recentRaw, gamification] = await Promise.all([
-        getDashboardKPIs(),
-        getRecentTransactions(),
-        getUserGamification()
-    ]);
-    const recentMovements = mapRecentMovements((recentRaw || []) as Array<Record<string, unknown>>);
-    const groupedDailyMovements = groupMovementsByDate(recentMovements);
+    let kpiBundle;
+    let recentMovements: RecentMovement[] = [];
+    let groupedDailyMovements: ReturnType<typeof groupMovementsByDate> = [];
+    let gamification = null;
+
+    try {
+        const [kpis, recentRaw, gam] = await Promise.all([
+            getDashboardKPIs(),
+            getRecentTransactions(),
+            getUserGamification()
+        ]);
+        kpiBundle = kpis;
+        recentMovements = mapRecentMovements((recentRaw || []) as Array<Record<string, unknown>>);
+        groupedDailyMovements = groupMovementsByDate(recentMovements);
+        gamification = gam;
+    } catch (error) {
+        console.error("Dashboard page data fetch failed:", error);
+        // Provide safe defaults so the page renders instead of crashing
+        kpiBundle = {
+            orgType: "personal" as const,
+            currency: "PEN",
+            locale: "es" as const,
+            monthlyTrend: [],
+            savingsGoals: [],
+            budgetUsed: 0,
+            budgetTotal: 0,
+            personal: {
+                netCashFlow: 0,
+                savingsRatePct: 0,
+                assets: 0,
+                liabilities: 0,
+                netWorth: 0,
+                emergencyFundMonths: 0,
+                avgMonthlyExpenses: 0,
+                expenseMonthsObserved: 0,
+                liquidCash: 0,
+                budgetVariance: 0,
+            },
+        };
+    }
+
 
     const format = formatter(kpiBundle.locale, kpiBundle.currency);
     const isBusiness = kpiBundle.orgType === "business";
@@ -198,11 +233,6 @@ export default async function DashboardPage() {
     const hasMonthPlan = monthPlanTotal > 0;
     const monthUsagePct = hasMonthPlan ? Math.min((monthActualTotal / monthPlanTotal) * 100, 100) : 0;
 
-    const dispatchPopup = (type: string) => {
-        if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("showCashflowPopup", { detail: { type } }));
-        }
-    };
 
     const xpPoints = gamification?.xp_points || 0;
     const currentLevel = gamification?.current_level || 1;
@@ -235,9 +265,9 @@ export default async function DashboardPage() {
                 description={<>Banco y efectivo <span className="hero-pill"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="18 15 12 9 6 15" /></svg> +12.3% este mes</span></>}
                 actions={
                     <>
-                        <button className="h-btn1" onClick={() => dispatchPopup("register")}>
+                        <ActionButton type="register" className="h-btn1">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Registrar movimiento
-                        </button>
+                        </ActionButton>
                         <Link href="/dashboard/transactions" className="h-btn2 no-underline">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg> Ver detalle
                         </Link>
@@ -268,22 +298,22 @@ export default async function DashboardPage() {
                 <div className="sh-chip">Lo más usado</div>
             </div>
             <div className="qa fu in" style={{ transitionDelay: ".1s" }}>
-                <div className="qa-c q1" onClick={() => dispatchPopup("income")}>
+                <ActionDiv type="income" className="qa-c q1">
                     <div className="qa-ico i1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 5 5 12" /></svg></div>
                     <span className="qa-lbl">Añadir Ingreso</span>
-                </div>
-                <div className="qa-c q2" onClick={() => dispatchPopup("expense")}>
+                </ActionDiv>
+                <ActionDiv type="expense" className="qa-c q2">
                     <div className="qa-ico i2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4757" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="5 12 12 19 19 12" /></svg></div>
                     <span className="qa-lbl">Añadir Gasto</span>
-                </div>
-                <div className="qa-c q3" onClick={() => dispatchPopup("transfer")}>
+                </ActionDiv>
+                <ActionDiv type="transfer" className="qa-c q3">
                     <div className="qa-ico i3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth="2.5"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" /></svg></div>
                     <span className="qa-lbl">Transferir</span>
-                </div>
-                <div className="qa-c q4" onClick={() => dispatchPopup("save")}>
+                </ActionDiv>
+                <ActionDiv type="save" className="qa-c q4">
                     <div className="qa-ico i4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0V9a1 1 0 011-1h2a1 1 0 011 1v11m-4 0h4" /></svg></div>
                     <span className="qa-lbl">Guardar / Ahorrar</span>
-                </div>
+                </ActionDiv>
             </div>
 
             <div className="g2 fu in" style={{ transitionDelay: ".13s" }}>
@@ -364,12 +394,12 @@ export default async function DashboardPage() {
                 <div className="c">
                     <div className="c-head"><div className="c-t">Retos de ahorro</div><div className="c-a">Ver todos</div></div>
                     <div className="ch-g">
-                        <div className="ch done" onClick={() => dispatchPopup("streak")}>
+                        <ActionDiv type="streak" className="ch done">
                             <div className="ch-bdg b-done">Hecho</div>
                             <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
                             <div className="ch-n">Sin café afuera</div>
                             <div className="ch-d">Ahorra S/ 50</div>
-                        </div>
+                        </ActionDiv>
                         <div className="ch">
                             <div className="ch-bdg b-hot">Activo</div>
                             <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div>
@@ -385,19 +415,19 @@ export default async function DashboardPage() {
                         <div className="plan-mt">
                             <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                             <p>Aún no tienes un plan mensual.<br />Crea uno y toma el control.</p>
-                            <button className="plan-btn" onClick={() => dispatchPopup("plan")}>
+                            <ActionButton type="plan" className="plan-btn">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Crear plan mensual
-                            </button>
+                            </ActionButton>
                         </div>
                     ) : (
                         <div className="plan-mt">
                             <div className="text-3xl font-bold text-[var(--ok)]">{format.percent.format(monthUsagePct)}%</div>
                             <p className="mt-2 text-[var(--tx2)] font-medium">del plan usado.</p>
-                            <div className="mt-4"><button className="plan-btn" onClick={() => dispatchPopup("plan")}>Revisar presupuesto</button></div>
+                            <div className="mt-4"><ActionButton type="plan" className="plan-btn">Revisar presupuesto</ActionButton></div>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
