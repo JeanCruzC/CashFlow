@@ -569,11 +569,10 @@ export function TransactionForm({
                                                         </td>
                                                         <td className="px-3 py-2">
                                                             <span
-                                                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${
-                                                                    item.ready_to_save
+                                                                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${item.ready_to_save
                                                                         ? "border-[#bfdfca] bg-[#eef9f1] text-positive-700"
                                                                         : "border-[#f1d3cf] bg-[#fff5f4] text-negative-600"
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {item.ready_to_save ? "Listo" : "Revisar"}
                                                             </span>
@@ -602,22 +601,20 @@ export function TransactionForm({
                                 <button
                                     type="button"
                                     onClick={() => setDirection("expense")}
-                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                                        direction === "expense"
-                                            ? "bg-white text-negative-600 shadow-sm"
+                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${direction === "expense"
+                                            ? "bg-white text-[#0f2233] shadow-sm ring-1 ring-[#c8d7eb]"
                                             : "text-surface-500 hover:text-[#0f2233]"
-                                    }`}
+                                        }`}
                                 >
                                     Egreso
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setDirection("income")}
-                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                                        direction === "income"
+                                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${direction === "income"
                                             ? "bg-white text-positive-600 shadow-sm"
                                             : "text-surface-500 hover:text-[#0f2233]"
-                                    }`}
+                                        }`}
                                 >
                                     Ingreso
                                 </button>

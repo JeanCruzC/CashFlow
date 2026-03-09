@@ -124,28 +124,26 @@
 
   .status-due-today {
     border-radius: 9999px;
-    border: 1px solid rgba(235, 198, 109, 0.5);
-    background: rgba(235, 198, 109, 0.15);
+    border: 1px solid rgba(13, 76, 122, 0.4);
+    background: rgba(13, 76, 122, 0.08);
     padding: 2px 10px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #A77C24;
-    animation: pulseAttention 2s ease-in-out infinite;
+    color: #0d4c7a;
   }
 
   .status-overdue {
     border-radius: 9999px;
-    border: 1px solid rgba(234, 138, 138, 0.5);
-    background: rgba(234, 138, 138, 0.12);
+    border: 1px solid rgba(17, 112, 104, 0.4);
+    background: rgba(17, 112, 104, 0.08);
     padding: 2px 10px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #A93636;
-    animation: pulseAttention 1.5s ease-in-out infinite;
+    color: #117068;
   }
 
   .status-upcoming {

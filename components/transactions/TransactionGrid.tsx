@@ -454,9 +454,8 @@ export function TransactionGrid({
                                             <td className="text-surface-600">{row.accounts?.name || "-"}</td>
                                             <td className="text-surface-600">{row.categories_gl?.name || "Sin categoria"}</td>
                                             <td
-                                                className={`text-right font-semibold ${
-                                                    row.amount >= 0 ? "text-positive-600" : "text-negative-600"
-                                                }`}
+                                                className={`text-right font-semibold ${row.amount >= 0 ? "text-positive-600" : "text-surface-600"
+                                                    }`}
                                             >
                                                 {row.amount >= 0 ? "+" : "-"}
                                                 {formatRowAmount(row.amount, row.currency)}
@@ -475,7 +474,7 @@ export function TransactionGrid({
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDelete(row.id)}
-                                                        className="font-medium text-negative-600 hover:text-negative-700"
+                                                        className="font-medium text-surface-500 hover:text-surface-700"
                                                     >
                                                         Eliminar
                                                     </button>

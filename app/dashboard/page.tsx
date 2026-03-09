@@ -144,12 +144,12 @@ const STATUS_META = {
     due_today: {
         label: "Hoy",
         pillClass: "status-due-today",
-        cardClass: "border-warning-300 bg-warning-50/50",
+        cardClass: "border-[#0d4c7a]/20 bg-[#0d4c7a]/5",
     },
     overdue: {
         label: "Vencido",
         pillClass: "status-overdue",
-        cardClass: "border-negative-200 bg-negative-50/40",
+        cardClass: "border-[#117068]/20 bg-[#117068]/5",
     },
     upcoming: {
         label: "Programado",
@@ -289,10 +289,10 @@ export default async function DashboardPage() {
                             </div>
                             <div className="mt-2 flex items-center justify-between gap-4">
                                 <span className="flex items-center gap-1.5 text-surface-500">
-                                    <ArrowUpCircle size={14} className="text-negative-500" />
+                                    <ArrowUpCircle size={14} className="text-[#0a3b5e]" />
                                     Gastos
                                 </span>
-                                <span className="font-semibold text-negative-600">{format.money.format(todayExpense)}</span>
+                                <span className="font-semibold text-surface-600">{format.money.format(todayExpense)}</span>
                             </div>
                             <div className="mt-2 flex items-center justify-between gap-4 border-t border-surface-200 pt-2">
                                 <span className="text-surface-600 font-medium">Neto</span>
@@ -325,9 +325,9 @@ export default async function DashboardPage() {
                         </div>
 
                         <div className="flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-600">
-                            <span className="flex items-center gap-1 text-warning-600"><span className="h-1.5 w-1.5 rounded-full bg-warning-500" /> {scheduleReview?.summary.needsAttention || 0} pendientes</span>
+                            <span className="flex items-center gap-1 text-[#0d4c7a]"><span className="h-1.5 w-1.5 rounded-full bg-[#0d4c7a]" /> {scheduleReview?.summary.needsAttention || 0} pendientes</span>
                             <span className="mx-1 text-surface-300">·</span>
-                            <span className="flex items-center gap-1 text-negative-600"><span className="h-1.5 w-1.5 rounded-full bg-negative-500" /> {scheduleReview?.summary.overdue || 0} vencidos</span>
+                            <span className="flex items-center gap-1 text-[#117068]"><span className="h-1.5 w-1.5 rounded-full bg-[#117068]" /> {scheduleReview?.summary.overdue || 0} vencidos</span>
                         </div>
                     </div>
 
