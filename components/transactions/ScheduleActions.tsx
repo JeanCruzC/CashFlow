@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { ArrowRight, Check, X } from "lucide-react";
+import { dismissScheduleEvent } from "@/app/actions/schedule";
 
 interface ScheduleActionsProps {
     eventId: string;
@@ -14,10 +14,10 @@ interface ScheduleActionsProps {
 }
 
 export function ScheduleActions({
+    eventId,
     status,
     ctaHref,
     ctaLabel,
-    kind,
 }: ScheduleActionsProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -34,20 +34,21 @@ export function ScheduleActions({
     if (status === "upcoming") {
         return (
             <span className="text-xs text-surface-400">
-                Sin acción requerida todavía.
+                Sin acción requerida.
             </span>
         );
     }
 
-    /* due_today | overdue → show single action button */
+    /* due_today | overdue → action buttons */
     const handleRegister = () => {
         startTransition(() => {
             router.push(ctaHref);
         });
     };
 
-    const handleSkip = () => {
-        startTransition(() => {
+    const handleDismiss = () => {
+        startTransition(async () => {
+            await dismissScheduleEvent(eventId);
             router.refresh();
         });
     };
@@ -71,7 +72,7 @@ export function ScheduleActions({
             </button>
             <button
                 type="button"
-                onClick={handleSkip}
+                onClick={handleDismiss}
                 disabled={isPending}
                 className="btn-skip"
             >

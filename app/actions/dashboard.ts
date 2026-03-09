@@ -231,11 +231,13 @@ function buildPersonalScheduleReview({
     cycle,
     financialProfile,
     transactions,
+    dismissedKeys,
 }: {
     today: Date;
     cycle: NonNullable<DashboardKPIs["personalCycle"]>;
     financialProfile: OrgFinancialProfile | null | undefined;
     transactions: Transaction[];
+    dismissedKeys: Set<string>;
 }) {
     const todayStart = startOfDayDate(today);
     const reviewSeeds: ReviewEventSeed[] = [];
@@ -368,6 +370,7 @@ function buildPersonalScheduleReview({
 
     const usedTransactionIds = new Set<string>();
     const items = reviewSeeds
+        .filter((seed) => !dismissedKeys.has(seed.id))
         .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
         .map((seed) => {
             const tolerance = Math.max(5, round2(seed.amount * 0.12));
@@ -784,6 +787,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         savingsGoalsResult,
         financialProfileResult,
         onboardingStateResult,
+        dismissedEventsResult,
     ] = await Promise.all([
         supabase
             .from("orgs")
@@ -813,6 +817,11 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle(),
+        supabase
+            .from("dismissed_schedule_events")
+            .select("event_key")
+            .eq("org_id", orgId)
+            .eq("cycle_month", `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -871,6 +880,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         (onboardingStateResult.data?.answers as Record<string, unknown> | undefined) ?? null;
     const onboardingStartDate = extractOnboardingStartDate(onboardingAnswers);
     const onboardingSubscriptions = extractOnboardingSubscriptions(onboardingAnswers);
+    const dismissedKeys = new Set((dismissedEventsResult.data || []).map((row) => String(row.event_key)));
     const summary = {
         accounts: accounts.length,
         categories: categories.length,
@@ -1032,6 +1042,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
         },
         financialProfile,
         transactions,
+        dismissedKeys,
     });
 
     const cycleDay = clampDay(

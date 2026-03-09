@@ -1,20 +1,10 @@
 import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
-import { CashFlowChart } from "@/components/ui/CashFlowChart";
-import { HoverMetricCard } from "@/components/ui/HoverMetricCard";
-import { ModuleHero } from "@/components/ui/ModuleHero";
-import { SpendingMixChart } from "@/components/ui/SpendingMixChart";
 import { ScheduleActions } from "@/components/transactions/ScheduleActions";
+import { ModuleHero } from "@/components/ui/ModuleHero";
 import {
-    AlertTriangle,
-    Clock,
-    CheckCircle2,
-    CalendarClock,
     ArrowDownCircle,
     ArrowUpCircle,
-    Wallet,
-    CreditCard,
-    RefreshCw,
 } from "lucide-react";
 
 type Locale = "es" | "en";
@@ -78,7 +68,7 @@ function daysUntilDay(targetDay: number, todayDay: number, daysInMonth: number) 
 }
 
 function savingsPriorityLabel(priority: string) {
-    if (priority === "fixed_expenses") return "Blindar gastos fijos";
+    if (priority === "emergency_fund") return "Fondo de emergencia";
     if (priority === "debt_payments") return "Bajar deudas";
     if (priority === "savings_goals") return "Acelerar metas";
     return priority;
@@ -223,13 +213,7 @@ export default async function DashboardPage() {
                     </div>
                 </section>
 
-                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Tendencia de caja</h3>
-                    <p className="mt-1 text-sm text-surface-500">Ingresos y gastos de los ultimos meses.</p>
-                    <div className="mt-4">
-                        <CashFlowChart data={kpiBundle.monthlyTrend} currency={kpiBundle.currency} />
-                    </div>
-                </section>
+                <p className="mt-1 text-sm text-surface-500">Vista limpia de ingresos, costos y resultado operativo.</p>
             </div>
         );
     }
@@ -241,7 +225,7 @@ export default async function DashboardPage() {
     const today = new Date();
     const todayDay = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const todayStart = startOfDay(today);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Replaced startOfDay
 
     const personal = kpiBundle.personal;
     const cycle = kpiBundle.personalCycle;
@@ -249,87 +233,9 @@ export default async function DashboardPage() {
     const savingsGoals = kpiBundle.savingsGoals || [];
 
     const availableNow = personal?.liquidCash || 0;
-    const fixedExpenses = cycle?.fixedPlanned || 0;
-    const variableExpenses = cycle?.variablePlanned || 0;
-    const cardPaymentsTotal = (cycle?.fullCardPayments || 0) + (cycle?.revolvingMinimumPayments || 0);
-    const aiSavings = cycle?.plannedSavings || savingsPlan?.monthlySavingsPool || 0;
-
-    const distributionRows = [
-        { label: "Gastos fijos", value: fixedExpenses, color: "#0d4c7a" },
-        { label: "Gastos variables", value: variableExpenses, color: "#117068" },
-        { label: "Pagos de tarjeta", value: cardPaymentsTotal, color: "#e05252" },
-        { label: "Ahorro IA", value: aiSavings, color: "#f59e0b" },
-    ];
-    const cycleTotal = distributionRows.reduce((sum, row) => sum + row.value, 0);
-
-    const nextIncomeDay = resolveNextCycleDay(
-        cycle ? [...cycle.incomePaymentDays, ...cycle.partnerIncomePaymentDays] : [],
-        todayDay
-    );
-    const nextCardDay = resolveNextCycleDay(
-        cycle ? cycle.cardSchedules.map((card) => card.paymentDay) : [],
-        todayDay
-    );
-
-    const nextIncomeDelta = nextIncomeDay == null ? null : daysUntilDay(nextIncomeDay, todayDay, daysInMonth);
-    const nextCardDelta = nextCardDay == null ? null : daysUntilDay(nextCardDay, todayDay, daysInMonth);
-    const nextSubscriptionDay = resolveNextCycleDay(
-        cycle ? cycle.subscriptionSchedules.map((s) => s.billingDay) : [],
-        todayDay
-    );
-    const nextSubscriptionDelta = nextSubscriptionDay == null ? null : daysUntilDay(nextSubscriptionDay, todayDay, daysInMonth);
 
     const topGoal = savingsGoals[0] || null;
     const topGoalProgress = topGoal ? goalProgress(topGoal.current_amount, topGoal.target_amount) : 0;
-
-    const fixedRatio = cycleTotal > 0 ? (fixedExpenses / cycleTotal) * 100 : 0;
-    const variableRatio = cycleTotal > 0 ? (variableExpenses / cycleTotal) * 100 : 0;
-    const cardRatio = cycleTotal > 0 ? (cardPaymentsTotal / cycleTotal) * 100 : 0;
-    const savingsRatio = cycleTotal > 0 ? (aiSavings / cycleTotal) * 100 : 0;
-
-    const sortedCards = [...(cycle?.cardSchedules || [])].sort((a, b) => {
-        if (a.paymentDay === b.paymentDay) return b.expectedPayment - a.expectedPayment;
-        return a.paymentDay - b.paymentDay;
-    });
-
-    const fixedCompositionDetails = (cycle?.fixedBreakdown || []).map((item) => ({
-        label: item.name,
-        value: format.money.format(item.amount),
-    }));
-    const variableCompositionDetails = (cycle?.variableBreakdown || []).map((item) => ({
-        label: item.name,
-        value: format.money.format(item.amount),
-    }));
-
-    const fixedHoverDetails = [
-        ...(fixedCompositionDetails.length > 0
-            ? fixedCompositionDetails
-            : [{ label: "Sin categorias fijas", value: "-" }]),
-        { label: "Total planificado", value: format.money.format(fixedExpenses) },
-        { label: "Peso en el ciclo", value: `${format.percent.format(fixedRatio)}%` },
-    ];
-
-    const variableHoverDetails = [
-        ...(variableCompositionDetails.length > 0
-            ? variableCompositionDetails
-            : [{ label: "Sin categorias variables", value: "-" }]),
-        { label: "Total planificado", value: format.money.format(variableExpenses) },
-        { label: "Peso en el ciclo", value: `${format.percent.format(variableRatio)}%` },
-    ];
-
-    const cardHoverDetails = [
-        ...sortedCards.slice(0, 4).map((card) => ({
-            label: `${card.name} · dia ${card.paymentDay}`,
-            value: format.money.format(card.expectedPayment),
-        })),
-        { label: "Peso en el ciclo", value: `${format.percent.format(cardRatio)}%` },
-    ];
-
-    const prioritiesLabel = savingsPlan?.savingsPriorities.length
-        ? savingsPlan.savingsPriorities
-            .map((p) => savingsPriorityLabel(p).replace(/^./, (c) => c.toLowerCase()))
-            .join(" · ")
-        : "No hay prioridades configuradas";
 
     const scheduleReview = cycle?.scheduleReview || null;
     const reviewItems = scheduleReview?.items || [];
@@ -395,28 +301,6 @@ export default async function DashboardPage() {
                                 </span>
                             </div>
                         </div>
-
-                        {/* Countdown pills */}
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-full border border-surface-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-surface-600">
-                                <Wallet size={11} className="text-positive-500" />
-                                Ingreso {nextIncomeDay != null
-                                    ? nextIncomeDelta === 0 ? "hoy" : `en ${nextIncomeDelta}d`
-                                    : "sin fecha"}
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full border border-surface-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-surface-600">
-                                <CreditCard size={11} className="text-negative-500" />
-                                Tarjeta {nextCardDay != null
-                                    ? nextCardDelta === 0 ? "hoy" : `en ${nextCardDelta}d`
-                                    : "sin fecha"}
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full border border-surface-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-surface-600">
-                                <RefreshCw size={11} className="text-brand-500" />
-                                Suscripción {nextSubscriptionDay != null
-                                    ? nextSubscriptionDelta === 0 ? "hoy" : `en ${nextSubscriptionDelta}d`
-                                    : "sin fecha"}
-                            </span>
-                        </div>
                     </>
                 }
             >
@@ -426,69 +310,26 @@ export default async function DashboardPage() {
                 <p className="mt-2 text-sm font-medium text-surface-600">
                     Dinero real disponible hoy en banco y efectivo.
                 </p>
-
-                {topGoal ? (
-                    <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-surface-200 bg-white/80 px-3 py-1 text-xs font-medium text-surface-600">
-                        <span className="h-1.5 w-1.5 rounded-full bg-positive-500" />
-                        <span>Meta activa: {topGoal.name}</span>
-                        <span className="text-surface-400">·</span>
-                        <span className="font-semibold text-positive-600">{format.percent.format(topGoalProgress)}%</span>
-                    </div>
-                ) : null}
             </ModuleHero>
 
-            {/* ═══════════ KPI STRIP ═══════════ */}
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <article className="kpi-strip-card border-warning-200 bg-warning-50/50">
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-warning-100">
-                            <AlertTriangle size={14} className="text-warning-600" />
-                        </div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-warning-600">Pendientes</p>
-                    </div>
-                    <p className="mt-2 text-3xl font-bold text-[#92400e]">{scheduleReview?.summary.needsAttention || 0}</p>
-                    <p className="mt-1 text-xs text-surface-500">Necesitan confirmación.</p>
-                </article>
-                <article className="kpi-strip-card border-negative-200 bg-negative-50/40">
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-negative-100">
-                            <Clock size={14} className="text-negative-600" />
-                        </div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-negative-600">Vencidos</p>
-                    </div>
-                    <p className="mt-2 text-3xl font-bold text-[#7f1d1d]">{scheduleReview?.summary.overdue || 0}</p>
-                    <p className="mt-1 text-xs text-surface-500">Pasaron su fecha sin movimiento.</p>
-                </article>
-                <article className="kpi-strip-card border-positive-200 bg-positive-50/40">
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-positive-100">
-                            <CheckCircle2 size={14} className="text-positive-600" />
-                        </div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-positive-600">Confirmados</p>
-                    </div>
-                    <p className="mt-2 text-3xl font-bold text-[#14532d]">{scheduleReview?.summary.confirmed || 0}</p>
-                    <p className="mt-1 text-xs text-surface-500">Detectados automáticamente.</p>
-                </article>
-                <article className="kpi-strip-card border-brand-100 bg-brand-50/30">
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100">
-                            <CalendarClock size={14} className="text-brand-600" />
-                        </div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-brand-600">Próximos</p>
-                    </div>
-                    <p className="mt-2 text-3xl font-bold text-[#1e3a5f]">{scheduleReview?.summary.upcoming || 0}</p>
-                    <p className="mt-1 text-xs text-surface-500">Programados este ciclo.</p>
-                </article>
-            </section>
-
-            {/* ═══════════ AGENDA + PLAN ═══════════ */}
-            <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+            {/* ═══════════ MAIN CONTENT ═══════════ */}
+            <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
                 {/* Agenda */}
                 <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Agenda del ciclo</h3>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Depósitos y pagos del mes. Se confirman solos cuando registras el movimiento.
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex-1">
+                            <h3 className="text-base font-semibold text-[#0f2233]">Agenda de cobros y pagos</h3>
+                            <p className="mt-1 text-sm text-surface-500">
+                                Tareas pendientes del mes actual.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-600">
+                            <span className="flex items-center gap-1 text-warning-600"><span className="h-1.5 w-1.5 rounded-full bg-warning-500" /> {scheduleReview?.summary.needsAttention || 0} pendientes</span>
+                            <span className="mx-1 text-surface-300">·</span>
+                            <span className="flex items-center gap-1 text-negative-600"><span className="h-1.5 w-1.5 rounded-full bg-negative-500" /> {scheduleReview?.summary.overdue || 0} vencidos</span>
+                        </div>
+                    </div>
 
                     {reviewItems.length === 0 ? (
                         <div className="mt-4 rounded-xl border border-dashed border-surface-200 bg-surface-50 px-4 py-8 text-center text-sm text-surface-500">
@@ -513,26 +354,6 @@ export default async function DashboardPage() {
                                                 <p className="mt-1.5 text-sm font-semibold text-[#0f2233] truncate">{event.title}</p>
                                                 <p className="text-xs text-surface-400 truncate">{event.subtitle}</p>
                                             </div>
-
-                                            <p className={`text-base font-bold tabular-nums ${event.kind === "income" ? "text-positive-600" : "text-negative-600"}`}>
-                                                {event.kind === "income" ? "+" : "−"}{format.money.format(event.amount)}
-                                            </p>
-                                        </div>
-
-                                        {/* Action row */}
-                                        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-surface-100 pt-2.5">
-                                            <p className="text-xs text-surface-400 truncate flex-1">
-                                                {event.status === "confirmed"
-                                                    ? "Ya impactó en el flujo diario."
-                                                    : event.note}
-                                            </p>
-                                            <ScheduleActions
-                                                eventId={event.id}
-                                                status={event.status}
-                                                ctaHref={event.ctaHref}
-                                                ctaLabel={event.ctaLabel}
-                                                kind={event.kind}
-                                            />
                                         </div>
                                     </article>
                                 );
@@ -602,87 +423,6 @@ export default async function DashboardPage() {
                         </div>
                     )}
                 </article>
-            </section>
-
-            {/* ═══════════ CYCLE PROJECTIONS ═══════════ */}
-            <section className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                        <h3 className="text-base font-semibold text-[#0f2233]">Distribución del ciclo</h3>
-                        <p className="mt-1 text-sm text-surface-500">
-                            Proyección mensual — no es dinero disponible hoy.
-                        </p>
-                    </div>
-                    <span className="rounded-full border border-surface-200 bg-surface-50 px-3 py-1 text-xs font-medium text-surface-500">
-                        Proyección
-                    </span>
-                </div>
-
-                {/* Stacked bar */}
-                {cycleTotal > 0 && (
-                    <div className="mt-4">
-                        <div className="flex h-3 w-full overflow-hidden rounded-full">
-                            <div className="h-full bg-[#0d4c7a] transition-all duration-700" style={{ width: `${fixedRatio}%` }} />
-                            <div className="h-full bg-[#117068] transition-all duration-700" style={{ width: `${variableRatio}%` }} />
-                            <div className="h-full bg-[#e05252] transition-all duration-700" style={{ width: `${cardRatio}%` }} />
-                            <div className="h-full bg-[#f59e0b] transition-all duration-700" style={{ width: `${savingsRatio}%` }} />
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-surface-500">
-                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#0d4c7a]" />Fijos {format.percent.format(fixedRatio)}%</span>
-                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#117068]" />Variables {format.percent.format(variableRatio)}%</span>
-                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#e05252]" />Tarjetas {format.percent.format(cardRatio)}%</span>
-                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#f59e0b]" />Ahorro {format.percent.format(savingsRatio)}%</span>
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <HoverMetricCard
-                        label="Gastos fijos"
-                        value={format.moneyCompact.format(fixedExpenses)}
-                        details={fixedHoverDetails}
-                        footer="Composicion de categorias fijas."
-                        tooltipSide="bottom"
-                    />
-                    <HoverMetricCard
-                        label="Gastos variables"
-                        value={format.moneyCompact.format(variableExpenses)}
-                        details={variableHoverDetails}
-                        footer="Composicion de categorias variables."
-                        tooltipSide="bottom"
-                    />
-                    <HoverMetricCard
-                        label="Pagos de tarjeta"
-                        value={format.moneyCompact.format(cardPaymentsTotal)}
-                        valueClassName="text-negative-600"
-                        details={cardHoverDetails}
-                        footer="Detalle según tarjetas activas."
-                        tooltipSide="bottom"
-                    />
-                    <HoverMetricCard
-                        label="Ahorro IA"
-                        value={format.moneyCompact.format(aiSavings)}
-                        valueClassName="text-[#117068]"
-                        details={[
-                            { label: "Pool mensual sugerido", value: format.money.format(aiSavings) },
-                            { label: "Porcentaje sugerido", value: `${format.percent.format(savingsPlan?.savingsPct || 0)}%` },
-                            { label: "Peso en el ciclo", value: `${format.percent.format(savingsRatio)}%` },
-                        ]}
-                        footer={prioritiesLabel}
-                        tooltipSide="bottom"
-                    />
-                </div>
-
-                <div className="mt-4 rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm">
-                    <div className="flex items-center justify-between">
-                        <span className="text-surface-500">Compromiso total</span>
-                        <span className="font-semibold text-[#0f2233]">{format.money.format(cycleTotal)}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                        <span className="text-surface-500">Saldo libre proyectado</span>
-                        <span className="font-bold text-positive-600">{format.money.format(cycle?.projectedFreeCash || 0)}</span>
-                    </div>
-                </div>
             </section>
 
             {/* ═══════════ RECENT + GOALS ═══════════ */}
@@ -783,30 +523,6 @@ export default async function DashboardPage() {
                         <Link href="/dashboard/settings#metas-ahorro" className="text-xs font-semibold text-brand-600 no-underline hover:text-brand-500">
                             Gestionar metas →
                         </Link>
-                    </div>
-                </article>
-            </section>
-
-            {/* ═══════════ CHARTS ═══════════ */}
-            <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Tendencia de caja</h3>
-                    <p className="mt-1 text-sm text-surface-500">Ingresos y gastos mensuales.</p>
-                    <div className="mt-4">
-                        <CashFlowChart data={kpiBundle.monthlyTrend} currency={kpiBundle.currency} />
-                    </div>
-                </article>
-
-                <article className="rounded-2xl border border-surface-200 bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#0f2233]">Mix del ciclo</h3>
-                    <p className="mt-1 text-sm text-surface-500">Distribución de la proyección mensual.</p>
-                    <div className="mt-4">
-                        <SpendingMixChart
-                            data={distributionRows}
-                            total={cycleTotal}
-                            currency={kpiBundle.currency}
-                            locale={kpiBundle.locale}
-                        />
                     </div>
                 </article>
             </section>
