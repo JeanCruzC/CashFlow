@@ -12,8 +12,8 @@
     --card-bg: #FFFFFF;
     --border: #D0C4B1;
     --muted: #5F6D73;
-    --brand-primary: #1C5B6E;
-    --brand-accent: #C86E2E;
+    --brand-primary: #0d4c7a;
+    --brand-accent: #117068;
     --surface-tint: #F7F1E8;
     --font-body: "IBM Plex Sans", system-ui, sans-serif;
     --font-display: "Fraunces", Georgia, serif;
@@ -55,7 +55,7 @@
   }
 
   .btn-primary {
-    @apply bg-[#c86e2e] hover:bg-[#b76125] text-white font-semibold px-4 py-2.5 rounded-xl border border-[#a9551d] transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#d8864a] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-[#0d4c7a] hover:bg-[#0a3b5e] text-white font-semibold px-4 py-2.5 rounded-xl border border-[#093250] transition-colors duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0d4c7a] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
