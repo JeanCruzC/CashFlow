@@ -1,19 +1,23 @@
-import { getOrgSettings } from "@/app/actions/settings";
+import { getFinancialProfile, getOrgSettings } from "@/app/actions/settings";
 import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { CategoryCreateForm } from "@/components/categories/CategoryCreateForm";
+import { FinancialProfileForm } from "@/components/settings/FinancialProfileForm";
 import { OrgSettingsForm } from "@/components/settings/OrgSettingsForm";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 import Link from "next/link";
 
 export default async function SettingsPage() {
-    const settings = await getOrgSettings();
+    const [settings, financialProfile] = await Promise.all([
+        getOrgSettings(),
+        getFinancialProfile()
+    ]);
 
-    if (!settings) {
+    if (!settings || !financialProfile) {
         return (
             <div className="rounded-3xl border border-surface-200 bg-white p-8 text-center shadow-card animate-fade-in">
                 <h2 className="text-2xl font-semibold text-[#0f2233]">Configuración no disponible</h2>
                 <p className="mt-2 text-sm text-surface-500">
-                    No existe una organización activa para este usuario. Completa onboarding para continuar.
+                    No existe una organización activa o perfil financiero para este usuario. Completa onboarding para continuar.
                 </p>
                 <Link href="/onboarding/select-profile" className="btn-primary mt-5 inline-flex text-sm">
                     Configurar organización
@@ -60,6 +64,16 @@ export default async function SettingsPage() {
                 </p>
                 <div className="mt-4">
                     <OrgSettingsForm settings={settings} />
+                </div>
+            </section>
+
+            <section id="perfil-financiero" className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card scroll-mt-24">
+                <h3 className="text-lg font-semibold text-[#10283b]">Perfil Financiero y Reglas</h3>
+                <p className="mt-1 text-sm text-surface-500">
+                    Los ingresos bases y proporciones de salud financiera que definiste en el onboarding.
+                </p>
+                <div className="mt-6">
+                    <FinancialProfileForm initialData={financialProfile} />
                 </div>
             </section>
 
