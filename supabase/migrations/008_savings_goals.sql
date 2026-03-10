@@ -31,14 +31,18 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 -- RLS
 ALTER TABLE public.savings_goals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "savings_goals_select" ON public.savings_goals;
 CREATE POLICY "savings_goals_select" ON public.savings_goals FOR SELECT
   USING (is_org_member(org_id));
 
+DROP POLICY IF EXISTS "savings_goals_insert" ON public.savings_goals;
 CREATE POLICY "savings_goals_insert" ON public.savings_goals FOR INSERT
   WITH CHECK (can_write_org(org_id));
 
+DROP POLICY IF EXISTS "savings_goals_update" ON public.savings_goals;
 CREATE POLICY "savings_goals_update" ON public.savings_goals FOR UPDATE
   USING (can_write_org(org_id));
 
+DROP POLICY IF EXISTS "savings_goals_delete" ON public.savings_goals;
 CREATE POLICY "savings_goals_delete" ON public.savings_goals FOR DELETE
   USING (is_org_admin(org_id));

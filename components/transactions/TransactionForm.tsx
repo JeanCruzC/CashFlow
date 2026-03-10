@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { createTransaction, createTransactionsBatch, updateTransaction } from "@/app/actions/transactions";
 import { processGamificationAction } from "@/app/actions/gamification";
+import { updateChallengeProgress } from "@/app/actions/challenges";
+import { interactWithPet } from "@/app/actions/pets";
 import { Select } from "@/components/ui/Select";
 import { Account, CategoryGL } from "@/lib/types/finance";
 
@@ -189,6 +191,15 @@ export function TransactionForm({
 
         let leveledUp = false;
         try {
+            const isConstructive = payload.amount >= 0 || !!payload.savings_goal_id;
+            const amountSaved = Math.abs(payload.amount);
+
+            // Sync gamification in background
+            Promise.all([
+                updateChallengeProgress(amountSaved, isConstructive),
+                interactWithPet(isConstructive ? 'save_money' : 'feed')
+            ]).catch(e => console.error("Error updating challenges/pet:", e));
+
             const gamificationResult = await processGamificationAction("transaction");
             if (gamificationResult?.leveledUp) {
                 leveledUp = true;
@@ -240,6 +251,14 @@ export function TransactionForm({
 
         let leveledUp = false;
         try {
+            const isConstructive = payloads.some(p => p.amount >= 0 || !!p.savings_goal_id);
+            const amountSaved = payloads.reduce((acc, p) => acc + Math.abs(p.amount), 0);
+
+            Promise.all([
+                updateChallengeProgress(amountSaved, isConstructive),
+                interactWithPet(isConstructive ? 'save_money' : 'feed')
+            ]).catch(e => console.error("Error updating challenges/pet:", e));
+
             const gamificationResult = await processGamificationAction("transaction");
             if (gamificationResult?.leveledUp) {
                 leveledUp = true;

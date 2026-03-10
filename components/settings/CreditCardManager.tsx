@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { type CreditCardInput, upsertCreditCard, deleteCreditCard } from "@/app/actions/settings";
-import { Plus, Trash2 as TrashIcon, Loader2 as SpinnerIcon } from "lucide-react";
+import { Plus, Loader2 as SpinnerIcon } from "lucide-react";
 
 export function CreditCardManager({
     initialCards,

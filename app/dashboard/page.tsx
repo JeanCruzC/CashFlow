@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
 import { getUserGamification } from "@/app/actions/gamification";
+import { getActiveChallenges, UserChallenge } from "@/app/actions/challenges";
+import { getUserPet, PetState } from "@/app/actions/pets";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 import { ActionButton, ActionDiv } from "@/components/dashboard/DashboardClientActions";
+import { TamagotchiPet } from "@/components/gamification/TamagotchiPet";
 
 type Locale = "es" | "en";
 
@@ -108,20 +111,25 @@ export default async function DashboardPage() {
     let recentMovements: RecentMovement[] = [];
     let groupedDailyMovements: ReturnType<typeof groupMovementsByDate> = [];
     let gamification = null;
+    let challenges: UserChallenge[] = [];
+    let pet: PetState | null = null;
 
     try {
-        const [kpis, recentRaw, gam] = await Promise.all([
+        const [kpis, recentRaw, gam, userChalls, userPet] = await Promise.all([
             getDashboardKPIs(),
             getRecentTransactions(),
-            getUserGamification()
+            getUserGamification(),
+            getActiveChallenges(),
+            getUserPet()
         ]);
         kpiBundle = kpis;
         recentMovements = mapRecentMovements((recentRaw || []) as Array<Record<string, unknown>>);
         groupedDailyMovements = groupMovementsByDate(recentMovements);
         gamification = gam;
+        challenges = userChalls;
+        pet = userPet;
     } catch (error) {
         console.error("Dashboard page data fetch failed:", error);
-        // Provide safe defaults so the page renders instead of crashing
         kpiBundle = {
             orgType: "personal" as const,
             currency: "PEN",
@@ -340,6 +348,10 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="flex flex-col gap-[15px]">
+                    {pet && (
+                        <TamagotchiPet initialPet={pet} />
+                    )}
+
                     <div className="goal">
                         <div className="c-head">
                             <div className="c-t"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2.5" style={{ marginRight: 5, verticalAlign: "-1px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> Meta de ahorro</div>
@@ -441,20 +453,36 @@ export default async function DashboardPage() {
 
                 <div className="c">
                     <div className="c-head"><div className="c-t">Retos de ahorro</div><div className="c-a">Ver todos</div></div>
-                    <div className="ch-g">
-                        <ActionDiv type="streak" className="ch done">
-                            <div className="ch-bdg b-done">Hecho</div>
-                            <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg></div>
-                            <div className="ch-n">Sin café afuera</div>
-                            <div className="ch-d">Ahorra S/ 50</div>
-                        </ActionDiv>
-                        <div className="ch">
-                            <div className="ch-bdg b-hot">Activo</div>
-                            <div className="ch-ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div>
-                            <div className="ch-n">Reto 30 días</div>
-                            <div className="ch-d">Día 7 de 30</div>
+                    {challenges.length === 0 ? (
+                        <div className="text-center py-4 text-[var(--tx2)] text-sm font-medium">No hay retos vigentes en este momento.</div>
+                    ) : (
+                        <div className="ch-g">
+                            {challenges.map((uc) => {
+                                const prog = uc.progress;
+                                const targ = uc.challenge?.target_amount || uc.challenge?.target_count || 1;
+                                const pct = Math.min(100, Math.floor((prog / targ) * 100));
+
+                                return (
+                                    <div key={uc.id} className={`ch ${uc.status === 'completed' ? 'done' : ''}`}>
+                                        <div className={`ch-bdg ${uc.status === 'completed' ? 'b-done' : 'b-hot'}`}>
+                                            {uc.status === 'completed' ? 'Hecho' : 'Activo'}
+                                        </div>
+                                        <div className="ch-ico">
+                                            {uc.status === 'completed' ? (
+                                                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00c48c" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                                            ) : (
+                                                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                            )}
+                                        </div>
+                                        <div className="ch-n">{uc.challenge?.title || "Reto"}</div>
+                                        <div className="ch-d text-xs font-semibold mt-1">
+                                            {prog} / {targ} ({pct}%)
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className="c">

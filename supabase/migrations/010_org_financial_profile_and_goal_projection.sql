@@ -26,15 +26,19 @@ FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
 ALTER TABLE public.org_financial_profile ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "org_financial_profile_select" ON public.org_financial_profile;
 CREATE POLICY "org_financial_profile_select" ON public.org_financial_profile FOR SELECT
   USING (is_org_member(org_id));
 
+DROP POLICY IF EXISTS "org_financial_profile_insert" ON public.org_financial_profile;
 CREATE POLICY "org_financial_profile_insert" ON public.org_financial_profile FOR INSERT
   WITH CHECK (can_write_org(org_id));
 
+DROP POLICY IF EXISTS "org_financial_profile_update" ON public.org_financial_profile;
 CREATE POLICY "org_financial_profile_update" ON public.org_financial_profile FOR UPDATE
   USING (can_write_org(org_id));
 
+DROP POLICY IF EXISTS "org_financial_profile_delete" ON public.org_financial_profile;
 CREATE POLICY "org_financial_profile_delete" ON public.org_financial_profile FOR DELETE
   USING (is_org_admin(org_id));
 
