@@ -96,21 +96,22 @@ export function TamagotchiModal({
     const danger = pet.hunger < 25 || pet.happiness < 25 || pet.health < 25;
 
     return (
-        <>
-            {/* Invisible backdrop — click to close */}
+        /* Non-blocking widget — no backdrop, user can navigate freely */
+        <div
+            className="fixed z-[100] select-none"
+            style={{
+                bottom: 90,
+                right: 20,
+                animation: "slideUpIn .25s ease-out",
+            }}
+        >
+            {/* Dark card container */}
             <div
-                className="fixed inset-0 z-[99]"
-                onClick={onClose}
-                style={{ background: "transparent" }}
-            />
-
-            {/* Side panel — anchored bottom-right above the mascot */}
-            <div
-                className="fixed z-[100] select-none"
                 style={{
-                    bottom: 90,
-                    right: 20,
-                    animation: "slideUpIn .25s ease-out",
+                    background: "#0d0020",
+                    borderRadius: 14,
+                    padding: "12px 12px 8px",
+                    boxShadow: "0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(124,79,219,.25)",
                 }}
             >
                 {/* Toast */}
@@ -400,7 +401,7 @@ export function TamagotchiModal({
                 >
                     [ CERRAR ]
                 </div>
-            </div>
+            </div>{/* end dark card */}
 
             {/* ─── ANIMATIONS ─── */}
             <style>{`
@@ -413,6 +414,6 @@ export function TamagotchiModal({
         @keyframes sdot{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes slideUpIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
       `}</style>
-        </>
+        </div>
     );
 }
