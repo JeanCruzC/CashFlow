@@ -441,26 +441,26 @@ export function TransactionForm({
                 Volver al libro de movimientos
             </Link>
 
-            <section className="c !p-6">
-                <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card mb-6">
+                <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] items-center">
                     <div>
-                        <p className="inline-flex rounded-full bg-[var(--acc)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[var(--acc)]">
-                            Nuevo Movimiento
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#0d4c7a]">
+                            NUEVO MOVIMIENTO
                         </p>
-                        <h1 className="mt-3 text-3xl font-bold text-[var(--tx1)]">{pageTitle}</h1>
-                        <p className="mt-2 text-sm text-[var(--tx2)]">
+                        <h1 className="mt-2 text-2xl font-bold text-[#0f2233]">{pageTitle}</h1>
+                        <p className="mt-1.5 text-sm text-surface-500">
                             Registra este movimiento para ganar experiencia y mantener tu racha activa.
                         </p>
                     </div>
 
-                    <article className="rounded-xl border border-[var(--l)] bg-[var(--bg)] p-4 flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-2">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-                            <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx1)]">
-                                Tip del Cerdito
+                    <article className="rounded-xl border border-[#6c63ff] bg-white p-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-[#0f2233]">
+                                TIP DEL CERDITO
                             </p>
                         </div>
-                        <p className="text-sm font-medium text-[var(--tx2)]">
+                        <p className="text-sm text-surface-600">
                             Sé específico en tu descripción. Esto te ayudará a obtener mejores analíticas a fin de mes.
                         </p>
                     </article>
@@ -475,8 +475,8 @@ export function TransactionForm({
                 ) : null}
 
                 {mode === "create" ? (
-                    <section id="documento-movimiento" className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                        <h2 className="text-base font-semibold text-[#0f2233]">0. Cargar comprobante (opcional)</h2>
+                    <section id="documento-movimiento" className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card mb-6">
+                        <h2 className="text-sm font-bold text-[#0f2233] mb-1">0. Cargar comprobante (opcional)</h2>
                         <p className="mt-1 text-sm text-surface-500">
                             Sube boletas, vouchers, capturas de Yape/Plin o estados de cuenta para autocompletar el movimiento.
                         </p>
@@ -634,19 +634,19 @@ export function TransactionForm({
                     </section>
                 ) : null}
 
-                <section className="c !p-6">
-                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">1. Tipo y monto</div></div>
+                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card mb-6">
+                    <h2 className="text-sm font-bold text-[#0f2233] border-b border-[#e8eef7] pb-3 mb-4">1. Tipo y monto</h2>
 
-                    <div className="mt-4 grid gap-5 md:grid-cols-2">
+                    <div className="grid gap-6 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Tipo de movimiento</label>
-                            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--l)] bg-[var(--bg)] p-1.5 transition-all">
+                            <label className="mb-2 block text-xs font-bold text-surface-600">Tipo de movimiento</label>
+                            <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-1">
                                 <button
                                     type="button"
                                     onClick={() => setDirection("expense")}
                                     className={`rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${direction === "expense"
-                                        ? "bg-[#ff4757] text-white shadow-md transform scale-[1.02]"
-                                        : "text-[var(--tx2)] hover:text-[var(--tx1)]"
+                                        ? "bg-[#ff4757] text-white shadow-sm"
+                                        : "text-surface-600 hover:text-[#0f2233]"
                                         }`}
                                 >
                                     Egreso
@@ -655,8 +655,8 @@ export function TransactionForm({
                                     type="button"
                                     onClick={() => setDirection("income")}
                                     className={`rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${direction === "income"
-                                        ? "bg-[#00c48c] text-white shadow-md transform scale-[1.02]"
-                                        : "text-[var(--tx2)] hover:text-[var(--tx1)]"
+                                        ? "bg-white border border-[#d9e2f0] text-[#0f2233] shadow-sm tracking-wide"
+                                        : "text-surface-600 hover:text-[#0f2233]"
                                         }`}
                                 >
                                     Ingreso
@@ -665,9 +665,9 @@ export function TransactionForm({
                         </div>
 
                         <div>
-                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Monto exacto</label>
+                            <label className="mb-2 block text-xs font-bold text-surface-600">Monto exacto</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold tracking-wide text-[var(--tx3)]">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold tracking-wide text-surface-400">
                                     {selectedAccountCurrency}
                                 </span>
                                 <input
@@ -676,7 +676,7 @@ export function TransactionForm({
                                     required
                                     value={amount}
                                     onChange={(event) => setAmount(event.target.value)}
-                                    className="w-full rounded-xl border border-[var(--l)] bg-white pl-14 pr-4 py-3 text-lg font-bold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
+                                    className="w-full rounded-xl border border-surface-200 bg-white pl-14 pr-4 py-3 text-lg font-bold text-[#0f2233] outline-none transition-all focus:border-[#0d4c7a] focus:ring-4 focus:ring-[#0d4c7a]/10"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -684,31 +684,31 @@ export function TransactionForm({
                     </div>
                 </section>
 
-                <section className="c !p-6">
-                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">2. Datos del movimiento</div></div>
+                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card mb-6">
+                    <h2 className="text-sm font-bold text-[#0f2233] border-b border-[#e8eef7] pb-3 mb-4">2. Datos del movimiento</h2>
 
-                    <div className="mt-4 space-y-5">
+                    <div className="space-y-5">
                         <div>
-                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Descripción</label>
+                            <label className="mb-2 block text-xs font-bold text-surface-600">Descripción</label>
                             <input
                                 type="text"
                                 required
                                 value={description}
                                 onChange={(event) => setDescription(event.target.value)}
-                                className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-semibold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
+                                className="w-full rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium text-[#0f2233] outline-none transition-all focus:border-[#0d4c7a] focus:ring-4 focus:ring-[#0d4c7a]/10"
                                 placeholder="Ej. Compra de supermercado o cobro de servicio"
                             />
                         </div>
 
                         <div className="grid gap-5 sm:grid-cols-2">
                             <div>
-                                <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Fecha</label>
+                                <label className="mb-2 block text-xs font-bold text-surface-600">Fecha</label>
                                 <input
                                     type="date"
                                     required
                                     value={date}
                                     onChange={(event) => setDate(event.target.value)}
-                                    className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-semibold text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10"
+                                    className="w-full rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium text-[#0f2233] outline-none transition-all focus:border-[#0d4c7a] focus:ring-4 focus:ring-[#0d4c7a]/10"
                                 />
                             </div>
 
@@ -729,10 +729,10 @@ export function TransactionForm({
                     </div>
                 </section>
 
-                <section className="c !p-6">
-                    <div className="c-head border-b border-[var(--l)] pb-3 mb-4"><div className="c-t">3. Clasificación (Opcional pero adictiva)</div></div>
+                <section className="rounded-3xl border border-[#d9e2f0] bg-white p-6 shadow-card mb-6">
+                    <h2 className="text-sm font-bold text-[#0f2233] border-b border-[#e8eef7] pb-3 mb-4">3. Clasificación (Opcional pero adictiva)</h2>
 
-                    <div className="mt-4 space-y-5">
+                    <div className="space-y-5">
                         <Select
                             label="Categoría"
                             value={categoryId}
@@ -762,18 +762,18 @@ export function TransactionForm({
                         ) : null}
 
                         <div>
-                            <label className="mb-2 block text-sm font-bold text-[var(--tx2)]">Notas para tu Yo del futuro</label>
+                            <label className="mb-2 block text-xs font-bold text-surface-600">Notas para tu Yo del futuro</label>
                             <textarea
                                 value={notes}
                                 onChange={(event) => setNotes(event.target.value)}
-                                className="w-full rounded-xl border border-[var(--l)] bg-[var(--bg)] px-4 py-3 text-sm font-medium text-[var(--tx1)] outline-none transition-all focus:border-[var(--acc)] focus:ring-4 focus:ring-[var(--acc)]/10 min-h-[96px]"
+                                className="w-full rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium text-[#0f2233] outline-none transition-all focus:border-[#0d4c7a] focus:ring-4 focus:ring-[#0d4c7a]/10 min-h-[96px]"
                                 placeholder="Escribe aquí un detalle para recordar esto después..."
                             />
                         </div>
                     </div>
                 </section>
 
-                <section className="flex flex-wrap items-center justify-end gap-2 pb-2">
+                <section className="flex flex-wrap items-center justify-end gap-3 pb-2">
                     <button
                         type="button"
                         onClick={() => router.back()}
@@ -785,7 +785,7 @@ export function TransactionForm({
                     <button
                         type="submit"
                         disabled={isPending || batchPending}
-                        className="btn-primary min-w-[180px]"
+                        className="btn-primary"
                     >
                         {isPending ? "Guardando..." : submitLabel}
                     </button>
