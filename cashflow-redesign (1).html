@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — CASHFLOW
+   ─────────────────────────────────────────
+   Fonts:  Outfit (UI) + DM Serif Display (hero numbers)
+   Colors: Ink Navy + Electric Indigo accent
+           Semantic: Emerald / Coral / Amber
+   Motion: Spring-based, purposeful, fast
+═══════════════════════════════════════════ */
+:root {
+  /* surfaces */
+  --bg:    #f2f3f7;
+  --srf:   #ffffff;
+  --srf2:  #f8f9fc;
+  --srf3:  #eef0f6;
+
+  /* borders */
+  --b1: rgba(15,15,35,.07);
+  --b2: rgba(15,15,35,.13);
+
+  /* accent — Electric Indigo */
+  --a:    #5b52f0;
+  --a2:   #4840d4;
+  --a-l:  #eeecfd;
+  --a-g:  rgba(91,82,240,.14);
+
+  /* semantic */
+  --ok:   #00b87a;  --ok-l: #dff8ee;
+  --ng:   #f5365c;  --ng-l: #fde8ed;
+  --wa:   #f59e0b;  --wa-l: #fef3cd;
+
+  /* ink */
+  --ink:  #0f0f23;
+  --t2:   #64748b;
+  --t3:   #aab0c0;
+
+  /* type */
+  --f-ui: 'Outfit', sans-serif;
+  --f-hd: 'DM Serif Display', serif;
+
+  /* elevations */
+  --e1: 0 1px 3px rgba(15,15,35,.05), 0 4px 12px rgba(15,15,35,.04);
+  --e2: 0 4px 16px rgba(15,15,35,.07), 0 12px 36px rgba(15,15,35,.06);
+  --e3: 0 16px 48px rgba(15,15,35,.12), 0 4px 16px rgba(15,15,35,.06);
+
+  --r: 20px;
+  --r2: 14px;
+  --r3: 9px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--f-ui);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ─── LOADER ──────────────────────────────────── */
+#loader {
+  position:fixed; inset:0; background:#fff;
+  z-index:9999;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:20px;
+}
+#loader.out { animation:.4s ease loaderOut forwards; }
+@keyframes loaderOut { to { opacity:0; pointer-events:none; } }
+
+.ld-logo {
+  display:flex; align-items:center; gap:10px;
+  font-size:22px; font-weight:800; letter-spacing:-.03em;
+}
+.ld-mark {
+  width:36px; height:36px; border-radius:11px;
+  background:var(--a);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 16px var(--a-g);
+}
+
+.ld-pig {
+  width:88px; height:88px;
+  animation:.65s ease infinite alternate pigBounce;
+}
+@keyframes pigBounce { from{transform:translateY(0)} to{transform:translateY(-11px)} }
+
+.ld-label { font-size:14px; font-weight:500; color:var(--t2); }
+.ld-label b { color:var(--a); font-weight:700; }
+
+.ld-track { width:196px; height:4px; background:var(--srf3); border-radius:99px; overflow:hidden; }
+.ld-fill { height:100%; background:linear-gradient(90deg,var(--a),var(--ok)); border-radius:99px; animation:2.8s cubic-bezier(.4,0,.2,1) ldFill forwards; }
+@keyframes ldFill { from{width:0} to{width:100%} }
+
+/* ─── LAYOUT ──────────────────────────────────── */
+.app { display:flex; min-height:100vh; }
+
+/* ─── SIDEBAR ─────────────────────────────────── */
+.sb {
+  width:224px;
+  background:var(--srf);
+  border-right:1px solid var(--b1);
+  display:flex; flex-direction:column;
+  position:fixed; inset:0 auto 0 0;
+  z-index:200;
+  box-shadow:var(--e1);
+}
+
+.sb-top {
+  padding:18px 16px 16px;
+  border-bottom:1px solid var(--b1);
+  display:flex; align-items:center; gap:9px;
+}
+.sb-mark {
+  width:34px; height:34px; border-radius:10px;
+  background:var(--a);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px var(--a-g); flex-shrink:0;
+}
+.sb-brand { font-size:16px; font-weight:800; letter-spacing:-.03em; }
+
+.sb-nav { padding:12px 10px; flex:1; overflow-y:auto; }
+.sb-group { margin-bottom:16px; }
+.sb-group-lbl {
+  font-size:9.5px; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase;
+  color:var(--t3); padding:0 8px; margin-bottom:4px;
+}
+.sb-item {
+  display:flex; align-items:center; gap:9px;
+  padding:8px 8px; border-radius:var(--r3);
+  font-size:13px; font-weight:500; color:var(--t2);
+  cursor:pointer; transition:all .15s;
+  margin-bottom:1px; text-decoration:none;
+  position:relative;
+}
+.sb-item:hover { background:var(--srf2); color:var(--ink); }
+.sb-item:hover svg { transform:scale(1.1); }
+.sb-item svg { transition:transform .15s; flex-shrink:0; }
+.sb-item.active {
+  background:var(--a-l);
+  color:var(--a);
+  font-weight:700;
+}
+.sb-item.active svg { opacity:1; }
+.sb-badge {
+  margin-left:auto; background:var(--ng); color:#fff;
+  font-size:10px; font-weight:700;
+  padding:1px 6px; border-radius:99px;
+  animation:1.8s ease infinite badgePulse;
+}
+@keyframes badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+/* STREAK */
+.sb-streak {
+  margin:4px 10px 12px;
+  background:linear-gradient(145deg,#fffbf0,#fff4d6);
+  border:1.5px solid rgba(245,158,11,.2);
+  border-radius:var(--r2);
+  padding:13px; cursor:pointer;
+  transition:all .2s;
+}
+.sb-streak:hover { border-color:rgba(245,158,11,.4); box-shadow:0 4px 18px rgba(245,158,11,.1); }
+.str-row { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+.str-fire { animation:1.8s ease infinite fireDance; display:block; }
+@keyframes fireDance { 0%,100%{transform:rotate(-5deg) scale(1)} 50%{transform:rotate(5deg) scale(1.15)} }
+.str-lbl { font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--t2); }
+.str-val { font-size:20px; font-weight:900; color:var(--wa); letter-spacing:-.04em; line-height:1.1; }
+.str-hint { font-size:11px; color:var(--t2); font-weight:500; margin-bottom:9px; }
+.str-dots { display:flex; gap:3px; }
+.sd { flex:1; height:5px; border-radius:99px; background:var(--srf3); }
+.sd.lit { background:var(--wa); }
+.sd.now { background:var(--a); animation:1.6s ease infinite sdNow; }
+@keyframes sdNow { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.sb-foot { border-top:1px solid var(--b1); padding:12px 10px; }
+.sb-user {
+  display:flex; align-items:center; gap:9px;
+  padding:8px; border-radius:var(--r3);
+  cursor:pointer; transition:background .15s;
+}
+.sb-user:hover { background:var(--srf2); }
+.sb-avi {
+  width:32px; height:32px; border-radius:50%;
+  background:linear-gradient(135deg,var(--a),#a78bfa);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; color:#fff; flex-shrink:0;
+}
+.sb-uname { font-size:12.5px; font-weight:700; }
+.sb-uplan { font-size:11px; color:var(--ok); font-weight:600; }
+
+/* ─── MAIN ────────────────────────────────────── */
+.main { margin-left:224px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+/* ─── TOPBAR ──────────────────────────────────── */
+.topbar {
+  position:sticky; top:0;
+  background:rgba(242,243,247,.88);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--b1);
+  padding:10px 24px;
+  display:flex; align-items:center; gap:11px;
+  z-index:100; height:54px;
+}
+.tb-title { flex:1; font-size:14px; font-weight:700; letter-spacing:-.01em; }
+.tb-title span { color:var(--a); }
+.tb-search {
+  display:flex; align-items:center; gap:7px;
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:99px; padding:6px 14px;
+  font-size:12.5px; color:var(--t2);
+  transition:all .18s; width:190px;
+  font-family:var(--f-ui);
+}
+.tb-search:hover { border-color:var(--a); box-shadow:0 0 0 3px var(--a-l); }
+.tb-icon {
+  width:34px; height:34px;
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .15s; position:relative;
+}
+.tb-icon:hover { border-color:var(--a); }
+.tb-dot {
+  position:absolute; top:5px; right:5px;
+  width:7px; height:7px; background:var(--ng);
+  border-radius:50%; border:2px solid var(--bg);
+  animation:1.8s ease infinite sdNow;
+}
+.tb-cta {
+  display:flex; align-items:center; gap:6px;
+  background:var(--a); color:#fff;
+  font-size:12.5px; font-weight:700;
+  padding:7px 16px; border-radius:99px;
+  border:none; cursor:pointer;
+  font-family:var(--f-ui);
+  box-shadow:0 4px 14px var(--a-g);
+  transition:all .18s;
+}
+.tb-cta:hover { background:var(--a2); transform:translateY(-1px); box-shadow:0 6px 20px rgba(91,82,240,.28); }
+.tb-cta:active { transform:none; }
+
+/* XP strip inside topbar */
+.tb-xp {
+  display:flex; align-items:center; gap:8px;
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:99px; padding:5px 12px; cursor:pointer;
+  transition:all .18s;
+}
+.tb-xp:hover { border-color:var(--a); }
+.tb-xp-lv { font-size:11px; font-weight:800; color:var(--a); }
+.tb-xp-bar-wrap { width:70px; height:5px; background:var(--srf3); border-radius:99px; overflow:hidden; }
+.tb-xp-bar { height:100%; background:linear-gradient(90deg,var(--a),#a78bfa); border-radius:99px; width:0%; transition:width 1.6s cubic-bezier(.4,0,.2,1); position:relative; overflow:hidden; }
+.tb-xp-bar::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); animation:2s linear infinite sheen; }
+@keyframes sheen { from{transform:translateX(-100%)} to{transform:translateX(100%)} }
+.tb-badges { display:flex; gap:3px; }
+.tb-b { font-size:14px; cursor:pointer; transition:transform .15s; }
+.tb-b:hover { transform:scale(1.2) rotate(-8deg); }
+
+/* ─── PAGE WRAPPER ────────────────────────────── */
+.page { padding:22px 24px; flex:1; }
+
+/* ─── SCREEN SWITCHER (demo) ──────────────────── */
+.screen { display:none; animation:.35s ease screenIn; }
+.screen.active { display:block; }
+@keyframes screenIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+/* ─── SECTION HEADING ─────────────────────────── */
+.s-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.s-title { font-size:15px; font-weight:800; letter-spacing:-.02em; }
+.s-sub { font-size:12px; color:var(--t2); margin-top:1px; }
+.s-link { font-size:12px; font-weight:600; color:var(--a); cursor:pointer; transition:opacity .14s; }
+.s-link:hover { opacity:.65; }
+
+/* ─── HERO CARD ───────────────────────────────── */
+.hero {
+  background:var(--ink);
+  border-radius:var(--r); padding:26px 28px;
+  position:relative; overflow:hidden;
+  margin-bottom:16px;
+  box-shadow:0 12px 40px rgba(15,15,35,.18);
+}
+.hero-glow1 { position:absolute; top:-80px; right:-60px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(91,82,240,.2),transparent 65%); pointer-events:none; }
+.hero-glow2 { position:absolute; bottom:-60px; left:20%; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,rgba(0,184,122,.08),transparent 65%); pointer-events:none; }
+.hero-stripe { position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--a),#a78bfa 50%,var(--ok)); }
+
+.hero-inner { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; position:relative; z-index:1; }
+.hero-l {}
+.hero-tag {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,255,255,.1); color:rgba(255,255,255,.8);
+  font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  padding:3px 9px; border-radius:99px; margin-bottom:9px;
+  border:1px solid rgba(255,255,255,.12);
+}
+.hero-tag::before { content:''; width:5px; height:5px; background:var(--ok); border-radius:50%; animation:1.8s ease infinite sdNow; }
+.hero-lbl { font-size:12px; color:rgba(255,255,255,.55); margin-bottom:3px; }
+.hero-amount {
+  font-family:var(--f-hd);
+  font-size:52px; color:#fff;
+  letter-spacing:-.02em; line-height:1; margin-bottom:7px;
+}
+.hero-sub { font-size:12.5px; color:rgba(255,255,255,.55); display:flex; align-items:center; gap:7px; margin-bottom:20px; }
+.hero-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  background:rgba(0,184,122,.2); color:#5effd5;
+  font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px;
+  border:1px solid rgba(0,184,122,.3);
+}
+.hero-acts { display:flex; gap:8px; }
+.hb1 {
+  display:flex; align-items:center; gap:6px;
+  background:#fff; color:var(--a);
+  font-size:12.5px; font-weight:700; padding:9px 17px;
+  border-radius:10px; border:none; cursor:pointer;
+  font-family:var(--f-ui); transition:all .18s;
+  box-shadow:0 4px 12px rgba(0,0,0,.14);
+}
+.hb1:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.2); }
+.hb2 {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,.11); color:rgba(255,255,255,.9);
+  font-size:12.5px; font-weight:600; padding:9px 17px;
+  border-radius:10px; border:1.5px solid rgba(255,255,255,.2);
+  cursor:pointer; font-family:var(--f-ui); transition:all .18s;
+}
+.hb2:hover { background:rgba(255,255,255,.17); }
+
+.hero-r { display:flex; flex-direction:column; gap:8px; min-width:175px; }
+.h-stat {
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1);
+  border-radius:11px; padding:10px 13px;
+  transition:all .18s; cursor:default;
+}
+.h-stat:hover { background:rgba(255,255,255,.13); transform:translateX(-2px); }
+.h-stat-l { font-size:10.5px; color:rgba(255,255,255,.55); margin-bottom:3px; display:flex; align-items:center; gap:4px; }
+.h-dot { width:5px; height:5px; border-radius:50%; }
+.h-stat-n { font-family:var(--f-hd); font-size:17px; letter-spacing:-.01em; }
+
+/* ─── QUICK ACTIONS ───────────────────────────── */
+.qa { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.qa-c {
+  background:var(--srf); border:1.5px solid var(--b1);
+  border-radius:var(--r); padding:16px 12px;
+  text-align:center; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:9px;
+  transition:all .22s; position:relative; overflow:hidden;
+  box-shadow:var(--e1);
+}
+.qa-c::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity .2s; border-radius:inherit; }
+.qa-c:hover { transform:translateY(-5px); box-shadow:var(--e2); }
+.qa-c:hover::before { opacity:1; }
+.qa-c:active { transform:translateY(-2px); }
+.qa-c.q1::before { background:radial-gradient(circle at 50% 0%,rgba(0,184,122,.07),transparent 70%); }
+.qa-c.q1:hover { border-color:rgba(0,184,122,.3); }
+.qa-c.q2::before { background:radial-gradient(circle at 50% 0%,rgba(245,54,92,.05),transparent 70%); }
+.qa-c.q2:hover { border-color:rgba(245,54,92,.25); }
+.qa-c.q3::before { background:radial-gradient(circle at 50% 0%,rgba(91,82,240,.05),transparent 70%); }
+.qa-c.q3:hover { border-color:rgba(91,82,240,.22); }
+.qa-c.q4::before { background:radial-gradient(circle at 50% 0%,rgba(245,158,11,.06),transparent 70%); }
+.qa-c.q4:hover { border-color:rgba(245,158,11,.28); }
+.qa-ico {
+  width:44px; height:44px; border-radius:13px;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .2s;
+}
+.qa-c:hover .qa-ico { transform:scale(1.12) rotate(-5deg); }
+.i1{background:var(--ok-l)} .i2{background:var(--ng-l)} .i3{background:var(--a-l)} .i4{background:var(--wa-l)}
+.qa-lbl { font-size:12px; font-weight:700; color:var(--t2); }
+
+/* ─── CARDS GRID ──────────────────────────────── */
+.g2 { display:grid; grid-template-columns:1.55fr 1fr; gap:14px; margin-bottom:16px; }
+.g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
+
+/* ─── CARD ────────────────────────────────────── */
+.card {
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:var(--r); padding:18px 20px;
+  transition:border-color .16s, box-shadow .16s;
+  box-shadow:var(--e1);
+}
+.card:hover { border-color:var(--b2); box-shadow:var(--e2); }
+.card-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.card-title { font-size:13.5px; font-weight:800; letter-spacing:-.01em; }
+.card-sub { font-size:11px; color:var(--t2); margin-top:2px; }
+.card-action { font-size:11.5px; font-weight:600; color:var(--a); cursor:pointer; transition:opacity .14s; white-space:nowrap; }
+.card-action:hover { opacity:.65; }
+
+/* STAT CARD */
+.stat-card {
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:var(--r); padding:18px 20px;
+  transition:all .2s; box-shadow:var(--e1); cursor:default;
+  position:relative; overflow:hidden;
+}
+.stat-card:hover { transform:translateY(-3px); box-shadow:var(--e2); }
+.stat-badge {
+  display:inline-flex; align-items:center;
+  font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 7px; border-radius:99px; margin-bottom:10px;
+}
+.sb-info { background:var(--a-l); color:var(--a); }
+.sb-ok   { background:var(--ok-l); color:var(--ok); }
+.sb-ng   { background:var(--ng-l); color:var(--ng); }
+.sb-wa   { background:var(--wa-l); color:var(--wa); }
+.stat-n {
+  font-family:var(--f-hd);
+  font-size:28px; letter-spacing:-.02em; margin-bottom:4px;
+}
+.stat-n.ok { color:var(--ok); }
+.stat-n.ng { color:var(--ng); }
+.stat-n.a  { color:var(--a); }
+.stat-desc { font-size:11px; color:var(--t2); line-height:1.5; }
+
+/* ─── CHART ───────────────────────────────────── */
+.chart-wrap { height:120px; margin:-4px 0 12px; }
+.chart-wrap svg { width:100%; height:100%; }
+
+/* ─── TX LIST ─────────────────────────────────── */
+.tx-list { display:flex; flex-direction:column; }
+.tx {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 7px; border-radius:9px;
+  cursor:pointer; transition:background .13s;
+}
+.tx:hover { background:var(--srf2); }
+.tx-ic { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.tx-b { flex:1; min-width:0; }
+.tx-n { font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-s { font-size:11px; color:var(--t2); }
+.tx-r { text-align:right; flex-shrink:0; }
+.tx-a { font-family:var(--f-hd); font-size:14px; }
+.pos{color:var(--ok)} .neg{color:var(--ng)} .wa{color:var(--wa)}
+.tx-t { font-size:10px; color:var(--t3); }
+
+/* GOAL */
+.goal-card {
+  background:linear-gradient(145deg,#fffbf2,#fff5d9);
+  border:1.5px solid rgba(245,158,11,.18);
+  border-radius:var(--r); padding:18px 20px;
+  transition:all .22s; box-shadow:var(--e1); position:relative; overflow:hidden;
+}
+.goal-card:hover { border-color:rgba(245,158,11,.35); transform:translateY(-2px); box-shadow:0 12px 32px rgba(245,158,11,.1); }
+.goal-card::after { content:''; position:absolute; top:-50px; right:-50px; width:140px; height:140px; background:radial-gradient(circle,rgba(245,158,11,.08),transparent 65%); pointer-events:none; }
+.goal-lbl { font-size:11px; font-weight:600; color:var(--t2); margin-bottom:2px; }
+.goal-name { font-size:15px; font-weight:800; letter-spacing:-.02em; margin-bottom:14px; }
+.goal-track { height:8px; background:rgba(245,158,11,.12); border-radius:99px; overflow:visible; position:relative; margin-bottom:9px; }
+.goal-fill { height:100%; background:linear-gradient(90deg,var(--wa),#fcd34d); border-radius:99px; position:relative; transition:width 1.7s cubic-bezier(.4,0,.2,1); }
+.goal-fill::after { content:''; position:absolute; right:-1px; top:50%; transform:translateY(-50%); width:14px; height:14px; background:var(--wa); border-radius:50%; border:3px solid #fff; box-shadow:0 0 8px rgba(245,158,11,.4); }
+.goal-info { display:flex; justify-content:space-between; font-size:11.5px; color:var(--t2); }
+.goal-info b { color:var(--wa); font-weight:700; }
+
+/* SPEND */
+.sp-list { display:flex; flex-direction:column; gap:12px; }
+.sp-row {}
+.sp-head { display:flex; justify-content:space-between; margin-bottom:5px; }
+.sp-name { font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:6px; }
+.sp-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.sp-track { height:5px; background:var(--srf3); border-radius:99px; overflow:hidden; }
+.sp-bar { height:100%; border-radius:99px; transition:width 1.4s cubic-bezier(.4,0,.2,1); }
+
+/* CHALLENGES */
+.ch-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.ch {
+  background:var(--srf2); border:1.5px solid var(--b1);
+  border-radius:var(--r2); padding:12px;
+  cursor:pointer; transition:all .18s; position:relative; overflow:hidden;
+}
+.ch:hover { border-color:var(--b2); transform:translateY(-2px); box-shadow:var(--e1); }
+.ch.done { border-color:rgba(0,184,122,.22); background:linear-gradient(135deg,rgba(0,184,122,.05),var(--srf2)); }
+.ch-bdg { position:absolute; top:8px; right:8px; font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:99px; }
+.ch-ico { margin-bottom:7px; }
+.ch-n { font-size:12px; font-weight:700; margin-bottom:2px; }
+.ch-d { font-size:11px; color:var(--t2); }
+
+/* AGENDA */
+.ag-list { display:flex; flex-direction:column; gap:7px; }
+.ag-item {
+  display:flex; align-items:center; gap:10px;
+  background:var(--srf2); border:1px solid var(--b1);
+  border-radius:var(--r2); padding:11px;
+  cursor:pointer; transition:all .16s;
+}
+.ag-item:hover { border-color:var(--b2); box-shadow:var(--e1); }
+.ag-dt { background:var(--bg); border-radius:7px; padding:5px 8px; text-align:center; min-width:36px; flex-shrink:0; }
+.ag-day { font-family:var(--f-hd); font-size:15px; line-height:1; }
+.ag-mon { font-size:8.5px; font-weight:700; text-transform:uppercase; color:var(--t3); letter-spacing:.04em; }
+.ag-info { flex:1; }
+.ag-name { font-size:12.5px; font-weight:700; margin-bottom:1px; }
+.ag-sub { font-size:11px; color:var(--t2); }
+.ag-amount { font-family:var(--f-hd); font-size:14px; flex-shrink:0; }
+
+/* ─── FILTER BAR ──────────────────────────────── */
+.filter-bar {
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:var(--r2); padding:14px 16px;
+  display:flex; gap:10px; align-items:center;
+  margin-bottom:14px; flex-wrap:wrap;
+  box-shadow:var(--e1);
+}
+.filter-input {
+  flex:1; min-width:200px;
+  background:var(--srf2); border:1px solid var(--b1);
+  border-radius:99px; padding:7px 14px;
+  font-size:12.5px; color:var(--ink); outline:none;
+  font-family:var(--f-ui); transition:all .18s;
+}
+.filter-input:focus { border-color:var(--a); box-shadow:0 0 0 3px var(--a-l); }
+.filter-select {
+  background:var(--srf2); border:1px solid var(--b1);
+  border-radius:99px; padding:7px 28px 7px 14px;
+  font-size:12.5px; color:var(--ink);
+  font-family:var(--f-ui); outline:none; cursor:pointer;
+  transition:all .18s; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+}
+.filter-select:focus { border-color:var(--a); }
+.filter-btn {
+  display:flex; align-items:center; gap:5px;
+  background:var(--a); color:#fff;
+  font-size:12.5px; font-weight:700; padding:7px 16px;
+  border-radius:99px; border:none; cursor:pointer;
+  font-family:var(--f-ui); transition:all .18s;
+}
+.filter-btn:hover { background:var(--a2); }
+.filter-btn.sec { background:var(--srf2); color:var(--t2); border:1px solid var(--b1); }
+.filter-btn.sec:hover { color:var(--ink); border-color:var(--b2); }
+
+/* ─── TABLE ───────────────────────────────────── */
+.table-wrap {
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:var(--r); overflow:hidden; box-shadow:var(--e1);
+}
+.table { width:100%; border-collapse:collapse; }
+.table thead th {
+  background:var(--srf2); padding:10px 16px;
+  font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--t2); text-align:left; border-bottom:1px solid var(--b1);
+  cursor:pointer;
+}
+.table thead th:hover { color:var(--ink); }
+.table tbody tr {
+  border-bottom:1px solid var(--b1);
+  transition:background .13s; cursor:pointer;
+}
+.table tbody tr:last-child { border-bottom:none; }
+.table tbody tr:hover { background:var(--srf2); }
+.table td { padding:11px 16px; font-size:12.5px; vertical-align:middle; }
+.table-empty {
+  padding:40px 20px; text-align:center;
+  color:var(--t2); font-size:13px;
+}
+.table-empty svg { display:block; margin:0 auto 10px; }
+.table-empty a { color:var(--a); font-weight:600; cursor:pointer; text-decoration:none; }
+
+/* PRIORITY TAGS */
+.ptag {
+  display:inline-flex; align-items:center;
+  font-size:10px; font-weight:700;
+  padding:2px 8px; border-radius:99px;
+}
+.ptag.cr { background:var(--ng-l); color:var(--ng); }
+.ptag.sg { background:var(--ok-l); color:var(--ok); }
+.ptag.if { background:var(--a-l); color:var(--a); }
+
+/* TABLE FOOTER */
+.table-foot {
+  background:var(--srf); border-top:1px solid var(--b1);
+  padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; color:var(--t2);
+}
+.pag { display:flex; gap:4px; }
+.pag-btn {
+  width:28px; height:28px; border-radius:var(--r3);
+  border:1px solid var(--b1); background:var(--srf2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .15s;
+  font-size:11px; font-weight:700;
+}
+.pag-btn:hover { border-color:var(--a); color:var(--a); }
+.pag-btn.active { background:var(--a); color:#fff; border-color:var(--a); }
+
+/* ─── PLAN PAGE ───────────────────────────────── */
+.plan-empty {
+  text-align:center; padding:14px 0;
+}
+.plan-empty svg { display:block; margin:0 auto 11px; opacity:.4; }
+.plan-empty p { font-size:13px; color:var(--t2); line-height:1.6; margin-bottom:15px; }
+.plan-btn {
+  width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+  background:var(--a); color:#fff;
+  font-size:13px; font-weight:700; padding:11px;
+  border-radius:12px; border:none; cursor:pointer;
+  font-family:var(--f-ui); transition:all .18s;
+  box-shadow:0 4px 14px var(--a-g);
+}
+.plan-btn:hover { background:var(--a2); transform:translateY(-1px); }
+.plan-note { margin-top:10px; font-size:11px; color:var(--t3); }
+.plan-note b { color:var(--wa); font-weight:700; }
+
+/* ─── ACCOUNTS ────────────────────────────────── */
+.acc-card {
+  background:var(--srf); border:1.5px solid var(--b1);
+  border-radius:var(--r); padding:16px 18px;
+  transition:all .2s; box-shadow:var(--e1); cursor:pointer;
+}
+.acc-card:hover { transform:translateY(-3px); box-shadow:var(--e2); border-color:var(--b2); }
+.acc-type { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--t2); margin-bottom:8px; }
+.acc-name { font-size:14px; font-weight:800; margin-bottom:3px; }
+.acc-sub { font-size:11px; color:var(--t2); margin-bottom:14px; }
+.acc-balance { font-family:var(--f-hd); font-size:24px; letter-spacing:-.02em; }
+
+/* ─── CATEGORIES ──────────────────────────────── */
+.cat-group {
+  background:var(--srf); border:1.5px solid var(--b1);
+  border-radius:var(--r); padding:16px 18px;
+  box-shadow:var(--e1); transition:all .18s;
+}
+.cat-group:hover { border-color:var(--b2); }
+.cat-group-name { font-size:14px; font-weight:800; margin-bottom:4px; }
+.cat-group-desc { font-size:11.5px; color:var(--t2); margin-bottom:12px; }
+.cat-tags { display:flex; flex-wrap:wrap; gap:6px; }
+.cat-tag {
+  background:var(--srf2); border:1px solid var(--b1);
+  border-radius:99px; padding:4px 11px;
+  font-size:11.5px; font-weight:500;
+  cursor:pointer; transition:all .15s;
+}
+.cat-tag:hover { background:var(--a-l); border-color:rgba(91,82,240,.25); color:var(--a); }
+.cat-count { float:right; background:var(--srf2); border:1px solid var(--b1); border-radius:99px; padding:1px 8px; font-size:11px; font-weight:700; color:var(--t2); }
+
+/* ─── RECOMMENDATIONS ─────────────────────────── */
+.rec-card {
+  background:var(--srf); border:1px solid var(--b1);
+  border-radius:var(--r); padding:18px 20px;
+  box-shadow:var(--e1); transition:all .18s;
+}
+.rec-card:hover { border-color:var(--b2); box-shadow:var(--e2); }
+.rec-actions-grid { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.rec-action {
+  background:var(--srf2); border:1px solid var(--b1);
+  border-radius:var(--r3); padding:12px 14px;
+  font-size:12.5px; color:var(--t2); line-height:1.5;
+  transition:all .15s; cursor:pointer;
+}
+.rec-action:hover { background:var(--a-l); border-color:rgba(91,82,240,.2); color:var(--ink); }
+.rec-action::before { content:'→ '; color:var(--a); font-weight:700; }
+.dist-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.dist-item { background:var(--srf2); border:1px solid var(--b1); border-radius:var(--r2); padding:12px 14px; }
+.dist-lbl { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--t2); margin-bottom:4px; }
+.dist-val { font-size:14px; font-weight:800; margin-bottom:1px; }
+.dist-pct { font-size:11px; color:var(--t2); }
+
+/* ─── REWARDS POPUP ───────────────────────────── */
+#ov { position:fixed; inset:0; background:rgba(15,15,35,.5); backdrop-filter:blur(8px); z-index:8999; opacity:0; pointer-events:none; transition:opacity .28s; }
+#ov.on { opacity:1; pointer-events:all; }
+#pop {
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%) scale(.82);
+  background:var(--srf); border:1.5px solid var(--b2);
+  border-radius:24px; padding:34px 46px;
+  text-align:center; z-index:9000;
+  box-shadow:var(--e3); opacity:0; pointer-events:none;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  min-width:290px;
+}
+#pop.on { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:all; }
+#pop::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--a),#a78bfa,var(--ok)); border-radius:24px 24px 0 0; }
+.pop-ico { display:block; margin-bottom:12px; animation:.45s cubic-bezier(.34,1.56,.64,1) popIco; }
+@keyframes popIco { from{transform:rotate(-15deg) scale(.4)} to{transform:none} }
+.pop-title { font-family:var(--f-hd); font-size:26px; color:var(--a); margin-bottom:5px; }
+.pop-sub { font-size:13px; color:var(--t2); margin-bottom:14px; line-height:1.5; }
+.pop-xp {
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--a-l); color:var(--a);
+  font-size:12.5px; font-weight:800;
+  padding:5px 14px; border-radius:99px; margin-bottom:18px;
+  border:1.5px solid rgba(91,82,240,.18);
+}
+.pop-btn {
+  width:100%; background:var(--a); color:#fff;
+  font-size:13px; font-weight:700; padding:12px;
+  border-radius:12px; border:none; cursor:pointer;
+  font-family:var(--f-ui); transition:all .18s;
+  box-shadow:0 4px 16px var(--a-g);
+}
+.pop-btn:hover { background:var(--a2); transform:translateY(-1px); }
+
+/* CONFETTI */
+.cf { position:fixed; pointer-events:none; z-index:9999; animation:cfDrop var(--d,.9s) ease-out var(--dl,0s) forwards; }
+@keyframes cfDrop { 0%{transform:translateY(-20px) translateX(0) rotate(0);opacity:1} 100%{transform:translateY(270px) translateX(var(--x,0)) rotate(620deg);opacity:0} }
+
+/* MASCOT */
+#pig { position:fixed; bottom:20px; right:20px; z-index:500; cursor:pointer; animation:3.5s ease infinite pigFloat; }
+@keyframes pigFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+#pig:hover .psv { transform:scale(1.1) rotate(-6deg); }
+.psv { display:block; transition:transform .2s; }
+.pbbl {
+  position:absolute; bottom:70px; right:0;
+  background:var(--srf); border:1.5px solid var(--b2);
+  border-radius:13px 13px 0 13px;
+  padding:9px 13px; font-size:12px; font-weight:600;
+  text-align:center; line-height:1.45;
+  box-shadow:var(--e2); opacity:0;
+  transform:translateY(5px) scale(.94);
+  transform-origin:bottom right;
+  transition:all .18s; pointer-events:none;
+  max-width:155px; min-width:130px;
+}
+#pig:hover .pbbl { opacity:1; transform:translateY(0) scale(1); }
+
+/* FADE UP */
+.fu { opacity:0; transform:translateY(14px); transition:opacity .42s ease, transform .42s ease; }
+.fu.in { opacity:1; transform:none; }
+
+@media(max-width:1080px){ .g3,.g4{grid-template-columns:1fr 1fr} .qa{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:800px){ .g2{grid-template-columns:1fr} .hero-inner{flex-direction:column} .sb{display:none} .main{margin-left:0} }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-logo">
+    <div class="ld-mark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#fff"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    CashFlow
+  </div>
+  <svg class="ld-pig" viewBox="0 0 100 100" fill="none">
+    <ellipse cx="50" cy="61" rx="30" ry="27" fill="#f2f3f7" stroke="#5b52f0" stroke-width="2"/>
+    <ellipse cx="50" cy="61" rx="26" ry="23" fill="#fff"/>
+    <ellipse cx="50" cy="71" rx="9" ry="6" fill="#eef0f6"/>
+    <circle cx="46.5" cy="71" r="2" fill="#5b52f0" opacity=".5"/>
+    <circle cx="53.5" cy="71" r="2" fill="#5b52f0" opacity=".5"/>
+    <circle cx="37" cy="54" r="3" fill="#5b52f0"/>
+    <circle cx="63" cy="54" r="3" fill="#5b52f0"/>
+    <rect x="44" y="34" width="12" height="3.5" rx="1.75" fill="#f59e0b"/>
+    <ellipse cx="21" cy="56" rx="6" ry="8" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <ellipse cx="79" cy="56" rx="6" ry="8" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <path d="M44 76 Q50 80 56 76" stroke="#5b52f0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="31" y="83" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <rect x="45" y="83" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <rect x="59" y="83" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <path d="M79 66 Q89 58 85 72" stroke="#5b52f0" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="30" cy="65" rx="5" ry="3" fill="#f5365c" opacity=".12"/>
+    <ellipse cx="70" cy="65" rx="5" ry="3" fill="#f5365c" opacity=".12"/>
+    <circle r="8" fill="#f59e0b"><animate attributeName="cx" values="50;50" dur=".5s" repeatCount="indefinite"/><animate attributeName="cy" values="10;33;37" dur=".5s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;.9;0" dur=".5s" repeatCount="indefinite"/></circle>
+    <text x="46" y="16" font-size="7" fill="#fff" font-weight="bold" font-family="monospace">S/</text>
+  </svg>
+  <div class="ld-label">Preparando tu <b>panel</b>…</div>
+  <div class="ld-track"><div class="ld-fill"></div></div>
+</div>
+
+<div class="app">
+
+<!-- ── SIDEBAR ──────────────────────────────── -->
+<aside class="sb">
+  <div class="sb-top">
+    <div class="sb-mark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="#fff"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <span class="sb-brand">CashFlow</span>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-group">
+      <div class="sb-group-lbl">Flujo diario</div>
+      <a class="sb-item active" onclick="nav('hoy',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Hoy
+      </a>
+      <a class="sb-item" onclick="nav('movimientos',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        Movimientos
+        <span class="sb-badge">3</span>
+      </a>
+      <a class="sb-item" onclick="nav('plan',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Plan mensual
+      </a>
+      <a class="sb-item" onclick="nav('proximo',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Próximo mes
+      </a>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-lbl">Configuración</div>
+      <a class="sb-item" onclick="nav('cuentas',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Cuentas
+      </a>
+      <a class="sb-item" onclick="nav('categorias',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Categorías
+      </a>
+      <a class="sb-item" onclick="nav('recomendaciones',this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Recomendaciones
+      </a>
+    </div>
+  </nav>
+
+  <div class="sb-streak" onclick="showPop('streak')">
+    <div class="str-row">
+      <svg class="str-fire" width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2c0 0-6 5-6 11a6 6 0 0012 0c0-6-6-11-6-11z"/><path d="M12 8c0 0-3 3-3 6a3 3 0 006 0c0-3-3-6-3-6z" fill="#fcd34d" opacity=".8"/></svg>
+      <div>
+        <div class="str-lbl">Racha de ahorro</div>
+        <div class="str-val">7 días</div>
+      </div>
+    </div>
+    <div class="str-hint">3 días más → medalla de oro</div>
+    <div class="str-dots">
+      <div class="sd lit"></div><div class="sd lit"></div><div class="sd lit"></div>
+      <div class="sd lit"></div><div class="sd lit"></div><div class="sd lit"></div>
+      <div class="sd lit"></div><div class="sd now"></div><div class="sd"></div><div class="sd"></div>
+    </div>
+  </div>
+
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-avi">CF</div>
+      <div>
+        <div class="sb-uname">Mi espacio</div>
+        <div class="sb-uplan">Plan Activo</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ──────────────────────────────────── -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-title" id="tb-title">Panel · <span>Hoy</span></div>
+    <div class="tb-xp" onclick="showPop('xp')">
+      <span class="tb-xp-lv">Nv. 4</span>
+      <div class="tb-xp-bar-wrap"><div class="tb-xp-bar" id="xpBar"></div></div>
+      <div class="tb-badges">
+        <span class="tb-b" title="Primer ahorro">⭐</span>
+        <span class="tb-b" title="Racha 7 días">🔥</span>
+        <span class="tb-b" title="Meta cumplida" style="filter:grayscale(1);opacity:.35">🛡️</span>
+      </div>
+    </div>
+    <div class="tb-search">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Buscar movimientos…
+    </div>
+    <div class="tb-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="tb-dot"></span>
+    </div>
+    <button class="tb-cta" onclick="showPop('register')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo movimiento
+    </button>
+  </div>
+
+  <div class="page">
+
+  <!-- ════ SCREEN: HOY ════════════════════════ -->
+  <div class="screen active" id="screen-hoy">
+
+    <!-- HERO -->
+    <div class="hero fu">
+      <div class="hero-glow1"></div><div class="hero-glow2"></div><div class="hero-stripe"></div>
+      <div class="hero-inner">
+        <div class="hero-l">
+          <div class="hero-tag">PANEL DIARIO · 10 DE MARZO</div>
+          <div class="hero-lbl">Saldo total disponible</div>
+          <div class="hero-amount">S/ <span id="balN">0</span></div>
+          <div class="hero-sub">
+            Banco y efectivo
+            <span class="hero-badge">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+              +12.3% este mes
+            </span>
+          </div>
+          <div class="hero-acts">
+            <button class="hb1" onclick="showPop('register')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Registrar movimiento
+            </button>
+            <button class="hb2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ver detalle
+            </button>
+          </div>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l"><span class="h-dot" style="background:#5effd5"></span>Ingresos</div><div class="h-stat-n" style="color:#5effd5">S/ 3,200</div></div>
+          <div class="h-stat"><div class="h-stat-l"><span class="h-dot" style="background:#ffb3bc"></span>Gastos</div><div class="h-stat-n" style="color:#ffb3bc">S/ 1,700</div></div>
+          <div class="h-stat"><div class="h-stat-l"><span class="h-dot" style="background:rgba(255,255,255,.5)"></span>Neto</div><div class="h-stat-n" style="color:#fff">S/ 1,500</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="s-head fu" style="transition-delay:.06s">
+      <div><div class="s-title">Acciones rápidas</div></div>
+      <div class="s-link">Lo más usado</div>
+    </div>
+    <div class="qa fu" style="transition-delay:.08s">
+      <div class="qa-c q1" onclick="showPop('income')">
+        <div class="qa-ico i1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00b87a" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></div>
+        <span class="qa-lbl">Añadir Ingreso</span>
+      </div>
+      <div class="qa-c q2" onclick="showPop('expense')">
+        <div class="qa-ico i2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5365c" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg></div>
+        <span class="qa-lbl">Añadir Gasto</span>
+      </div>
+      <div class="qa-c q3" onclick="showPop('transfer')">
+        <div class="qa-ico i3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b52f0" stroke-width="2.5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>
+        <span class="qa-lbl">Transferir</span>
+      </div>
+      <div class="qa-c q4" onclick="showPop('save')">
+        <div class="qa-ico i4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0V9a1 1 0 011-1h2a1 1 0 011 1v11m-4 0h4"/></svg></div>
+        <span class="qa-lbl">Guardar / Ahorrar</span>
+      </div>
+    </div>
+
+    <!-- GRID 2 -->
+    <div class="g2 fu" style="transition-delay:.11s">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Movimientos recientes</div></div><div class="card-action">Ver todos →</div></div>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 400 110" preserveAspectRatio="none">
+            <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:#5b52f0;stop-opacity:.1"/><stop offset="100%" style="stop-color:#5b52f0;stop-opacity:0"/></linearGradient></defs>
+            <path d="M0,88 C40,78 60,50 100,45 S160,60 200,37 S260,13 300,27 S360,48 400,21 L400,110 L0,110 Z" fill="url(#cg)"/>
+            <path d="M0,88 C40,78 60,50 100,45 S160,60 200,37 S260,13 300,27 S360,48 400,21" fill="none" stroke="#5b52f0" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="100" cy="45" r="4" fill="#5b52f0"/><circle cx="200" cy="37" r="4" fill="#5b52f0"/><circle cx="300" cy="27" r="4" fill="#5b52f0"/><circle cx="400" cy="21" r="5" fill="#5b52f0" stroke="#fff" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="tx-list">
+          <div class="tx"><div class="tx-ic" style="background:var(--ok-l)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00b87a" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="tx-b"><div class="tx-n">Depósito de sueldo</div><div class="tx-s">Ingresos · Titular</div></div><div class="tx-r"><div class="tx-a pos">+S/ 3,200</div><div class="tx-t">Hoy</div></div></div>
+          <div class="tx"><div class="tx-ic" style="background:var(--ng-l)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5365c" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg></div><div class="tx-b"><div class="tx-n">Supermercado</div><div class="tx-s">Alimentación</div></div><div class="tx-r"><div class="tx-a neg">-S/ 180</div><div class="tx-t">Ayer</div></div></div>
+          <div class="tx"><div class="tx-ic" style="background:var(--a-l)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5b52f0" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-8.46-8.46 19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 8.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div><div class="tx-b"><div class="tx-n">Netflix</div><div class="tx-s">Suscripciones</div></div><div class="tx-r"><div class="tx-a neg">-S/ 49</div><div class="tx-t">Mar 7</div></div></div>
+          <div class="tx"><div class="tx-ic" style="background:var(--wa-l)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="tx-b"><div class="tx-n">Ahorro emergencias</div><div class="tx-s">Metas · Ahorro</div></div><div class="tx-r"><div class="tx-a wa">S/ 200</div><div class="tx-t">Mar 5</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="goal-card">
+          <div class="card-head" style="margin-bottom:10px"><div><div class="card-title" style="display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Meta de ahorro</div></div><div class="card-action" style="color:var(--wa)">Editar</div></div>
+          <div class="goal-lbl">Depa Inicial</div>
+          <div class="goal-name">Fondo de emergencias</div>
+          <div class="goal-track"><div class="goal-fill" id="gFill" style="width:0%"></div></div>
+          <div class="goal-info"><span>Guardado: <b>S/ 1,200</b></span><span><b>40%</b> de S/ 3,000</span></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Gastos por categoría</div><div class="card-action">Este mes</div></div>
+          <div class="sp-list">
+            <div class="sp-row"><div class="sp-head"><div class="sp-name"><span class="sp-dot" style="background:#f5365c"></span>Alimentación</div><div style="font-size:12.5px;font-weight:700;color:#f5365c">S/ 480</div></div><div class="sp-track"><div class="sp-bar" id="b1" style="background:#f5365c;width:0%"></div></div></div>
+            <div class="sp-row"><div class="sp-head"><div class="sp-name"><span class="sp-dot" style="background:#5b52f0"></span>Transporte</div><div style="font-size:12.5px;font-weight:700;color:#5b52f0">S/ 290</div></div><div class="sp-track"><div class="sp-bar" id="b2" style="background:#5b52f0;width:0%"></div></div></div>
+            <div class="sp-row"><div class="sp-head"><div class="sp-name"><span class="sp-dot" style="background:#00b87a"></span>Suscripciones</div><div style="font-size:12.5px;font-weight:700;color:#00b87a">S/ 180</div></div><div class="sp-track"><div class="sp-bar" id="b3" style="background:#00b87a;width:0%"></div></div></div>
+            <div class="sp-row"><div class="sp-head"><div class="sp-name"><span class="sp-dot" style="background:#f59e0b"></span>Otros</div><div style="font-size:12.5px;font-weight:700;color:#f59e0b">S/ 120</div></div><div class="sp-track"><div class="sp-bar" id="b4" style="background:#f59e0b;width:0%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID 3 -->
+    <div class="g3 fu" style="transition-delay:.15s">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Agenda de cobros y pagos</div><div class="card-action">Ver mes →</div></div>
+        <div class="ag-list">
+          <div class="ag-item"><div class="ag-dt"><div class="ag-day">30</div><div class="ag-mon">Mar</div></div><div class="ag-info"><div class="ag-name">Depósito de sueldo</div><div class="ag-sub">Ingreso programado</div></div><div class="ag-amount pos">+S/ 3,200</div></div>
+          <div class="ag-item"><div class="ag-dt"><div class="ag-day">30</div><div class="ag-mon">Mar</div></div><div class="ag-info"><div class="ag-name">Pago tarjeta</div><div class="ag-sub">Débito automático</div></div><div class="ag-amount neg">-S/ 850</div></div>
+          <div class="ag-item"><div class="ag-dt" style="background:var(--a-l)"><div class="ag-day" style="color:var(--a)">15</div><div class="ag-mon">Abr</div></div><div class="ag-info"><div class="ag-name">Depósito compartido</div><div class="ag-sub">Pareja / copartícipe</div></div><div class="ag-amount pos">+S/ 800</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Retos de ahorro</div><div class="card-action">Ver todos →</div></div>
+        <div class="ch-grid">
+          <div class="ch done"><div class="ch-bdg" style="background:var(--ok-l);color:var(--ok)">Hecho</div><div class="ch-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00b87a" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="ch-n">Sin café afuera</div><div class="ch-d">Ahorra S/ 50</div></div>
+          <div class="ch"><div class="ch-bdg" style="background:var(--ng-l);color:var(--ng)">Activo</div><div class="ch-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="ch-n">Reto 30 días</div><div class="ch-d">Día 7 de 30</div></div>
+          <div class="ch"><div class="ch-bdg" style="background:var(--a-l);color:var(--a)">Nuevo</div><div class="ch-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b52f0" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="ch-n">Ahorro redondeo</div><div class="ch-d">Redondea gastos</div></div>
+          <div class="ch"><div class="ch-bdg" style="background:var(--wa-l);color:var(--wa)">+XP</div><div class="ch-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div class="ch-n">Invita amigos</div><div class="ch-d">+100 XP c/u</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Plan vs Real del mes</div><div class="card-action">Crear plan →</div></div>
+        <div class="plan-empty">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <p>Sin plan para este mes.<br>Créalo y toma el control total.</p>
+          <button class="plan-btn" onclick="showPop('plan')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Crear plan mensual</button>
+          <div class="plan-note">Planifica y gana <b>+200 XP</b></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end screen-hoy -->
+
+
+  <!-- ════ SCREEN: MOVIMIENTOS ════════════════ -->
+  <div class="screen" id="screen-movimientos">
+    <div class="fu">
+      <div class="g4" style="margin-bottom:16px">
+        <div class="stat-card"><div class="stat-badge sb-info">Movimientos</div><div class="stat-n a" id="mvCnt">0</div><div class="stat-desc">Total registrados este mes</div></div>
+        <div class="stat-card"><div class="stat-badge sb-ok">Filtros activos</div><div class="stat-n">0</div><div class="stat-desc">Sin filtros aplicados</div></div>
+        <div class="stat-card"><div class="stat-badge sb-wa">Rango visible</div><div class="stat-n">Mar 2026</div><div class="stat-desc">Período seleccionado</div></div>
+        <div class="stat-card"><div class="stat-badge sb-ng">Modo prioridad</div><div style="display:flex;gap:6px;margin:8px 0"><span class="ptag cr">C·0</span><span class="ptag sg">S·0</span><span class="ptag if">I·0</span></div><div class="stat-desc">Crítico / Seguimiento / Informativo</div></div>
+      </div>
+    </div>
+    <div class="filter-bar fu" style="transition-delay:.06s">
+      <input class="filter-input" placeholder="Buscar por descripción…" type="text"/>
+      <select class="filter-select"><option>Todas las cuentas</option><option>Cuenta principal</option><option>Cuenta compartida</option></select>
+      <select class="filter-select"><option>Todas las categorías</option><option>Alimentación</option><option>Transporte</option><option>Suscripciones</option></select>
+      <select class="filter-select"><option>Todos</option><option>Ingreso</option><option>Gasto</option><option>Ahorro</option></select>
+      <button class="filter-btn">Buscar</button>
+      <button class="filter-btn sec">Limpiar</button>
+      <button class="filter-btn" style="margin-left:auto" onclick="showPop('import')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar CSV
+      </button>
+      <button class="filter-btn sec">Exportar</button>
+    </div>
+    <div class="table-wrap fu" style="transition-delay:.1s">
+      <table class="table">
+        <thead><tr><th>FECHA ↓</th><th>DESCRIPCIÓN</th><th>CUENTA</th><th>CATEGORÍA</th><th>MONTO</th><th>PRIORIDAD</th><th>ACCIONES</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--t2);font-size:12px">Mar 10</td><td><div style="font-weight:700;font-size:13px">Depósito de sueldo</div><div style="font-size:11px;color:var(--t2)">Ingreso mensual</div></td><td style="font-size:12.5px">Cuenta principal</td><td><span class="ptag if">Salary</span></td><td><span class="pos" style="font-family:var(--f-hd);font-size:14px">+S/ 3,200</span></td><td><span class="ptag sg">Seguimiento</span></td><td><div style="display:flex;gap:6px"><button class="filter-btn" style="padding:4px 10px;font-size:11px">Editar</button></div></td></tr>
+          <tr><td style="color:var(--t2);font-size:12px">Mar 9</td><td><div style="font-weight:700;font-size:13px">Supermercado Plaza Vea</div><div style="font-size:11px;color:var(--t2)">Compra semanal</div></td><td style="font-size:12.5px">Cuenta principal</td><td><span class="ptag if">Groceries</span></td><td><span class="neg" style="font-family:var(--f-hd);font-size:14px">-S/ 180</span></td><td><span class="ptag if">Informativo</span></td><td><button class="filter-btn sec" style="padding:4px 10px;font-size:11px">Editar</button></td></tr>
+          <tr><td style="color:var(--t2);font-size:12px">Mar 7</td><td><div style="font-weight:700;font-size:13px">Netflix</div><div style="font-size:11px;color:var(--t2)">Suscripción mensual</div></td><td style="font-size:12.5px">Daniela (tarjeta)</td><td><span class="ptag if">Subscriptions</span></td><td><span class="neg" style="font-family:var(--f-hd);font-size:14px">-S/ 49</span></td><td><span class="ptag cr">Crítico</span></td><td><button class="filter-btn sec" style="padding:4px 10px;font-size:11px">Editar</button></td></tr>
+        </tbody>
+      </table>
+      <div class="table-foot">
+        <span>Mostrando 3 de 3 movimientos</span>
+        <div class="pag"><div class="pag-btn">‹</div><div class="pag-btn active">1</div><div class="pag-btn">›</div></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ SCREEN: PLAN MENSUAL ════════════════ -->
+  <div class="screen" id="screen-plan">
+    <div class="hero fu" style="margin-bottom:16px">
+      <div class="hero-glow1"></div><div class="hero-stripe"></div>
+      <div class="hero-inner" style="align-items:center">
+        <div class="hero-l">
+          <div class="hero-tag">PLAN MENSUAL · MARZO 2026</div>
+          <div class="hero-lbl">Presupuesto fácil por mes</div>
+          <div class="hero-sub" style="margin-bottom:16px">Define topes por categoría y compara contra lo real</div>
+          <div class="hero-acts">
+            <button class="hb1" onclick="showPop('register')">Registrar movimiento</button>
+            <button class="hb2">Volver a Hoy</button>
+          </div>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l">Plan total</div><div class="h-stat-n">S/ 0.00</div></div>
+          <div class="h-stat"><div class="h-stat-l">Gastado</div><div class="h-stat-n">S/ 0.00</div></div>
+          <div class="h-stat"><div class="h-stat-l">Uso del plan</div>
+            <div style="height:6px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:6px;overflow:hidden"><div style="height:100%;width:0%;background:#fff;border-radius:99px"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="g3 fu" style="transition-delay:.05s">
+      <div class="stat-card"><div class="stat-badge sb-info">Informativo</div><div class="stat-n">S/ 0.00</div><div class="stat-desc">Plan total del mes — suma de límites por categoría. No es tu saldo.</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ok">Informativo</div><div class="stat-n ok">S/ 0.00</div><div class="stat-desc">Gastado registrado — movimientos clasificados este mes.</div></div>
+      <div class="stat-card"><div class="stat-badge sb-wa">Seguimiento</div><div class="stat-n a">S/ 0.00</div><div class="stat-desc">Disponible dentro del plan — vas bajo el límite total.</div></div>
+    </div>
+    <div class="g2 fu" style="transition-delay:.1s">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Estado del mes</div><div class="card-sub">Sin plan para marzo de 2026 aún</div></div></div>
+        <div style="background:var(--srf2);border:1px solid var(--b1);border-radius:var(--r2);padding:16px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">Empieza rápido</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12.5px;color:var(--t2);padding:7px 0;border-bottom:1px solid var(--b1)">1. Copia el plan del último mes parecido.</div>
+            <div style="font-size:12.5px;color:var(--t2);padding:7px 0;border-bottom:1px solid var(--b1)">2. Ajusta categorías grandes (vivienda, comida, transporte).</div>
+            <div style="font-size:12.5px;color:var(--t2);padding:7px 0">3. Registra movimientos y revisa desviaciones cada semana.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="plan-btn" style="flex:1" onclick="showPop('plan')">Registrar movimiento</button>
+          <button class="plan-btn" style="flex:1;background:var(--srf2);color:var(--ink);box-shadow:none;border:1px solid var(--b1)">Revisar categorías</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Copiar plan entre meses</div><div class="card-sub">Pasa el plan de un mes a otro en un paso</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Mes origen</div><select class="filter-select" style="width:100%;border-radius:var(--r3)"><option>febrero de 2026</option><option>enero de 2026</option></select></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Mes destino <span class="ptag cr" style="font-size:9.5px">Reemplaza plan</span></div><input class="filter-input" value="2026-03" style="width:100%;border-radius:var(--r3)"/></div>
+          <button class="plan-btn" onclick="showPop('plan')">Copiar plan al mes destino</button>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b1)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Definir tope por categoría</div>
+          <div style="font-size:12px;color:var(--t2)">Añade límites individuales para controlar cada rubro mensual.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ SCREEN: PRÓXIMO MES ═══════════════ -->
+  <div class="screen" id="screen-proximo">
+    <div class="hero fu">
+      <div class="hero-glow1"></div><div class="hero-stripe"></div>
+      <div class="hero-inner" style="align-items:center">
+        <div class="hero-l">
+          <div class="hero-tag">FLUJO DIARIO · PRÓXIMO MES</div>
+          <div class="hero-lbl">Escenario del próximo ciclo</div>
+          <div class="hero-sub" style="margin-bottom:16px">Fechas y movimientos reales para estimar cómo podría cerrar</div>
+          <button class="hb1">Actualizar proyección</button>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l">Modelo</div><div style="font-size:14px;font-weight:700;color:#fff">Promedio personal</div></div>
+          <div class="h-stat"><div class="h-stat-l">Horizonte</div><div style="font-size:14px;font-weight:700;color:#fff">6 meses</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g4 fu" style="transition-delay:.05s">
+      <div class="stat-card"><div class="stat-badge sb-ok">Seguimiento</div><div class="card-title" style="margin-bottom:6px">Promedio personal</div><div class="stat-desc">Modelo de proyección activo</div></div>
+      <div class="stat-card"><div class="stat-badge sb-info">Informativo</div><div class="stat-n a">6 meses</div><div class="stat-desc">Horizonte de proyección</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ng">Crítico</div><div class="stat-n ng">0 / 36</div><div class="stat-desc">Historial útil acumulado</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ok">Seguimiento</div><div class="card-title" style="margin-bottom:6px">Basado en promedios</div><div class="stat-desc">Precisión del modelo actual</div></div>
+    </div>
+    <div class="card fu" style="transition-delay:.1s">
+      <div class="card-head"><div><div class="card-title">Tendencia proyectada</div><div class="card-sub">Ingresos, gastos y flujo neto para los próximos 6 meses</div></div><div class="card-action">Horizonte 6m</div></div>
+      <div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:13px;flex-direction:column;gap:8px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Sin datos históricos suficientes para proyectar.<br>
+        <span style="color:var(--a);font-weight:600;cursor:pointer;font-size:12px">Registra movimientos para activar la proyección →</span>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;padding-top:12px;border-top:1px solid var(--b1)">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11.5px"><span style="width:10px;height:3px;background:var(--a);border-radius:99px;display:inline-block"></span>Flujo neto</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11.5px"><span style="width:10px;height:3px;background:var(--ng);border-radius:99px;display:inline-block"></span>Gastos</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11.5px"><span style="width:10px;height:3px;background:var(--ok);border-radius:99px;display:inline-block"></span>Ingresos</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ SCREEN: CUENTAS ════════════════════ -->
+  <div class="screen" id="screen-cuentas">
+    <div class="hero fu" style="margin-bottom:16px">
+      <div class="hero-glow1"></div><div class="hero-stripe"></div>
+      <div class="hero-inner" style="align-items:center">
+        <div class="hero-l">
+          <div class="hero-tag">CONFIGURACIÓN · CUENTAS</div>
+          <div class="hero-lbl">Tus cuentas y saldos</div>
+          <div class="hero-sub" style="margin-bottom:16px">Cuánto tienes hoy, cuánto debes y estructura financiera</div>
+          <div class="hero-acts">
+            <button class="hb1" onclick="showPop('register')">Administrar estructura</button>
+            <button class="hb2">Registrar movimiento</button>
+          </div>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l">Activos</div><div class="h-stat-n" style="color:#5effd5">S/ 4,000</div></div>
+          <div class="h-stat"><div class="h-stat-l">Pasivos</div><div class="h-stat-n" style="color:#ffb3bc">S/ 1,400</div></div>
+          <div class="h-stat"><div class="h-stat-l">Patrimonio</div><div class="h-stat-n" style="color:#fff">S/ 2,600</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g3 fu" style="transition-delay:.05s">
+      <div class="stat-card"><div class="stat-badge sb-info">Informativo</div><div class="stat-n ok">S/ 4,000</div><div class="stat-desc">Activos — liquidez + inversiones + saldos positivos</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ng">Crítico</div><div class="stat-n ng">S/ 1,400</div><div class="stat-desc">Pasivos — ratio deuda/activos: 35.0%</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ok">Seguimiento</div><div class="stat-n a">S/ 2,600</div><div class="stat-desc">Patrimonio neto — activos menos pasivos consolidados</div></div>
+    </div>
+    <div class="g2 fu" style="transition-delay:.1s">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Liquidez disponible</div></div><div class="card-action">2 cuentas</div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="acc-card"><div class="acc-type">Cuenta bancaria · PEN</div><div class="acc-name">Cuenta principal</div><div class="acc-sub">Saldo operativo diario</div><div class="acc-balance pos">S/ 1,500.00</div></div>
+          <div class="acc-card"><div class="acc-type">Cuenta bancaria · PEN</div><div class="acc-name">Cuenta compartida (pareja)</div><div class="acc-sub">Gastos compartidos del hogar</div><div class="acc-balance pos">S/ 2,500.00</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Deuda y compromisos</div></div><div class="card-action">1 obligación</div></div>
+        <div class="acc-card" style="border-color:rgba(245,54,92,.2)">
+          <div class="acc-type" style="color:var(--ng)">Tarjeta de crédito · PEN</div>
+          <div class="acc-name">Daniela</div>
+          <div class="acc-sub">Pago total</div>
+          <div class="acc-balance neg">-S/ 1,400.00</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1)">
+            <div><div style="font-size:10px;color:var(--t2);margin-bottom:3px">Límite</div><div style="font-size:12.5px;font-weight:700">S/ 1,800</div></div>
+            <div><div style="font-size:10px;color:var(--t2);margin-bottom:3px">Vencimiento</div><div style="font-size:12.5px;font-weight:700">Día 30</div></div>
+            <div><div style="font-size:10px;color:var(--t2);margin-bottom:3px">Pago mínimo</div><div style="font-size:12.5px;font-weight:700;color:var(--t3)">No definido</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap fu" style="transition-delay:.15s">
+      <table class="table">
+        <thead><tr><th>CUENTA</th><th>TIPO</th><th>MONEDA</th><th>SALDO OPERATIVO</th><th>PRIORIDAD</th><th>ESTADO</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:700">Cuenta principal</td><td style="color:var(--t2)">Cuenta bancaria</td><td><span class="ptag if">PEN</span></td><td><span class="pos" style="font-family:var(--f-hd);font-size:14px">S/ 1,500.00</span></td><td><span class="ptag if">Informativo</span></td><td><span class="ptag sg">ACTIVA</span></td></tr>
+          <tr><td style="font-weight:700">Daniela</td><td style="color:var(--t2)">Tarjeta de crédito</td><td><span class="ptag if">PEN</span></td><td><span class="neg" style="font-family:var(--f-hd);font-size:14px">-S/ 1,400.00</span></td><td><span class="ptag cr">Crítico</span></td><td><span class="ptag sg">ACTIVA</span></td></tr>
+          <tr><td style="font-weight:700">Cuenta compartida</td><td style="color:var(--t2)">Cuenta bancaria</td><td><span class="ptag if">PEN</span></td><td><span class="pos" style="font-family:var(--f-hd);font-size:14px">S/ 2,500.00</span></td><td><span class="ptag if">Informativo</span></td><td><span class="ptag sg">ACTIVA</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- ════ SCREEN: CATEGORÍAS ════════════════ -->
+  <div class="screen" id="screen-categorias">
+    <div class="hero fu" style="margin-bottom:16px">
+      <div class="hero-glow1"></div><div class="hero-stripe"></div>
+      <div class="hero-inner" style="align-items:center">
+        <div class="hero-l">
+          <div class="hero-tag">CONFIGURACIÓN · CATEGORÍAS</div>
+          <div class="hero-lbl">Clasificación de movimientos</div>
+          <div class="hero-sub" style="margin-bottom:16px">Ordena tus categorías para que cada registro quede claro</div>
+          <div class="hero-acts">
+            <button class="hb1" onclick="showPop('register')">Administrar categorías</button>
+            <button class="hb2">Registrar movimiento</button>
+          </div>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l">Workspace</div><div style="font-size:14px;font-weight:700;color:#fff">Personal</div></div>
+          <div class="h-stat"><div class="h-stat-l">Grupos activos</div><div class="h-stat-n" style="color:#5effd5">3</div></div>
+          <div class="h-stat"><div class="h-stat-l">Categorías activas</div><div class="h-stat-n" style="color:#5effd5">22</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g2 fu" style="transition-delay:.05s">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="cat-group" style="border-color:rgba(0,184,122,.18);background:linear-gradient(145deg,#f0fdf8,#fff)">
+          <div class="card-head"><div><div class="cat-group-name" style="color:var(--ok)">Ingresos <span class="cat-count">5</span></div><div class="cat-group-desc">Entradas que incrementan caja</div></div></div>
+          <div class="cat-tags">
+            <span class="cat-tag" style="border-color:rgba(0,184,122,.2)">Freelance</span>
+            <span class="cat-tag" style="border-color:rgba(0,184,122,.2)">Investments</span>
+            <span class="cat-tag" style="border-color:rgba(0,184,122,.2)">Other Income</span>
+            <span class="cat-tag" style="border-color:rgba(0,184,122,.2)">Rental Income</span>
+            <span class="cat-tag" style="border-color:rgba(0,184,122,.2)">Salary</span>
+          </div>
+        </div>
+        <div class="cat-group" style="border-color:rgba(245,54,92,.15);background:linear-gradient(145deg,#fff8f9,#fff)">
+          <div class="card-head"><div><div class="cat-group-name" style="color:var(--ng)">Gastos <span class="cat-count">16</span></div><div class="cat-group-desc">Salidas operativas del flujo</div></div></div>
+          <div class="cat-tags">
+            <span class="cat-tag">Ahorro / Metas</span><span class="cat-tag">Debt Payments</span><span class="cat-tag">Dining Out</span><span class="cat-tag">Education</span><span class="cat-tag">Entertainment</span><span class="cat-tag">Groceries</span><span class="cat-tag">Healthcare</span><span class="cat-tag">Housing</span><span class="cat-tag">Insurance</span><span class="cat-tag">Other Expenses</span><span class="cat-tag">Personal Care</span><span class="cat-tag">Savings</span><span class="cat-tag">Shopping</span><span class="cat-tag">Subscriptions</span><span class="cat-tag">Transportation</span><span class="cat-tag">Utilities</span>
+          </div>
+        </div>
+        <div class="cat-group">
+          <div class="card-head"><div><div class="cat-group-name">Transferencias <span class="cat-count">1</span></div><div class="cat-group-desc">Movimiento entre cuentas, sin impacto neto</div></div></div>
+          <div class="cat-tags"><span class="cat-tag">Transfer</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div class="card-head"><div class="card-title">Prioridad de revisión</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--srf2);border:1px solid var(--b1);border-radius:var(--r2)"><div style="width:24px;height:24px;background:var(--ng-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ng)">1</div><div><div style="font-size:13px;font-weight:700">Gastos</div><div style="font-size:11px;color:var(--t2)">16 categorías</div></div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--srf2);border:1px solid var(--b1);border-radius:var(--r2)"><div style="width:24px;height:24px;background:var(--ok-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ok)">2</div><div><div style="font-size:13px;font-weight:700">Ingresos</div><div style="font-size:11px;color:var(--t2)">5 categorías</div></div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--srf2);border:1px solid var(--b1);border-radius:var(--r2)"><div style="width:24px;height:24px;background:var(--a-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--a)">3</div><div><div style="font-size:13px;font-weight:700">Transferencias</div><div style="font-size:11px;color:var(--t2)">1 categoría</div></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Buenas prácticas</div></div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="rec-action">Evita categorías duplicadas con nombres similares.</div>
+            <div class="rec-action">Usa categorías específicas para gastos relevantes.</div>
+            <div class="rec-action">Revisa mensualmente las categorías sin uso.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ SCREEN: RECOMENDACIONES ══════════ -->
+  <div class="screen" id="screen-recomendaciones">
+    <div class="hero fu" style="margin-bottom:16px">
+      <div class="hero-glow1"></div><div class="hero-stripe"></div>
+      <div class="hero-inner" style="align-items:center">
+        <div class="hero-l">
+          <div class="hero-tag">CONFIGURACIÓN · RECOMENDACIONES</div>
+          <div class="hero-lbl">Sugerencias guardadas</div>
+          <div class="hero-sub" style="margin-bottom:16px">Recomendaciones de ingreso, ahorro y metas guardadas el 25 feb. 2026</div>
+        </div>
+        <div class="hero-r">
+          <div class="h-stat"><div class="h-stat-l">Recomendaciones</div><div class="h-stat-n" style="color:#5effd5">1</div></div>
+          <div class="h-stat"><div class="h-stat-l">Última actualización</div><div style="font-size:12px;color:rgba(255,255,255,.7)">25 feb. 2026</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g4 fu" style="transition-delay:.05s">
+      <div class="stat-card"><div class="stat-badge sb-info">Ingreso actual</div><div class="stat-n">S/ 4,000</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ok">Ingreso recomendado</div><div class="stat-n ok">S/ 5,936</div></div>
+      <div class="stat-card"><div class="stat-badge sb-wa">Ingreso adicional sugerido</div><div class="stat-n wa">S/ 1,936</div></div>
+      <div class="stat-card"><div class="stat-badge sb-ng">Ahorro requerido</div><div class="stat-n a">S/ 1,389</div></div>
+    </div>
+    <div class="g2 fu" style="transition-delay:.1s">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Distribución saludable</div><div class="card-sub">Basada en tu perfil y metas actuales</div></div></div>
+        <div class="dist-grid">
+          <div class="dist-item"><div class="dist-lbl">Necesidades</div><div class="dist-val">S/ 3,835</div><div class="dist-pct">64.6%</div></div>
+          <div class="dist-item"><div class="dist-lbl">Deseos</div><div class="dist-val">S/ 712</div><div class="dist-pct">12.0%</div></div>
+          <div class="dist-item" style="border-color:rgba(0,184,122,.2);background:var(--ok-l)"><div class="dist-lbl" style="color:var(--ok)">Ahorro</div><div class="dist-val" style="color:var(--ok)">S/ 1,389</div><div class="dist-pct">23.4%</div></div>
+          <div class="dist-item"><div class="dist-lbl">Deuda</div><div class="dist-val">S/ 0</div><div class="dist-pct">0.0%</div></div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b1)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Meta evaluada — Depa Inicial</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="text-align:center;padding:10px;background:var(--srf2);border-radius:var(--r3)"><div style="font-size:10px;color:var(--t2);margin-bottom:3px">Aporte actual</div><div style="font-size:13px;font-weight:800">S/ 164.80</div></div>
+            <div style="text-align:center;padding:10px;background:var(--srf2);border-radius:var(--r3)"><div style="font-size:10px;color:var(--t2);margin-bottom:3px">Aporte requerido</div><div style="font-size:13px;font-weight:800">S/ 1,389</div></div>
+            <div style="text-align:center;padding:10px;background:var(--ng-l);border-radius:var(--r3)"><div style="font-size:10px;color:var(--ng);margin-bottom:3px">Faltante mensual</div><div style="font-size:13px;font-weight:800;color:var(--ng)">S/ 647.89</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Acciones sugeridas</div></div></div>
+        <div class="rec-actions-grid">
+          <div class="rec-action">Define un ingreso adicional alcanzable y úsalo como escenario base antes de comprometer un objetivo agresivo.</div>
+          <div class="rec-action">Mantén cubiertos compromisos operativos y de deuda antes de aumentar gastos discrecionales.</div>
+          <div class="rec-action">Si el ingreso adicional es limitado, prioriza metas y amplía el horizonte para evitar sobreendeudamiento.</div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b1)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">Escenario personalizado</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div style="flex:1"><div style="font-size:10px;color:var(--t2);margin-bottom:4px;font-weight:600">Ingreso adicional</div><input class="filter-input" value="1200" type="number" style="width:100%;border-radius:var(--r3)"/></div>
+            <div style="flex:1"><div style="font-size:10px;color:var(--t2);margin-bottom:4px;font-weight:600">Ahorro mensual estimado</div><input class="filter-input" value="741" readonly style="width:100%;border-radius:var(--r3);background:var(--srf2)"/></div>
+          </div>
+          <button class="plan-btn" onclick="showPop('plan')">Recalcular escenario</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  </div><!-- end .page -->
+</main>
+</div><!-- end .app -->
+
+<!-- MASCOT -->
+<div id="pig">
+  <div class="pbbl" id="pigTip">¡Ahorra hoy y gana una medalla!</div>
+  <svg class="psv" width="62" height="62" viewBox="0 0 100 100" fill="none">
+    <ellipse cx="50" cy="60" rx="30" ry="27" fill="#f2f3f7" stroke="#5b52f0" stroke-width="2"/>
+    <ellipse cx="50" cy="60" rx="26" ry="23" fill="#fff"/>
+    <ellipse cx="50" cy="70" rx="9" ry="6" fill="#eef0f6"/>
+    <circle cx="46.5" cy="70" r="2" fill="#5b52f0" opacity=".5"/>
+    <circle cx="53.5" cy="70" r="2" fill="#5b52f0" opacity=".5"/>
+    <circle cx="37" cy="53" r="3" fill="#5b52f0"/>
+    <circle cx="63" cy="53" r="3" fill="#5b52f0"/>
+    <rect x="44" y="33" width="12" height="3.5" rx="1.75" fill="#f59e0b"/>
+    <ellipse cx="21" cy="54" rx="6" ry="8" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <ellipse cx="79" cy="54" rx="6" ry="8" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <path d="M44 75 Q50 79 56 75" stroke="#5b52f0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="31" y="82" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <rect x="45" y="82" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <rect x="59" y="82" width="9" height="11" rx="4.5" fill="#f2f3f7" stroke="#5b52f0" stroke-width="1.5"/>
+    <path d="M79 65 Q89 57 85 71" stroke="#5b52f0" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="30" cy="64" rx="5" ry="3" fill="#f5365c" opacity=".12"/>
+    <ellipse cx="70" cy="64" rx="5" ry="3" fill="#f5365c" opacity=".12"/>
+    <ellipse cx="50" cy="94" rx="15" ry="2.5" fill="#5b52f0" opacity=".06"/>
+  </svg>
+</div>
+
+<!-- OVERLAY + POPUP -->
+<div id="ov" onclick="closePop()"></div>
+<div id="pop">
+  <div class="pop-ico" id="popIco"></div>
+  <div class="pop-title" id="popTitle">¡Excelente!</div>
+  <div class="pop-sub" id="popSub">Acción completada</div>
+  <div class="pop-xp" id="popXp">+25 XP</div>
+  <button class="pop-btn" onclick="closePop()">¡Genial, siguiente!</button>
+</div>
+
+<script>
+// ── counter
+function countUp(el,to,ms=1200){
+  let s=null;
+  const go=ts=>{if(!s)s=ts;const p=Math.min((ts-s)/ms,1);el.textContent=Math.floor((1-Math.pow(1-p,3))*to).toLocaleString('es-PE');if(p<1)requestAnimationFrame(go);else el.textContent=to.toLocaleString('es-PE');};
+  requestAnimationFrame(go);
+}
+
+// ── IntersectionObserver fade-up
+const io=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('in');});},{threshold:.06});
+function observeAll(){ document.querySelectorAll('.fu:not(.in)').forEach(el=>io.observe(el)); }
+
+// ── loader
+setTimeout(()=>{
+  document.getElementById('loader').classList.add('out');
+  setTimeout(()=>document.getElementById('loader').style.display='none',420);
+  setTimeout(()=>{
+    const bal=document.getElementById('balN');
+    if(bal) countUp(bal,1500);
+    document.getElementById('xpBar').style.width='64%';
+    setTimeout(()=>{ const g=document.getElementById('gFill'); if(g) g.style.width='40%'; },300);
+    [['b1','76%'],['b2','46%'],['b3','29%'],['b4','19%']].forEach(([id,w],i)=>setTimeout(()=>{ const el=document.getElementById(id); if(el) el.style.width=w; },200+i*140));
+    observeAll();
+  },150);
+},3000);
+
+// ── nav
+const titles={'hoy':'Panel · Hoy','movimientos':'Flujo diario · Movimientos','plan':'Plan mensual','proximo':'Próximo mes','cuentas':'Configuración · Cuentas','categorias':'Configuración · Categorías','recomendaciones':'Configuración · Recomendaciones'};
+function nav(id,el){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+  const sc=document.getElementById('screen-'+id);
+  if(sc){ sc.classList.add('active'); }
+  if(el) el.classList.add('active');
+  const tb=document.getElementById('tb-title');
+  if(tb){
+    const parts=(titles[id]||id).split(' · ');
+    tb.innerHTML = parts.length>1 ? parts[0]+' · <span>'+parts.slice(1).join(' · ')+'</span>' : '<span>'+parts[0]+'</span>';
+  }
+  window.scrollTo(0,0);
+  setTimeout(observeAll,50);
+  // animate counters per screen
+  if(id==='movimientos'){ const c=document.getElementById('mvCnt'); if(c) countUp(c,3); }
+}
+
+// ── rewards
+const rwd={
+  income:{t:'¡Ingreso registrado!',s:'Tu saldo sigue creciendo.',xp:'+30 XP',ico:'ok'},
+  expense:{t:'¡Gasto anotado!',s:'Buen control de tu dinero.',xp:'+10 XP',ico:'ng'},
+  transfer:{t:'¡Transferencia lista!',s:'Cuentas cada vez más ordenadas.',xp:'+20 XP',ico:'a'},
+  save:{t:'¡Ahorraste dinero!',s:'Tu alcancía está feliz hoy.',xp:'+50 XP',ico:'wa'},
+  streak:{t:'¡7 días seguidos!',s:'Eres imparable esta semana.',xp:'+100 XP',ico:'wa'},
+  plan:{t:'¡Plan listo!',s:'Ahora tienes control total del mes.',xp:'+200 XP',ico:'a'},
+  register:{t:'¡Registrado!',s:'Cada movimiento construye tu futuro.',xp:'+25 XP',ico:'a'},
+  xp:{t:'Subiendo de nivel…',s:'640 de 1000 XP para nivel 5.',xp:'64% completado',ico:'a'},
+  import:{t:'¡Importando!',s:'Tus movimientos se están procesando.',xp:'+15 XP',ico:'ok'},
+};
+const icos={
+  ok:`<svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="#dff8ee"/><path d="M15 27l8 8 14-14" stroke="#00b87a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+  ng:`<svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="#fde8ed"/><path d="M18 18l16 16M34 18L18 34" stroke="#f5365c" stroke-width="3" stroke-linecap="round" fill="none"/></svg>`,
+  a:`<svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="#eeecfd"/><path d="M26 14v12l7 7" stroke="#5b52f0" stroke-width="3" stroke-linecap="round" fill="none"/></svg>`,
+  wa:`<svg width="52" height="52" viewBox="0 0 52 52"><polygon points="26 4 32 18 48 20 36 32 40 48 26 40 12 48 16 32 4 20 20 18" fill="#f59e0b"/></svg>`,
+};
+function showPop(type='register'){
+  const r=rwd[type]||rwd.register;
+  document.getElementById('popIco').innerHTML=icos[r.ico];
+  document.getElementById('popTitle').textContent=r.t;
+  document.getElementById('popSub').textContent=r.s;
+  document.getElementById('popXp').innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${r.xp}`;
+  document.getElementById('pop').classList.add('on');
+  document.getElementById('ov').classList.add('on');
+  confetti();
+}
+function closePop(){ document.getElementById('pop').classList.remove('on'); document.getElementById('ov').classList.remove('on'); }
+
+// ── confetti
+function confetti(){
+  const cols=['#5b52f0','#f59e0b','#00b87a','#f5365c'];
+  for(let i=0;i<40;i++){
+    const el=document.createElement('div');
+    el.className='cf';
+    const x=(Math.random()-.5)*310, d=.6+Math.random()*.65, dl=Math.random()*.3;
+    el.style.cssText=`left:${36+Math.random()*28}%;top:${20+Math.random()*30}%;width:${5+Math.random()*7}px;height:${5+Math.random()*7}px;background:${cols[i%4]};--x:${x}px;--d:${d}s;--dl:${dl}s;border-radius:${Math.random()>.45?'50%':'3px'}`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// ── ripple
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.qa-c,.hb1,.tb-cta,.plan-btn,.filter-btn');
+  if(!btn) return;
+  if(!document.getElementById('rplS')){const s=document.createElement('style');s.id='rplS';s.textContent='@keyframes rpl{to{transform:scale(80);opacity:0}}';document.head.appendChild(s);}
+  const r=document.createElement('span'),rc=btn.getBoundingClientRect();
+  r.style.cssText=`position:absolute;width:6px;height:6px;background:rgba(0,0,0,.07);border-radius:50%;transform:scale(0);animation:rpl .4s ease forwards;left:${e.clientX-rc.left}px;top:${e.clientY-rc.top}px;pointer-events:none;`;
+  if(getComputedStyle(btn).position==='static') btn.style.position='relative';
+  btn.appendChild(r); r.addEventListener('animationend',()=>r.remove());
+});
+
+// ── mascot tips
+const tips=['¡Ahorra hoy y gana una medalla!','7 días de racha ¡Sigue!','Tu meta al 40%, no pares','Un reto nuevo te espera','Registra hoy, sube de nivel','Pequeños ahorros, grandes cambios','El dinero que guardas trabaja para ti'];
+let ti=0;
+setInterval(()=>{ ti=(ti+1)%tips.length; const el=document.getElementById('pigTip'); if(el) el.textContent=tips[ti]; },4500);
+</script>
+</body>
+</html>

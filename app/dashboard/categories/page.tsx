@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getCategories, getOrgType } from "@/app/actions/categories";
 import { ModuleHero } from "@/components/ui/ModuleHero";
-import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { CategoryGL } from "@/lib/types/finance";
 
 const KIND_ORDER = [
@@ -42,46 +41,26 @@ function kindLabel(kind: string) {
     return labels[kind] ?? kind;
 }
 
-function groupTone(kind: string) {
+function groupColor(kind: string) {
     if (kind === "income" || kind === "revenue" || kind === "other_income") {
-        return "border-[#c9e6de] bg-[#f2faf7]";
+        return { border: "rgba(0,184,122,.18)", bg: "linear-gradient(145deg,#f0fdf8,#fff)", color: "var(--ok)", tagBorder: "rgba(0,184,122,.2)" };
     }
     if (kind === "transfer") {
-        return "border-[#d2e0f2] bg-[#f3f8fd]";
+        return { border: "var(--brd)", bg: "var(--srf)", color: "var(--tx)", tagBorder: "var(--brd)" };
     }
     if (kind === "cogs" || kind === "tax") {
-        return "border-[#f1dfc8] bg-[#fff9ef]";
+        return { border: "rgba(255,165,2,.18)", bg: "linear-gradient(145deg,#fffbf2,#fff)", color: "var(--wa)", tagBorder: "rgba(255,165,2,.2)" };
     }
-    return "border-[#f0d9d0] bg-[#fff8f5]";
+    return { border: "rgba(245,54,92,.15)", bg: "linear-gradient(145deg,#fff8f9,#fff)", color: "var(--ng)", tagBorder: "rgba(245,54,92,.15)" };
 }
 
 function groupHint(kind: string) {
-    if (kind === "income" || kind === "revenue" || kind === "other_income") {
-        return "Entradas que incrementan caja.";
-    }
-    if (kind === "transfer") {
-        return "Movimiento entre cuentas, sin impacto neto.";
-    }
-    if (kind === "cogs") {
-        return "Costos directos del negocio.";
-    }
-    if (kind === "tax") {
-        return "Obligaciones tributarias.";
-    }
-    if (kind === "opex") {
-        return "Gastos de operación del negocio.";
-    }
-    return "Salidas operativas del flujo.";
-}
-
-function categoryPriority(category: CategoryGL): PriorityLevel {
-    if (category.kind === "expense" || category.kind === "cogs" || category.kind === "tax" || category.fixed_cost) {
-        return "critical";
-    }
-    if (category.kind === "opex" || category.kind === "other_expense" || category.kind === "transfer" || category.variable_cost) {
-        return "followup";
-    }
-    return "info";
+    if (kind === "income" || kind === "revenue" || kind === "other_income") return "Entradas que incrementan caja";
+    if (kind === "transfer") return "Movimiento entre cuentas, sin impacto neto";
+    if (kind === "cogs") return "Costos directos del negocio";
+    if (kind === "tax") return "Obligaciones tributarias";
+    if (kind === "opex") return "Gastos de operación del negocio";
+    return "Salidas operativas del flujo";
 }
 
 function categoryProfileLabel(category: CategoryGL) {
@@ -125,207 +104,114 @@ export default async function CategoriesPage() {
         .sort((a, b) => b.count - a.count)
         .slice(0, 3);
 
-    const flatCategories = sortedKinds.flatMap((kind) =>
-        grouped[kind].slice().sort((a, b) => a.name.localeCompare(b.name))
-    );
+    const priorityColors = ["var(--ng-l)", "var(--ok-l)", "var(--acc-l)"];
+    const priorityTextColors = ["var(--ng)", "var(--ok)", "var(--acc)"];
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="min-h-screen">
             <ModuleHero
-                eyebrow="Configuracion · Categorias"
-                title="Clasificacion de movimientos"
-                description="Ordena tus categorias para que cada registro por fecha quede claro y bien clasificado."
+                eyebrow="CONFIGURACIÓN · CATEGORÍAS"
+                title="Clasificación de movimientos"
+                description="Ordena tus categorías para que cada registro quede claro"
                 actions={
                     <>
-                        <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
-                            Administrar categorias
+                        <Link href="/dashboard/settings#estructura-financiera" className="h-btn1 no-underline">
+                            Administrar categorías
                         </Link>
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                        <Link href="/dashboard/transactions/new" className="h-btn2 no-underline">
                             Registrar movimiento
                         </Link>
                     </>
                 }
                 rightPanel={
                     <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Estado de clasificacion
-                        </p>
-                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-surface-500">Workspace</span>
-                                <span className="font-semibold text-[#0f2233]">
-                                    {orgType === "business" ? "Empresa" : "Personal"}
-                                </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                                <span className="text-surface-500">Grupos activos</span>
-                                <span className="font-semibold text-[#0f2233]">{sortedKinds.length}</span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                                <span className="text-surface-500">Categorias activas</span>
-                                <span className="font-semibold text-[#0f2233]">{totalCategories}</span>
-                            </div>
-                        </div>
+                        <div className="h-stat"><div className="h-stat-lbl">Workspace</div><div style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{orgType === "business" ? "Empresa" : "Personal"}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Grupos activos</div><div className="h-stat-n" style={{ color: "#5effd5" }}>{sortedKinds.length}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Categorías activas</div><div className="h-stat-n" style={{ color: "#5effd5" }}>{totalCategories}</div></div>
                     </>
                 }
             />
 
-            <section className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Tipo de workspace</p>
-                    <div className="mt-1">
-                        <PriorityPill level="info" />
-                    </div>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">
-                        {orgType === "business" ? "Empresa" : "Personal"}
-                    </p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Grupos activos</p>
-                    <div className="mt-1">
-                        <PriorityPill level="followup" />
-                    </div>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{sortedKinds.length}</p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Categorías activas</p>
-                    <div className="mt-1">
-                        <PriorityPill level="critical" />
-                    </div>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{totalCategories}</p>
-                </article>
-            </section>
-
-            <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#10283b]">Mapa por grupos</h3>
-                    <p className="mt-1 text-sm text-surface-500">
-                        Cada grupo define cómo se interpreta un movimiento en el flujo.
-                    </p>
-
+            {/* Category Groups + Sidebar */}
+            <div className="g2 fu in" style={{ transitionDelay: ".06s" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     {sortedKinds.length === 0 ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
-                            No hay categorías activas en este workspace.
-                        </div>
+                        <div className="card"><div className="table-empty">No hay categorías activas en este workspace.</div></div>
                     ) : (
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
-                            {sortedKinds.map((kind) => (
-                                <article
-                                    key={kind}
-                                    className={`rounded-xl border p-4 ${groupTone(kind)}`}
-                                >
-                                    <div className="flex items-start justify-between gap-2">
+                        sortedKinds.map((kind) => {
+                            const colors = groupColor(kind);
+                            return (
+                                <div key={kind} className="cat-group" style={{ borderColor: colors.border, background: colors.bg }}>
+                                    <div className="card-head">
                                         <div>
-                                            <h4 className="text-sm font-semibold text-[#0f2233]">{kindLabel(kind)}</h4>
-                                            <p className="mt-0.5 text-xs text-surface-500">{groupHint(kind)}</p>
+                                            <div className="cat-group-name" style={{ color: colors.color }}>
+                                                {kindLabel(kind)} <span className="cat-count">{grouped[kind].length}</span>
+                                            </div>
+                                            <div className="cat-group-desc">{groupHint(kind)}</div>
                                         </div>
-                                        <span className="rounded-full border border-[#d9e2f0] bg-white px-2 py-0.5 text-[11px] font-semibold text-surface-500">
-                                            {grouped[kind].length}
-                                        </span>
                                     </div>
-                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <div className="cat-tags">
                                         {grouped[kind]
                                             .slice()
                                             .sort((a, b) => a.name.localeCompare(b.name))
                                             .map((category) => (
-                                                <span
-                                                    key={category.id}
-                                                    className="rounded-full border border-[#d9e2f0] bg-white px-2.5 py-1 text-xs font-medium text-[#0f2233]"
-                                                >
+                                                <span key={category.id} className="cat-tag" style={{ borderColor: colors.tagBorder }}>
                                                     {category.name}
                                                 </span>
                                             ))}
                                     </div>
-                                </article>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div className="card">
+                        <div className="card-head"><div className="card-title">Prioridad de revisión</div></div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {topKinds.map((item, index) => (
+                                <div key={item.kind} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", background: "var(--srf2)", border: "1px solid var(--brd)", borderRadius: "var(--r2)" }}>
+                                    <div style={{ width: "24px", height: "24px", background: priorityColors[index], borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: priorityTextColors[index] }}>{index + 1}</div>
+                                    <div>
+                                        <div style={{ fontSize: "13px", fontWeight: 700 }}>{kindLabel(item.kind)}</div>
+                                        <div style={{ fontSize: "11px", color: "var(--tx2)" }}>{item.count} categorías</div>
+                                    </div>
+                                </div>
                             ))}
                         </div>
-                    )}
-                </article>
-
-                <article className="space-y-4">
-                    <section className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                        <h3 className="text-base font-semibold text-[#10283b]">Prioridad de revisión</h3>
-                        <p className="mt-1 text-sm text-surface-500">
-                            Grupos con más categorías, donde suelen aparecer duplicados.
-                        </p>
-                        {topKinds.length === 0 ? (
-                            <p className="mt-4 text-sm text-surface-500">Sin datos para analizar.</p>
-                        ) : (
-                            <div className="mt-4 space-y-2.5">
-                                {topKinds.map((item, index) => (
-                                    <div key={item.kind} className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3.5 py-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-400">
-                                            #{index + 1}
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-[#0f2233]">
-                                            {kindLabel(item.kind)}
-                                        </p>
-                                        <p className="text-xs text-surface-500">{item.count} categorías</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-
-                    <section className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                        <h3 className="text-base font-semibold text-[#10283b]">Buenas prácticas</h3>
-                        <ul className="mt-3 space-y-2 text-sm text-surface-600">
-                            <li>1. Evita categorías duplicadas con nombres similares.</li>
-                            <li>2. Usa categorías específicas para gastos relevantes.</li>
-                            <li>3. Revisa mensualmente las categorías sin uso.</li>
-                            <li>4. Si cambia tu operación, ajusta la estructura en Configuración.</li>
-                        </ul>
-                    </section>
-                </article>
-            </section>
-
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-base font-semibold text-[#10283b]">Vista tabular operativa</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Tabla densa con prioridad y perfil de cada categoria.
-                </p>
-
-                <div className="enterprise-table-shell mt-4">
-                    <div className="enterprise-table-wrap scrollbar-thin">
-                        <table className="enterprise-table min-w-[920px]">
-                            <thead>
-                                <tr>
-                                    <th className="enterprise-col-key-header">Categoria</th>
-                                    <th>Grupo</th>
-                                    <th>Prioridad</th>
-                                    <th>Perfil</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {flatCategories.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-surface-500">
-                                            No hay categorias activas en este workspace.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    flatCategories.map((category) => (
-                                        <tr key={category.id}>
-                                            <td className="enterprise-col-key text-[#10233f]">{category.name}</td>
-                                            <td>{kindLabel(category.kind)}</td>
-                                            <td>
-                                                <PriorityPill level={categoryPriority(category)} />
-                                            </td>
-                                            <td>{categoryProfileLabel(category)}</td>
-                                            <td>
-                                                <span className="rounded-full border border-[#b7c6da] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#425972]">
-                                                    {category.is_active ? "Activa" : "Inactiva"}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                    </div>
+                    <div className="card">
+                        <div className="card-head"><div className="card-title">Buenas prácticas</div></div>
+                        <div className="rec-actions-grid" style={{ marginTop: 0 }}>
+                            <div className="rec-action">Evita categorías duplicadas con nombres similares.</div>
+                            <div className="rec-action">Usa categorías específicas para gastos relevantes.</div>
+                            <div className="rec-action">Revisa mensualmente las categorías sin uso.</div>
+                        </div>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            {/* Data Table */}
+            <div className="table-wrap fu in" style={{ transitionDelay: ".12s" }}>
+                <table className="table-v">
+                    <thead><tr><th>CATEGORÍA</th><th>GRUPO</th><th>PERFIL</th><th>ESTADO</th></tr></thead>
+                    <tbody>
+                        {sortedKinds.flatMap((kind) =>
+                            grouped[kind]
+                                .slice()
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((category) => (
+                                    <tr key={category.id}>
+                                        <td style={{ fontWeight: 700 }}>{category.name}</td>
+                                        <td style={{ color: "var(--tx2)" }}>{kindLabel(category.kind)}</td>
+                                        <td><span className="ptag if">{categoryProfileLabel(category)}</span></td>
+                                        <td><span className="ptag sg">{category.is_active ? "ACTIVA" : "INACTIVA"}</span></td>
+                                    </tr>
+                                ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

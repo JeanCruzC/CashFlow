@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { deleteTransaction } from "@/app/actions/transactions";
 import { ModuleHero } from "@/components/ui/ModuleHero";
-import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { Transaction } from "@/lib/types/finance";
 
 interface TransactionWithJoins extends Transaction {
@@ -41,14 +40,7 @@ function formatRowAmount(amount: number, currency?: string) {
 
 function sortIndicator(column: string, activeSort: string, activeDirection: string) {
     if (column !== activeSort) return "";
-    return activeDirection === "asc" ? "↑" : "↓";
-}
-
-function getTransactionPriority(row: TransactionWithJoins): PriorityLevel {
-    const amount = Math.abs(row.amount);
-    if (row.amount < 0 && amount >= 1000) return "critical";
-    if (row.amount < 0) return "followup";
-    return "info";
+    return activeDirection === "asc" ? " ↑" : " ↓";
 }
 
 export function TransactionGrid({
@@ -92,17 +84,6 @@ export function TransactionGrid({
         dateTo,
     ].filter(Boolean).length;
 
-    const prioritySummary = useMemo(() => {
-        return data.reduce(
-            (acc, row) => {
-                const level = getTransactionPriority(row);
-                acc[level] += 1;
-                return acc;
-            },
-            { critical: 0, followup: 0, info: 0 }
-        );
-    }, [data]);
-
     const exportHref = useMemo(() => {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("page");
@@ -111,38 +92,22 @@ export function TransactionGrid({
 
     function updateParams(updates: Partial<Record<SearchKey | "sort" | "sortDir" | "page", string>>) {
         const params = new URLSearchParams(searchParams.toString());
-
         Object.entries(updates).forEach(([key, value]) => {
-            if (!value) {
-                params.delete(key);
-                return;
-            }
+            if (!value) { params.delete(key); return; }
             params.set(key, value);
         });
-
         const query = params.toString();
         router.replace(query ? `${pathname}?${query}` : pathname);
     }
 
     function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        updateParams({
-            search: term.trim(),
-            page: "1",
-        });
+        updateParams({ search: term.trim(), page: "1" });
     }
 
     function handleSort(key: string) {
-        if (sort === key) {
-            updateParams({ sortDir: sortDir === "asc" ? "desc" : "asc" });
-            return;
-        }
-
-        updateParams({
-            sort: key,
-            sortDir: "desc",
-            page: "1",
-        });
+        if (sort === key) { updateParams({ sortDir: sortDir === "asc" ? "desc" : "asc" }); return; }
+        updateParams({ sort: key, sortDir: "desc", page: "1" });
     }
 
     function handlePage(nextPage: number) {
@@ -151,19 +116,13 @@ export function TransactionGrid({
     }
 
     function handleFilterChange(key: SearchKey, value: string) {
-        updateParams({
-            [key]: value,
-            page: "1",
-        });
+        updateParams({ [key]: value, page: "1" });
     }
 
     function handleClearFilters() {
         setTerm("");
         const params = new URLSearchParams(searchParams.toString());
-        ["search", "accountId", "categoryId", "direction", "dateFrom", "dateTo", "page"].forEach((key) => {
-            params.delete(key);
-        });
-
+        ["search", "accountId", "categoryId", "direction", "dateFrom", "dateTo", "page"].forEach((key) => { params.delete(key); });
         const query = params.toString();
         router.replace(query ? `${pathname}?${query}` : pathname);
     }
@@ -171,352 +130,157 @@ export function TransactionGrid({
     async function handleDelete(id: string) {
         const confirmed = confirm("¿Seguro que deseas eliminar esta transacción?");
         if (!confirmed) return;
-
-        setError(null);
-        setNotice(null);
-
+        setError(null); setNotice(null);
         const result = await deleteTransaction(id);
-        if (result.error) {
-            setError(result.error);
-            return;
-        }
-
+        if (result.error) { setError(result.error); return; }
         setNotice("Transacción eliminada correctamente.");
         router.refresh();
     }
 
-    function handleImportClick() {
-        fileInputRef.current?.click();
-    }
+    function handleImportClick() { fileInputRef.current?.click(); }
 
     async function handleImportChange(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
         if (!file) return;
-
-        setError(null);
-        setNotice(null);
-        setImporting(true);
-
+        setError(null); setNotice(null); setImporting(true);
         try {
             const formData = new FormData();
             formData.append("file", file);
-
-            const response = await fetch("/api/transactions/import", {
-                method: "POST",
-                body: formData,
-            });
-
-            const payload = (await response.json()) as {
-                error?: string;
-                inserted?: number;
-                errors?: string[];
-            };
-
-            if (!response.ok) {
-                setError(payload.error || "No se pudo importar el archivo.");
-                return;
-            }
-
+            const response = await fetch("/api/transactions/import", { method: "POST", body: formData });
+            const payload = (await response.json()) as { error?: string; inserted?: number; errors?: string[] };
+            if (!response.ok) { setError(payload.error || "No se pudo importar el archivo."); return; }
             const inserted = payload.inserted ?? 0;
             const rowErrors = payload.errors || [];
-            const summary =
-                rowErrors.length > 0
-                    ? `Importación completada: ${inserted} filas insertadas y ${rowErrors.length} con error.`
-                    : `Importación completada: ${inserted} filas insertadas.`;
-
+            const summary = rowErrors.length > 0
+                ? `Importación completada: ${inserted} filas insertadas y ${rowErrors.length} con error.`
+                : `Importación completada: ${inserted} filas insertadas.`;
             setNotice(summary);
             router.refresh();
-        } catch {
-            setError("No se pudo importar el archivo.");
-        } finally {
-            setImporting(false);
-            event.target.value = "";
-        }
+        } catch { setError("No se pudo importar el archivo."); }
+        finally { setImporting(false); event.target.value = ""; }
     }
 
-    return (
-        <div className="space-y-6 animate-fade-in">
-            <ModuleHero
-                eyebrow="Flujo diario · Registro por fecha"
-                title="Diario financiero"
-                description="Cada ingreso, gasto y pago se registra por fecha para que el control sea claro y facil de seguir."
-                rightPanel={
-                    <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Acciones
-                        </p>
-                        <p className="mt-1 text-sm text-surface-600">
-                            Importa CSV, sube comprobantes con IA o registra manualmente.
-                        </p>
+    // Generate page numbers for pagination
+    const pageNumbers: number[] = [];
+    const maxPages = 5;
+    let startPage = Math.max(1, page - Math.floor(maxPages / 2));
+    const endPage = Math.min(totalPages, startPage + maxPages - 1);
+    if (endPage - startPage + 1 < maxPages) startPage = Math.max(1, endPage - maxPages + 1);
+    for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
 
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv,text/csv"
-                                className="hidden"
-                                onChange={handleImportChange}
-                            />
-                            <button
-                                onClick={handleImportClick}
-                                className="btn-secondary text-sm"
-                                disabled={importing}
-                                type="button"
-                            >
-                                {importing ? "Importando..." : "Importar CSV"}
-                            </button>
-                            <a href={exportHref} className="btn-secondary text-sm no-underline">
-                                Exportar CSV
-                            </a>
-                            <Link
-                                href="/dashboard/transactions/new"
-                                className="btn-primary text-sm no-underline hover:text-white"
-                            >
-                                Nuevo movimiento
-                            </Link>
-                            <Link
-                                href="/dashboard/transactions/new#documento-movimiento"
-                                className="btn-secondary text-sm no-underline"
-                            >
-                                Cargar comprobante IA
-                            </Link>
-                        </div>
+    return (
+        <div className="min-h-screen">
+            <ModuleHero
+                eyebrow="FLUJO DIARIO · REGISTRO POR FECHA"
+                title="Diario financiero"
+                description="Cada ingreso, gasto y pago se registra por fecha"
+                actions={
+                    <>
+                        <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportChange} />
+                        <button onClick={handleImportClick} className="h-btn1" disabled={importing} type="button">{importing ? "Importando..." : "Importar CSV"}</button>
+                        <a href={exportHref} className="h-btn2 no-underline">Exportar CSV</a>
+                        <Link href="/dashboard/transactions/new" className="h-btn1 no-underline">Nuevo movimiento</Link>
                     </>
                 }
-            >
-                <div className="mt-5 grid gap-3 sm:grid-cols-4">
-                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
-                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-[var(--acc)]/5 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Movimientos</p>
-                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">{totalCount}</p>
-                    </article>
-                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
-                        <div className="absolute -right-4 -top-4 w-12 h-12 bg-[#00c48c]/5 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Filtros activos</p>
-                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">{activeFilterCount}</p>
-                    </article>
-                    <article className="c !p-4 flex flex-col justify-center relative overflow-hidden group">
-                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Rango visible</p>
-                        <p className="mt-1 text-2xl font-black text-[var(--tx1)]">
-                            {showingFrom}-{showingTo}
-                        </p>
-                    </article>
-                    <article className="c !p-4 flex flex-col justify-center">
-                        <p className="text-xs font-bold uppercase tracking-widest text-[var(--tx2)]">Modo prioridad</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <PriorityPill level="critical" label={`C ${prioritySummary.critical}`} />
-                            <PriorityPill level="followup" label={`S ${prioritySummary.followup}`} />
-                            <PriorityPill level="info" label={`I ${prioritySummary.info}`} />
-                        </div>
-                    </article>
-                </div>
-            </ModuleHero>
+                rightPanel={
+                    <>
+                        <div className="h-stat"><div className="h-stat-lbl">Movimientos</div><div className="h-stat-n" style={{ color: "#5effd5" }}>{totalCount}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Filtros activos</div><div className="h-stat-n" style={{ color: "#fff" }}>{activeFilterCount}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Rango visible</div><div style={{ fontSize: "13px", fontWeight: 700, color: "rgba(255,255,255,.7)" }}>{showingFrom}–{showingTo}</div></div>
+                    </>
+                }
+            />
 
-            {error ? (
-                <div className="rounded-xl border border-[#f1d3cf] bg-[#fff5f4] px-4 py-3 text-sm text-negative-600">
-                    {error}
-                </div>
-            ) : null}
-            {notice ? (
-                <div className="rounded-xl border border-[#c6e5dd] bg-[#eef9f5] px-4 py-3 text-sm text-positive-600">
-                    {notice}
-                </div>
-            ) : null}
+            {/* Notices */}
+            {error && <div style={{ background: "var(--ng-l)", border: "1px solid rgba(245,54,92,.2)", borderRadius: "var(--r2)", padding: "12px 16px", fontSize: "13px", color: "var(--ng)", marginBottom: "14px" }}>{error}</div>}
+            {notice && <div style={{ background: "var(--ok-l)", border: "1px solid rgba(0,184,122,.2)", borderRadius: "var(--r2)", padding: "12px 16px", fontSize: "13px", color: "var(--ok)", marginBottom: "14px" }}>{notice}</div>}
 
-            <section className="c !p-5">
-                <p className="px-1 text-xs font-bold uppercase tracking-widest text-[var(--acc)]">
-                    Filtros por fecha y tipo
-                </p>
-
-                <form className="mt-3 flex flex-col gap-3 sm:flex-row" onSubmit={handleSearchSubmit}>
-                    <input
-                        type="text"
-                        value={term}
-                        onChange={(event) => setTerm(event.target.value)}
-                        placeholder="Buscar por descripción..."
-                        className="input-field text-sm"
-                    />
-                    <button type="submit" className="btn-secondary text-sm">
-                        Buscar
-                    </button>
-                    <button type="button" className="btn-secondary text-sm" onClick={handleClearFilters}>
-                        Limpiar
-                    </button>
+            {/* Filter Bar */}
+            <div className="filter-bar fu in" style={{ transitionDelay: ".06s" }}>
+                <form onSubmit={handleSearchSubmit} style={{ display: "contents" }}>
+                    <input type="text" value={term} onChange={(event) => setTerm(event.target.value)} placeholder="Buscar por descripción..." className="filter-input" />
+                    <button type="submit" className="filter-btn">Buscar</button>
                 </form>
+                <select className="filter-select" value={accountId} onChange={(event) => handleFilterChange("accountId", event.target.value)}>
+                    <option value="">Todas las cuentas</option>
+                    {accounts.map((account) => (<option key={account.id} value={account.id}>{account.name}</option>))}
+                </select>
+                <select className="filter-select" value={categoryId} onChange={(event) => handleFilterChange("categoryId", event.target.value)}>
+                    <option value="">Todas las categorías</option>
+                    {categories.map((category) => (<option key={category.id} value={category.id}>{category.name}</option>))}
+                </select>
+                <select className="filter-select" value={direction} onChange={(event) => handleFilterChange("direction", event.target.value)}>
+                    <option value="all">Todos</option>
+                    <option value="income">Solo ingresos</option>
+                    <option value="expense">Solo egresos</option>
+                </select>
+                <input type="date" className="filter-input" style={{ minWidth: "130px", flex: "none" }} value={dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} />
+                <input type="date" className="filter-input" style={{ minWidth: "130px", flex: "none" }} value={dateTo} onChange={(event) => handleFilterChange("dateTo", event.target.value)} />
+                {activeFilterCount > 0 && (
+                    <button type="button" className="filter-btn sec" onClick={handleClearFilters}>Limpiar</button>
+                )}
+            </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                    <select
-                        className="input-field text-sm"
-                        value={accountId}
-                        onChange={(event) => handleFilterChange("accountId", event.target.value)}
-                    >
-                        <option value="">Todas las cuentas</option>
-                        {accounts.map((account) => (
-                            <option key={account.id} value={account.id}>
-                                {account.name}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="input-field text-sm"
-                        value={categoryId}
-                        onChange={(event) => handleFilterChange("categoryId", event.target.value)}
-                    >
-                        <option value="">Todas las categorías</option>
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.name}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="input-field text-sm"
-                        value={direction}
-                        onChange={(event) => handleFilterChange("direction", event.target.value)}
-                    >
-                        <option value="all">Todos</option>
-                        <option value="income">Solo ingresos</option>
-                        <option value="expense">Solo egresos</option>
-                    </select>
-
-                    <input
-                        type="date"
-                        className="input-field text-sm"
-                        value={dateFrom}
-                        onChange={(event) => handleFilterChange("dateFrom", event.target.value)}
-                    />
-
-                    <input
-                        type="date"
-                        className="input-field text-sm"
-                        value={dateTo}
-                        onChange={(event) => handleFilterChange("dateTo", event.target.value)}
-                    />
-                </div>
-            </section>
-
-            <section className="enterprise-table-shell">
-                <div className="enterprise-table-wrap scrollbar-thin">
-                    <table className="enterprise-table min-w-[980px]">
-                        <thead>
+            {/* Table */}
+            <div className="table-wrap fu in" style={{ transitionDelay: ".1s" }}>
+                <table className="table-v">
+                    <thead>
+                        <tr>
+                            <th onClick={() => handleSort("date")} style={{ cursor: "pointer" }}>FECHA{sortIndicator("date", sort, sortDir)}</th>
+                            <th onClick={() => handleSort("description")} style={{ cursor: "pointer" }}>DESCRIPCIÓN{sortIndicator("description", sort, sortDir)}</th>
+                            <th>CUENTA</th>
+                            <th>CATEGORÍA</th>
+                            <th onClick={() => handleSort("amount")} style={{ cursor: "pointer", textAlign: "right" }}>MONTO{sortIndicator("amount", sort, sortDir)}</th>
+                            <th style={{ textAlign: "right" }}>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {!hasData ? (
                             <tr>
-                                <th
-                                    className="enterprise-col-key-header cursor-pointer select-none"
-                                    onClick={() => handleSort("date")}
-                                >
-                                    <span className="inline-flex items-center gap-1">
-                                        Fecha
-                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("date", sort, sortDir)}</span>
-                                    </span>
-                                </th>
-                                <th className="cursor-pointer select-none" onClick={() => handleSort("description")}>
-                                    <span className="inline-flex items-center gap-1">
-                                        Descripcion
-                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("description", sort, sortDir)}</span>
-                                    </span>
-                                </th>
-                                <th>Cuenta</th>
-                                <th>Categoria</th>
-                                <th className="text-right cursor-pointer select-none" onClick={() => handleSort("amount")}>
-                                    <span className="inline-flex items-center gap-1">
-                                        Monto
-                                        <span className="text-[11px] text-[#1b4679]">{sortIndicator("amount", sort, sortDir)}</span>
-                                    </span>
-                                </th>
-                                <th>Prioridad</th>
-                                <th className="text-right">Acciones</th>
+                                <td colSpan={6}>
+                                    <div className="table-empty">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.4}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                                        No hay transacciones para los filtros seleccionados.<br />
+                                        <Link href="/dashboard/transactions/new" style={{ color: "var(--acc)", fontWeight: 600, textDecoration: "none" }}>Registrar primer movimiento →</Link>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-
-                        <tbody>
-                            {!hasData ? (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-surface-500">
-                                        <p>No hay transacciones para los filtros seleccionados.</p>
-                                        <Link
-                                            href="/dashboard/transactions/new"
-                                            className="mt-3 inline-flex text-sm font-semibold text-[#0d4c7a] no-underline hover:text-[#117068]"
-                                        >
-                                            Registrar primer movimiento
-                                        </Link>
+                        ) : (
+                            data.map((row) => (
+                                <tr key={row.id}>
+                                    <td style={{ fontWeight: 600, color: "var(--tx2)" }}>{new Date(row.date).toLocaleDateString("es-PE")}</td>
+                                    <td style={{ fontWeight: 700 }}>{row.description}</td>
+                                    <td style={{ color: "var(--tx2)" }}>{row.accounts?.name || "—"}</td>
+                                    <td><span className="ptag if">{row.categories_gl?.name || "Sin categoría"}</span></td>
+                                    <td style={{ textAlign: "right" }}>
+                                        <span className={row.amount >= 0 ? "pos" : "neg"} style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: "14px", fontWeight: 700 }}>
+                                            {row.amount >= 0 ? "+" : "−"}{formatRowAmount(row.amount, row.currency)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                                            <Link href={`/dashboard/transactions/${row.id}/edit`} style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--acc)", textDecoration: "none", transition: "opacity .14s" }}>Editar</Link>
+                                            <button type="button" onClick={() => handleDelete(row.id)} style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--tx2)", background: "none", border: "none", cursor: "pointer", transition: "color .14s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--ng)"} onMouseOut={(e) => e.currentTarget.style.color = "var(--tx2)"}>Eliminar</button>
+                                        </div>
                                     </td>
                                 </tr>
-                            ) : (
-                                data.map((row) => {
-                                    const priorityLevel = getTransactionPriority(row);
-
-                                    return (
-                                        <tr key={row.id}>
-                                            <td className="enterprise-col-key text-[var(--tx2)] font-medium">
-                                                {new Date(row.date).toLocaleDateString("es-PE")}
-                                            </td>
-                                            <td className="font-bold text-[var(--tx1)]">{row.description}</td>
-                                            <td className="text-[var(--tx2)] font-medium">{row.accounts?.name || "-"}</td>
-                                            <td className="text-[var(--tx2)] font-medium">{row.categories_gl?.name || "Sin categoria"}</td>
-                                            <td
-                                                className={`text-right font-black tracking-tight ${row.amount >= 0 ? "text-[var(--ok)]" : "text-[var(--tx1)]"
-                                                    }`}
-                                            >
-                                                {row.amount >= 0 ? "+" : "-"}
-                                                {formatRowAmount(row.amount, row.currency)}
-                                            </td>
-                                            <td>
-                                                <PriorityPill level={priorityLevel} />
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-3 text-sm">
-                                                    <Link
-                                                        href={`/dashboard/transactions/${row.id}/edit`}
-                                                        className="font-bold text-[var(--acc)] no-underline hover:opacity-70 transition-opacity"
-                                                    >
-                                                        Editar
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDelete(row.id)}
-                                                        className="font-bold text-[var(--tx2)] hover:text-[#ff4757] transition-colors"
-                                                    >
-                                                        Eliminar
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d2dce9] px-4 py-3">
-                    <p className="text-xs text-surface-500">
-                        Mostrando {showingFrom}-{showingTo} de {totalCount} movimientos
-                    </p>
-                    <div className="flex items-center gap-2 text-sm">
-                        <button
-                            type="button"
-                            className="btn-secondary px-3 py-1.5 text-sm"
-                            disabled={page <= 1}
-                            onClick={() => handlePage(page - 1)}
-                        >
-                            Anterior
-                        </button>
-                        <span className="text-surface-600">
-                            Página {page} de {totalPages}
-                        </span>
-                        <button
-                            type="button"
-                            className="btn-secondary px-3 py-1.5 text-sm"
-                            disabled={page >= totalPages}
-                            onClick={() => handlePage(page + 1)}
-                        >
-                            Siguiente
-                        </button>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+                {hasData && (
+                    <div className="table-foot">
+                        <span>Mostrando {showingFrom}–{showingTo} de {totalCount}</span>
+                        <div className="pag">
+                            <button type="button" className="pag-btn" disabled={page <= 1} onClick={() => handlePage(page - 1)}>‹</button>
+                            {pageNumbers.map((p) => (
+                                <button key={p} type="button" className={`pag-btn ${p === page ? "active" : ""}`} onClick={() => handlePage(p)}>{p}</button>
+                            ))}
+                            <button type="button" className="pag-btn" disabled={page >= totalPages} onClick={() => handlePage(page + 1)}>›</button>
+                        </div>
                     </div>
-                </div>
-            </section>
+                )}
+            </div>
         </div>
     );
 }

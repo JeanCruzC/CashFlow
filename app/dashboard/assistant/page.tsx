@@ -24,131 +24,67 @@ export default async function AssistantPage() {
     const latest = insights[0] || null;
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="min-h-screen">
             <ModuleHero
-                eyebrow="Configuracion · Recomendaciones"
+                eyebrow="CONFIGURACIÓN · RECOMENDACIONES"
                 title="Sugerencias guardadas"
-                description="Aqui quedan tus recomendaciones de ingreso, ahorro y metas para revisarlas cuando ajustes tu plan."
+                description={`Recomendaciones de ingreso, ahorro y metas guardadas${latest ? ` el ${formatDate(latest.created_at)}` : ""}`}
                 rightPanel={
                     <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Estado del modulo
-                        </p>
-                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="text-surface-500">Recomendaciones</span>
-                                <span className="font-semibold text-[#0f2233]">{insights.length}</span>
-                            </div>
-                            <div className="mt-2 text-xs text-surface-600">
-                                {latest
-                                    ? `Ultima actualizacion: ${formatDate(latest.created_at)}`
-                                    : "Sin recomendaciones guardadas todavia."}
-                            </div>
-                        </div>
+                        <div className="h-stat"><div className="h-stat-lbl">Recomendaciones</div><div className="h-stat-n" style={{ color: "#5effd5" }}>{insights.length}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Última actualización</div><div style={{ fontSize: "12px", color: "rgba(255,255,255,.7)" }}>{latest ? formatDate(latest.created_at) : "—"}</div></div>
                     </>
                 }
             />
 
             {insights.length === 0 ? (
-                <section className="rounded-2xl border border-[#d9e2f0] bg-white px-6 py-10 text-sm text-surface-500 shadow-card">
-                    Todavía no hay recomendaciones guardadas. Completa el paso final de onboarding para generar la primera.
-                </section>
+                <div className="card fu in">
+                    <div className="table-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.4}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+                        Todavía no hay recomendaciones guardadas. Completa el onboarding para generar la primera.
+                    </div>
+                </div>
             ) : (
                 insights.map((insight) => {
                     const recommendation = insight.recommendation;
                     const currency = recommendation.currency || "PEN";
 
                     return (
-                        <section
-                            key={insight.id}
-                            className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card"
-                        >
-                            <div className="flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-surface-400">
-                                        {insight.title}
-                                    </p>
-                                    <p className="mt-2 text-base font-semibold text-[#0f2233]">
-                                        {recommendation.summary}
-                                    </p>
-                                </div>
-                                <span className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs text-surface-600">
-                                    {formatDate(insight.created_at)}
-                                </span>
+                        <div key={insight.id} style={{ marginBottom: "20px" }}>
+                            {/* Stat Cards */}
+                            <div className="g4 fu in" style={{ transitionDelay: ".06s" }}>
+                                <div className="stat-card"><div className="stat-badge sb-info">Ingreso actual</div><div className="stat-n">{formatMoney(recommendation.consolidated_income, currency)}</div></div>
+                                <div className="stat-card"><div className="stat-badge sb-ok">Ingreso recomendado</div><div className="stat-n ok">{formatMoney(recommendation.recommended_income, currency)}</div></div>
+                                <div className="stat-card"><div className="stat-badge sb-wa">Ingreso adicional sugerido</div><div className="stat-n wa">{formatMoney(recommendation.additional_income_needed, currency)}</div></div>
+                                <div className="stat-card"><div className="stat-badge sb-ng">Ahorro requerido</div><div className="stat-n a">{formatMoney(recommendation.required_savings_for_goals, currency)}</div></div>
                             </div>
 
-                            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
-                                    <p className="text-xs text-surface-500">Ingreso actual</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">
-                                        {formatMoney(recommendation.consolidated_income, currency)}
-                                    </p>
-                                </article>
-                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
-                                    <p className="text-xs text-surface-500">Ingreso recomendado</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">
-                                        {formatMoney(recommendation.recommended_income, currency)}
-                                    </p>
-                                </article>
-                                <article className="rounded-xl border border-[#bfe1d8] bg-[#eef9f5] px-4 py-3">
-                                    <p className="text-xs text-[#117068]">Ingreso adicional sugerido</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#117068]">
-                                        {formatMoney(recommendation.additional_income_needed, currency)}
-                                    </p>
-                                </article>
-                                <article className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-3">
-                                    <p className="text-xs text-surface-500">Ahorro requerido</p>
-                                    <p className="mt-1 text-lg font-semibold text-[#0f2233]">
-                                        {formatMoney(recommendation.required_savings_for_goals, currency)}
-                                    </p>
-                                </article>
-                            </div>
-
-                            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1fr]">
-                                <article className="rounded-xl border border-[#d9e2f0] bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Distribución saludable</h3>
-                                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
-                                            <p className="text-surface-500">Necesidades</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {recommendation.healthy_plan_pct.needs_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.needs_amount, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
-                                            <p className="text-surface-500">Deseos</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {recommendation.healthy_plan_pct.wants_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.wants_amount, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
-                                            <p className="text-surface-500">Ahorro</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {recommendation.healthy_plan_pct.savings_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.savings_amount, currency)}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2 text-xs">
-                                            <p className="text-surface-500">Deuda</p>
-                                            <p className="mt-1 font-semibold text-[#0f2233]">
-                                                {recommendation.healthy_plan_pct.debt_pct.toFixed(2)}% · {formatMoney(recommendation.healthy_plan_amounts.debt_amount, currency)}
-                                            </p>
-                                        </div>
+                            {/* Distribution + Actions */}
+                            <div className="g2 fu in" style={{ transitionDelay: ".1s" }}>
+                                <div className="card">
+                                    <div className="card-head"><div><div className="card-title">Distribución saludable</div><div className="card-sub">Basada en tu perfil y metas actuales</div></div></div>
+                                    <div className="dist-grid">
+                                        <div className="dist-item"><div className="dist-lbl">Necesidades</div><div className="dist-val">{formatMoney(recommendation.healthy_plan_amounts.needs_amount, currency)}</div><div className="dist-pct">{recommendation.healthy_plan_pct.needs_pct.toFixed(1)}%</div></div>
+                                        <div className="dist-item"><div className="dist-lbl">Deseos</div><div className="dist-val">{formatMoney(recommendation.healthy_plan_amounts.wants_amount, currency)}</div><div className="dist-pct">{recommendation.healthy_plan_pct.wants_pct.toFixed(1)}%</div></div>
+                                        <div className="dist-item" style={{ borderColor: "rgba(0,184,122,.2)", background: "var(--ok-l)" }}><div className="dist-lbl" style={{ color: "var(--ok)" }}>Ahorro</div><div className="dist-val" style={{ color: "var(--ok)" }}>{formatMoney(recommendation.healthy_plan_amounts.savings_amount, currency)}</div><div className="dist-pct">{recommendation.healthy_plan_pct.savings_pct.toFixed(1)}%</div></div>
+                                        <div className="dist-item"><div className="dist-lbl">Deuda</div><div className="dist-val">{formatMoney(recommendation.healthy_plan_amounts.debt_amount, currency)}</div><div className="dist-pct">{recommendation.healthy_plan_pct.debt_pct.toFixed(1)}%</div></div>
                                     </div>
-                                </article>
 
-                                <article className="rounded-xl border border-[#d9e2f0] bg-white p-4">
-                                    <h3 className="text-sm font-semibold text-[#0f2233]">Acciones sugeridas</h3>
-                                    <ul className="mt-3 space-y-2 text-sm text-surface-600">
+
+                                </div>
+
+                                <div className="card">
+                                    <div className="card-head"><div><div className="card-title">Acciones sugeridas</div></div></div>
+                                    <div className="rec-actions-grid" style={{ marginTop: 0 }}>
                                         {recommendation.action_items.map((item, index) => (
-                                            <li key={`${insight.id}-action-${index}`} className="rounded-lg border border-[#d9e2f0] bg-[#f8fbff] px-3 py-2">
-                                                {item}
-                                            </li>
+                                            <div key={`${insight.id}-action-${index}`} className="rec-action">{item}</div>
                                         ))}
-                                    </ul>
-                                </article>
-                            </div>
+                                    </div>
 
-                            <ScenarioPlanner recommendation={recommendation} />
-                        </section>
+                                    <ScenarioPlanner recommendation={recommendation} />
+                                </div>
+                            </div>
+                        </div>
                     );
                 })
             )}

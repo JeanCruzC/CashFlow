@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getAccounts, getAccountBalances, getPartnerContribution } from "@/app/actions/accounts";
 import { getOrgSettings } from "@/app/actions/settings";
 import { ModuleHero } from "@/components/ui/ModuleHero";
-import { PriorityPill, type PriorityLevel } from "@/components/ui/PriorityPill";
 import { Account } from "@/lib/types/finance";
 
 function accountTypeLabel(type: Account["account_type"]) {
@@ -22,27 +21,11 @@ function strategyLabel(strategy: string | null | undefined) {
     return "Pago total";
 }
 
-function balanceTone(value: number) {
-    if (value > 0) return "text-positive-600";
-    if (value < 0) return "text-negative-600";
-    return "text-surface-600";
-}
-
 function normalizeLabel(value: string) {
     return value
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase();
-}
-
-function accountPriority(account: Account, balance: number): PriorityLevel {
-    if ((account.account_type === "credit_card" || account.account_type === "loan") && balance < 0) {
-        return "critical";
-    }
-    if (account.is_restricted_cash || account.account_type === "investment") {
-        return "followup";
-    }
-    return "info";
 }
 
 export default async function AccountsPage() {
@@ -112,255 +95,139 @@ export default async function AccountsPage() {
     const leverageRatio = assets > 0 ? (liabilities / assets) * 100 : 0;
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="min-h-screen">
             <ModuleHero
-                eyebrow="Configuracion · Cuentas"
+                eyebrow="CONFIGURACIÓN · CUENTAS"
                 title="Tus cuentas y saldos"
-                description="Aqui ves cuanto tienes hoy por cuenta, cuanto debes y que cuentas forman tu estructura financiera."
+                description="Cuánto tienes hoy, cuánto debes y estructura financiera"
                 actions={
                     <>
-                        <Link href="/dashboard/settings#estructura-financiera" className="btn-secondary text-sm no-underline">
+                        <Link href="/dashboard/settings#estructura-financiera" className="h-btn1 no-underline">
                             Administrar estructura
                         </Link>
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                        <Link href="/dashboard/transactions/new" className="h-btn2 no-underline">
                             Registrar movimiento
                         </Link>
                     </>
                 }
                 rightPanel={
                     <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Resumen rapido
-                        </p>
-                        <div className="mt-4 space-y-2 text-sm">
-                            <div className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-3 py-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-surface-500">Activos</span>
-                                    <span className="font-semibold text-positive-600">{formatMoney(assets)}</span>
-                                </div>
-                                <div className="mt-2 flex items-center justify-between">
-                                    <span className="text-surface-500">Pasivos</span>
-                                    <span className="font-semibold text-negative-600">{formatMoney(liabilities)}</span>
-                                </div>
-                                <div className="mt-2 flex items-center justify-between">
-                                    <span className="text-surface-500">Patrimonio</span>
-                                    <span className="font-semibold text-[#0f2233]">{formatMoney(netWorth)}</span>
-                                </div>
-                            </div>
-                            <p className="text-xs text-surface-500">
-                                Deuda sobre activos: <span className="font-semibold text-[#0f2233]">{leverageRatio.toFixed(1)}%</span>
-                            </p>
-                        </div>
+                        <div className="h-stat"><div className="h-stat-lbl"><span className="h-dot" style={{ background: "#5effd5" }}></span>Activos</div><div className="h-stat-n" style={{ color: "#5effd5" }}>{formatMoney(assets)}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl"><span className="h-dot" style={{ background: "#ffb3bc" }}></span>Pasivos</div><div className="h-stat-n" style={{ color: "#ffb3bc" }}>{formatMoney(liabilities)}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl"><span className="h-dot" style={{ background: "rgba(255,255,255,.5)" }}></span>Patrimonio</div><div className="h-stat-n" style={{ color: "#fff" }}>{formatMoney(netWorth)}</div></div>
                     </>
                 }
-            />
+            >
+                {formatMoney(assets)}
+            </ModuleHero>
 
-            <section className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Activos</p>
-                    <div className="mt-1">
-                        <PriorityPill level="info" />
-                    </div>
-                    <p className="mt-2 text-3xl font-semibold text-positive-600">{formatMoney(assets)}</p>
-                    <p className="mt-1 text-xs text-surface-400">Liquidez + inversiones + saldos positivos.</p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Pasivos</p>
-                    <div className="mt-1">
-                        <PriorityPill level="critical" />
-                    </div>
-                    <p className="mt-2 text-3xl font-semibold text-negative-600">{formatMoney(liabilities)}</p>
-                    <p className="mt-1 text-xs text-surface-400">
-                        Ratio deuda/activos: {leverageRatio.toFixed(1)}%
-                    </p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Patrimonio neto</p>
-                    <div className="mt-1">
-                        <PriorityPill level="followup" />
-                    </div>
-                    <p className={`mt-2 text-3xl font-semibold ${netWorth >= 0 ? "text-[#0f2233]" : "text-negative-600"}`}>
-                        {formatMoney(netWorth)}
-                    </p>
-                    <p className="mt-1 text-xs text-surface-400">Activos menos pasivos consolidados.</p>
-                </article>
-            </section>
+            {/* Stat Cards */}
+            <div className="g3 fu in" style={{ transitionDelay: ".06s" }}>
+                <div className="stat-card"><div className="stat-badge sb-info">Informativo</div><div className="stat-n ok">{formatMoney(assets)}</div><div className="stat-desc">Activos — liquidez + inversiones + saldos positivos</div></div>
+                <div className="stat-card"><div className="stat-badge sb-ng">Crítico</div><div className="stat-n ng">{formatMoney(liabilities)}</div><div className="stat-desc">Pasivos — ratio deuda/activos: {leverageRatio.toFixed(1)}%</div></div>
+                <div className="stat-card"><div className="stat-badge sb-ok">Seguimiento</div><div className="stat-n a">{formatMoney(netWorth)}</div><div className="stat-desc">Patrimonio neto — activos menos pasivos consolidados</div></div>
+            </div>
 
-            <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-[#10283b]">Liquidez disponible</h3>
-                        <span className="rounded-full border border-[#d9e2f0] bg-[#f5f9ff] px-3 py-1 text-xs font-semibold text-surface-500">
-                            {liquidAccounts.length} cuentas
-                        </span>
-                    </div>
-
+            {/* Account Cards Grid */}
+            <div className="g2 fu in" style={{ transitionDelay: ".1s" }}>
+                <div className="card">
+                    <div className="card-head"><div><div className="card-title">Liquidez disponible</div></div><div className="card-action">{liquidAccounts.length} cuentas</div></div>
                     {liquidAccounts.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
-                            No hay cuentas líquidas configuradas.
-                        </div>
+                        <div className="table-empty">No hay cuentas líquidas configuradas.</div>
                     ) : (
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                             {liquidAccounts.map((account) => {
                                 const balance = getRealBalance(account);
-
                                 return (
-                                    <article key={account.id} className="rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-4">
-                                        <p className="text-sm font-semibold text-[#0f2233]">{account.name}</p>
-                                        <p className="mt-1 text-xs text-surface-500">
-                                            {accountTypeLabel(account.account_type)} · {account.currency}
-                                        </p>
-                                        <p className={`mt-4 text-xl font-semibold ${balanceTone(balance)}`}>
-                                            {formatMoney(balance, account.currency)}
-                                        </p>
-                                    </article>
+                                    <div key={account.id} className="acc-card">
+                                        <div className="acc-type">{accountTypeLabel(account.account_type)} · {account.currency}</div>
+                                        <div className="acc-name">{account.name}</div>
+                                        <div className="acc-sub">Saldo operativo diario</div>
+                                        <div className={`acc-balance ${balance >= 0 ? "pos" : "neg"}`}>{formatMoney(balance, account.currency)}</div>
+                                    </div>
                                 );
                             })}
                         </div>
                     )}
 
                     {investmentAccounts.length > 0 && (
-                        <div className="mt-6 border-t border-[#e6edf7] pt-5">
-                            <div className="mb-3 flex items-center justify-between">
-                                <h4 className="text-sm font-semibold text-[#10283b]">Inversiones</h4>
-                                <span className="text-xs text-surface-500">{investmentAccounts.length} activos</span>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
+                        <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid var(--brd)" }}>
+                            <div className="card-head"><div className="card-title">Inversiones</div><div className="card-action">{investmentAccounts.length} activos</div></div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                 {investmentAccounts.map((account) => {
                                     const balance = getRealBalance(account);
-
                                     return (
-                                        <article key={account.id} className="rounded-xl border border-[#d9e2f0] bg-white p-4">
-                                            <p className="text-sm font-semibold text-[#0f2233]">{account.name}</p>
-                                            <p className="mt-1 text-xs text-surface-500">{account.currency}</p>
-                                            <p className={`mt-3 text-lg font-semibold ${balanceTone(balance)}`}>
-                                                {formatMoney(balance, account.currency)}
-                                            </p>
-                                        </article>
+                                        <div key={account.id} className="acc-card">
+                                            <div className="acc-type">Inversión · {account.currency}</div>
+                                            <div className="acc-name">{account.name}</div>
+                                            <div className={`acc-balance ${balance >= 0 ? "pos" : "neg"}`}>{formatMoney(balance, account.currency)}</div>
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
                     )}
-                </article>
+                </div>
 
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-[#10283b]">Deuda y compromisos</h3>
-                        <span className="rounded-full border border-[#d9e2f0] bg-[#fff5f5] px-3 py-1 text-xs font-semibold text-negative-600">
-                            {debtAccounts.length} obligaciones
-                        </span>
-                    </div>
-
+                <div className="card">
+                    <div className="card-head"><div><div className="card-title">Deuda y compromisos</div></div><div className="card-action">{debtAccounts.length} obligaciones</div></div>
                     {debtAccounts.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
-                            No hay deudas registradas.
-                        </div>
+                        <div className="table-empty">No hay deudas registradas.</div>
                     ) : (
-                        <div className="space-y-3">
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                             {debtAccounts.map((account) => {
                                 const balance = getRealBalance(account);
-
                                 return (
-                                    <article key={account.id} className="rounded-xl border border-[#f0d6cd] bg-[#fff9f7] p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="text-sm font-semibold text-[#0f2233]">{account.name}</p>
-                                                <p className="mt-0.5 text-xs text-surface-500">
-                                                    {accountTypeLabel(account.account_type)} · {strategyLabel(account.card_payment_strategy)}
-                                                </p>
-                                            </div>
-                                            <p className="text-sm font-semibold text-negative-600">
-                                                {formatMoney(balance, account.currency)}
-                                            </p>
+                                    <div key={account.id} className="acc-card" style={{ borderColor: "rgba(255,71,87,.2)" }}>
+                                        <div className="acc-type" style={{ color: "var(--ng)" }}>{accountTypeLabel(account.account_type)} · {account.currency}</div>
+                                        <div className="acc-name">{account.name}</div>
+                                        <div className="acc-sub">{strategyLabel(account.card_payment_strategy)}</div>
+                                        <div className="acc-balance neg">{formatMoney(balance, account.currency)}</div>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--brd)" }}>
+                                            <div><div style={{ fontSize: "10px", color: "var(--tx2)", marginBottom: "3px" }}>Límite</div><div style={{ fontSize: "12.5px", fontWeight: 700 }}>{account.credit_limit ? formatMoney(Number(account.credit_limit), account.currency) : "No definido"}</div></div>
+                                            <div><div style={{ fontSize: "10px", color: "var(--tx2)", marginBottom: "3px" }}>Vencimiento</div><div style={{ fontSize: "12.5px", fontWeight: 700 }}>{account.payment_day ? `Día ${account.payment_day}` : "No definido"}</div></div>
+                                            <div><div style={{ fontSize: "10px", color: "var(--tx2)", marginBottom: "3px" }}>Pago mínimo</div><div style={{ fontSize: "12.5px", fontWeight: 700, color: account.minimum_payment_amount ? "var(--tx)" : "var(--tx3)" }}>{account.minimum_payment_amount ? formatMoney(Number(account.minimum_payment_amount), account.currency) : "No definido"}</div></div>
                                         </div>
-
-                                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                            <div className="rounded-lg border border-[#f1ddd7] bg-white px-2.5 py-2">
-                                                <p className="text-surface-500">Límite</p>
-                                                <p className="mt-1 font-semibold text-[#0f2233]">
-                                                    {account.credit_limit
-                                                        ? formatMoney(Number(account.credit_limit), account.currency)
-                                                        : "No definido"}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-lg border border-[#f1ddd7] bg-white px-2.5 py-2">
-                                                <p className="text-surface-500">Vencimiento</p>
-                                                <p className="mt-1 font-semibold text-[#0f2233]">
-                                                    {account.payment_day ? `Día ${account.payment_day}` : "No definido"}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-lg border border-[#f1ddd7] bg-white px-2.5 py-2">
-                                                <p className="text-surface-500">Pago mínimo</p>
-                                                <p className="mt-1 font-semibold text-[#0f2233]">
-                                                    {account.minimum_payment_amount
-                                                        ? formatMoney(Number(account.minimum_payment_amount), account.currency)
-                                                        : "No definido"}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </article>
+                                    </div>
                                 );
                             })}
                         </div>
                     )}
-                </article>
-            </section>
+                </div>
+            </div>
 
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-base font-semibold text-[#10283b]">Inventario completo de cuentas</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Vista tabular densa con prioridad operativa para revisión diaria.
-                </p>
-
+            {/* Full Table */}
+            <div className="table-wrap fu in" style={{ transitionDelay: ".15s" }}>
                 {accountRows.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
+                    <div className="table-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.4}><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                         Todavía no tienes cuentas activas.
                     </div>
                 ) : (
-                    <div className="enterprise-table-shell mt-4">
-                        <div className="enterprise-table-wrap scrollbar-thin">
-                            <table className="enterprise-table min-w-[980px]">
-                                <thead>
-                                    <tr>
-                                        <th className="enterprise-col-key-header">Cuenta</th>
-                                        <th>Tipo</th>
-                                        <th>Moneda</th>
-                                        <th className="text-right">Saldo operativo</th>
-                                        <th>Prioridad</th>
-                                        <th>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {accountRows.map((account) => {
-                                        const balance = getRealBalance(account);
-                                        const priority = accountPriority(account, balance);
-
-                                        return (
-                                            <tr key={account.id}>
-                                                <td className="enterprise-col-key text-[#10233f]">{account.name}</td>
-                                                <td>{accountTypeLabel(account.account_type)}</td>
-                                                <td>{account.currency}</td>
-                                                <td className={`text-right font-semibold ${balanceTone(balance)}`}>
-                                                    {formatMoney(balance, account.currency)}
-                                                </td>
-                                                <td>
-                                                    <PriorityPill level={priority} />
-                                                </td>
-                                                <td>
-                                                    <span className="rounded-full border border-[#b7c6da] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#425972]">
-                                                        {account.is_active ? "Activa" : "Inactiva"}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <>
+                        <table className="table-v">
+                            <thead><tr><th>CUENTA</th><th>TIPO</th><th>MONEDA</th><th>SALDO OPERATIVO</th><th>PRIORIDAD</th><th>ESTADO</th></tr></thead>
+                            <tbody>
+                                {accountRows.map((account) => {
+                                    const balance = getRealBalance(account);
+                                    const isDebt = (account.account_type === "credit_card" || account.account_type === "loan") && balance < 0;
+                                    const isInv = account.account_type === "investment";
+                                    return (
+                                        <tr key={account.id}>
+                                            <td style={{ fontWeight: 700 }}>{account.name}</td>
+                                            <td style={{ color: "var(--tx2)" }}>{accountTypeLabel(account.account_type)}</td>
+                                            <td><span className="ptag if">{account.currency}</span></td>
+                                            <td><span className={`${balance >= 0 ? "pos" : "neg"}`} style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: "14px" }}>{formatMoney(balance, account.currency)}</span></td>
+                                            <td><span className={`ptag ${isDebt ? "cr" : isInv ? "sg" : "if"}`}>{isDebt ? "Crítico" : isInv ? "Seguimiento" : "Informativo"}</span></td>
+                                            <td><span className="ptag sg">{account.is_active ? "ACTIVA" : "INACTIVA"}</span></td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </>
                 )}
-            </section>
+            </div>
         </div>
     );
 }

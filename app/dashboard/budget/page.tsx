@@ -4,19 +4,15 @@ import { getCategories } from "@/app/actions/categories";
 import { BudgetCopyForm } from "@/components/budget/BudgetCopyForm";
 import { BudgetSetForm } from "@/components/budget/BudgetSetForm";
 import { BudgetBars } from "@/components/ui/BudgetBars";
-import { HoverMetricCard } from "@/components/ui/HoverMetricCard";
-import type { PriorityLevel } from "@/components/ui/PriorityPill";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 
 function getRecentMonths(count = 6) {
     const current = new Date();
     const months: string[] = [];
-
     for (let i = 0; i < count; i += 1) {
         const date = new Date(current.getFullYear(), current.getMonth() - i, 1);
         months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
     }
-
     return months;
 }
 
@@ -29,36 +25,19 @@ function monthLabel(month: string) {
 
 function friendlyCategoryName(name: string) {
     const map: Record<string, string> = {
-        Salary: "Salario",
-        Freelance: "Freelance",
-        Investments: "Inversiones",
-        "Rental Income": "Ingreso por alquiler",
-        "Other Income": "Otros ingresos",
-        Housing: "Vivienda",
-        Utilities: "Servicios",
-        Groceries: "Alimentación",
-        Transportation: "Transporte",
-        Healthcare: "Salud",
-        Insurance: "Seguros",
-        Entertainment: "Entretenimiento",
-        Education: "Educación",
-        Shopping: "Compras",
-        "Debt Payments": "Pago de deuda",
-        Taxes: "Impuestos",
-        "Savings & Investments": "Ahorro e inversión",
-        "Other Expenses": "Otros gastos",
-        Revenue: "Ingresos del negocio",
-        "Service Revenue": "Ingresos por servicios",
-        "Product Revenue": "Ingresos por productos",
-        COGS: "Costo de ventas",
-        "Raw Materials": "Materia prima",
-        "Direct Labor": "Mano de obra directa",
-        "Rent & Facilities": "Alquiler e instalaciones",
-        Payroll: "Planilla",
-        Marketing: "Marketing",
-        "Travel & Entertainment": "Viajes y representación",
-        Technology: "Tecnología",
-        "Income Tax": "Impuesto a la renta",
+        Salary: "Salario", Freelance: "Freelance", Investments: "Inversiones",
+        "Rental Income": "Ingreso por alquiler", "Other Income": "Otros ingresos",
+        Housing: "Vivienda", Utilities: "Servicios", Groceries: "Alimentación",
+        Transportation: "Transporte", Healthcare: "Salud", Insurance: "Seguros",
+        Entertainment: "Entretenimiento", Education: "Educación", Shopping: "Compras",
+        "Debt Payments": "Pago de deuda", Taxes: "Impuestos",
+        "Savings & Investments": "Ahorro e inversión", "Other Expenses": "Otros gastos",
+        Revenue: "Ingresos del negocio", "Service Revenue": "Ingresos por servicios",
+        "Product Revenue": "Ingresos por productos", COGS: "Costo de ventas",
+        "Raw Materials": "Materia prima", "Direct Labor": "Mano de obra directa",
+        "Rent & Facilities": "Alquiler e instalaciones", Payroll: "Planilla",
+        Marketing: "Marketing", "Travel & Entertainment": "Viajes y representación",
+        Technology: "Tecnología", "Income Tax": "Impuesto a la renta",
     };
     return map[name] ?? name;
 }
@@ -96,7 +75,6 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
     const sourceOptions = monthOptions
         .filter((option) => option !== month)
         .map((option) => ({ value: option, label: monthLabel(option) }));
-    const averageBudgetPerCategory = overview.rows.length > 0 ? overview.totalBudget / overview.rows.length : null;
     const chartRows = overview.rows
         .map((row) => ({
             category: friendlyCategoryName(row.category),
@@ -105,283 +83,137 @@ export default async function BudgetPage({ searchParams }: BudgetPageProps) {
             progress: row.progress,
         }))
         .sort((a, b) => b.actual - a.actual);
-    const profileLabel = overview.orgType === "business" ? "empresa" : "personal";
-    const spendingPriority: PriorityLevel = usageRate >= 90 ? "critical" : usageRate >= 70 ? "followup" : "info";
-    const remainingPriority: PriorityLevel = remaining < 0 ? "critical" : "followup";
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="min-h-screen">
             <ModuleHero
-                eyebrow="Hoy primero · Plan mensual secundario"
+                eyebrow={`PLAN MENSUAL · ${monthLabel(month).toUpperCase()}`}
                 title="Presupuesto fácil por mes"
-                description={`Este módulo te ayuda a poner límites por categoría para ${monthLabel(
-                    overview.month
-                )}, sin confundirlo con tu saldo de hoy.`}
+                description="Define topes por categoría y compara contra lo real"
                 actions={
                     <>
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
+                        <Link href="/dashboard/transactions/new" className="h-btn1 no-underline">
                             Registrar movimiento
                         </Link>
-                        <Link href="/dashboard" className="btn-secondary text-sm no-underline">
+                        <Link href="/dashboard" className="h-btn2 no-underline">
                             Volver a Hoy
                         </Link>
                     </>
                 }
                 rightPanel={
                     <>
-                        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-surface-500">
-                            Periodo del plan
-                        </p>
-                        <form className="mt-3 flex items-center gap-2" method="get">
-                            <select className="input-field w-full text-sm" name="month" defaultValue={month}>
-                                {monthOptions.map((option) => (
-                                    <option key={option} value={option}>
-                                        {monthLabel(option)}
-                                    </option>
-                                ))}
-                            </select>
-                            <button type="submit" className="btn-secondary text-sm">
-                                Aplicar
-                            </button>
-                        </form>
-
-                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f7fbff] px-3 py-3 text-sm">
-                            <div className="group relative flex items-center justify-between">
-                                <span className="text-surface-500">Plan total</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[#0f2233]">
-                                        {currencyFormatter.format(overview.totalBudget)}
-                                    </span>
-                                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#9fb4c9] bg-white text-[10px] font-semibold leading-none text-[#0f2233]">
-                                        i
-                                    </span>
-                                </div>
-
-                                <div className="pointer-events-none absolute right-0 top-full z-20 mt-2 w-[min(18rem,calc(100vw-3.5rem))] rounded-xl border border-[#d9e2f0] bg-white p-3 text-xs text-surface-600 opacity-0 shadow-[0_10px_30px_rgba(15,34,51,0.14)] transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
-                                    <p className="font-semibold text-[#0f2233]">¿Qué muestra este importe?</p>
-                                    <p className="mt-1">Es la suma de topes de todas las categorías del mes, no tu saldo disponible de hoy.</p>
-                                </div>
+                        <div className="h-stat"><div className="h-stat-lbl">Plan total</div><div className="h-stat-n" style={{ color: "#fff" }}>{currencyFormatter.format(overview.totalBudget)}</div></div>
+                        <div className="h-stat"><div className="h-stat-lbl">Gastado</div><div className="h-stat-n" style={{ color: "#fff" }}>{currencyFormatter.format(overview.totalActual)}</div></div>
+                        <div className="h-stat">
+                            <div className="h-stat-lbl">Uso del plan</div>
+                            <div style={{ height: "6px", background: "rgba(255,255,255,.15)", borderRadius: "99px", marginTop: "6px", overflow: "hidden" }}>
+                                <div style={{ height: "100%", width: `${usageRate}%`, background: usageRate >= 100 ? "var(--ng)" : "#fff", borderRadius: "99px", transition: "width 1.5s cubic-bezier(.4,0,.2,1)" }}></div>
                             </div>
-                            <div className="mt-2 flex items-center justify-between">
-                                <span className="text-surface-500">Gastado</span>
-                                <span className="font-semibold text-[#0f2233]">
-                                    {currencyFormatter.format(overview.totalActual)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-4">
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-200">
-                                <div
-                                    className={`h-full rounded-full transition-all ${
-                                        usageRate >= 100 ? "bg-negative-500" : "bg-[#117068]"
-                                    }`}
-                                    style={{ width: `${usageRate}%` }}
-                                />
-                            </div>
-                            <p className="mt-2 text-xs text-surface-500">
-                                Uso del plan: <span className="font-semibold text-[#0f2233]">{Math.round(usageRate)}%</span>
-                            </p>
                         </div>
                     </>
                 }
             />
 
-            <section className="grid gap-4 md:grid-cols-3">
-                <HoverMetricCard
-                    label="Plan total del mes"
-                    value={currencyFormatter.format(overview.totalBudget)}
-                    valueClassName="text-3xl font-semibold text-[#0f2233]"
-                    priorityLevel="info"
-                    priorityLabel="Informativo"
-                    note="Este valor suma límites por categoría; no es tu saldo de hoy."
-                    details={[
-                        { label: "Mes evaluado", value: monthLabel(overview.month) },
-                        { label: "Categorías con plan", value: String(overview.rows.length) },
-                        {
-                            label: "Promedio por categoría",
-                            value:
-                                averageBudgetPerCategory == null
-                                    ? "Sin categorías aún"
-                                    : currencyFormatter.format(averageBudgetPerCategory),
-                        },
-                        { label: "Moneda", value: overview.currency || "USD" },
-                    ]}
-                />
+            {/* Stat Cards */}
+            <div className="g3 fu in" style={{ transitionDelay: ".06s" }}>
+                <div className="stat-card"><div className="stat-badge sb-info">Informativo</div><div className="stat-n">{currencyFormatter.format(overview.totalBudget)}</div><div className="stat-desc">Plan total del mes — suma de límites por categoría. No es tu saldo.</div></div>
+                <div className="stat-card"><div className="stat-badge sb-ok">Informativo</div><div className="stat-n ok">{currencyFormatter.format(overview.totalActual)}</div><div className="stat-desc">Gastado registrado — movimientos clasificados este mes.</div></div>
+                <div className="stat-card"><div className="stat-badge sb-wa">Seguimiento</div><div className={`stat-n ${remaining >= 0 ? "a" : "ng"}`}>{currencyFormatter.format(Math.abs(remaining))}</div><div className="stat-desc">{remaining >= 0 ? "Disponible dentro del plan — vas bajo el límite total." : "Exceso sobre el plan — ya superaste el límite."}</div></div>
+            </div>
 
-                <HoverMetricCard
-                    label="Gastado registrado"
-                    value={currencyFormatter.format(overview.totalActual)}
-                    valueClassName="text-3xl font-semibold text-[#0f2233]"
-                    priorityLevel={spendingPriority}
-                    details={[
-                        { label: "Uso del plan", value: `${Math.round(usageRate)}%` },
-                        { label: "Categorías pasadas", value: String(overBudgetCategories) },
-                        {
-                            label: "Categorías dentro del plan",
-                            value: String(Math.max(overview.rows.length - overBudgetCategories, 0)),
-                        },
-                        {
-                            label: remaining >= 0 ? "Todavía disponible" : "Exceso acumulado",
-                            value: currencyFormatter.format(Math.abs(remaining)),
-                        },
-                    ]}
-                />
-
-                <HoverMetricCard
-                    label={remaining >= 0 ? "Disponible dentro del plan" : "Exceso sobre el plan"}
-                    value={currencyFormatter.format(Math.abs(remaining))}
-                    valueClassName={`text-3xl font-semibold ${remaining >= 0 ? "text-[#117068]" : "text-[#a3462a]"}`}
-                    priorityLevel={remainingPriority}
-                    note={remaining >= 0 ? "Vas por debajo del límite total del mes." : "Ya superaste el límite total del mes."}
-                    details={[
-                        { label: "Mes evaluado", value: monthLabel(overview.month) },
-                        { label: "Límite mensual", value: currencyFormatter.format(overview.totalBudget) },
-                        { label: "Gastado real", value: currencyFormatter.format(overview.totalActual) },
-                        {
-                            label: "Estado",
-                            value: remaining >= 0 ? "Aún dentro del plan" : "Fuera del plan",
-                        },
-                    ]}
-                />
-            </section>
-
-            <section className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Categorías con plan</p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{overview.rows.length}</p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Categorías pasadas</p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233]">{overBudgetCategories}</p>
-                </article>
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-5 shadow-card">
-                    <p className="text-xs font-medium text-surface-500">Perfil activo</p>
-                    <p className="mt-2 text-2xl font-semibold text-[#0f2233] capitalize">{profileLabel}</p>
-                </article>
-            </section>
-
-            <section className="grid gap-4 xl:grid-cols-[1fr_1.05fr]">
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#10283b]">Estado del mes</h3>
-                    <p className="mt-1 text-sm text-surface-500">
-                        {hasBudgetPlan
-                            ? `Ya tienes plan para ${monthLabel(overview.month)}. Puedes ajustarlo por categoría.`
-                            : `Todavía no tienes plan para ${monthLabel(
-                                  overview.month
-                              )}. Puedes copiar un mes anterior o empezar categoría por categoría.`}
-                    </p>
+            {/* Status + Copy form */}
+            <div className="g2 fu in" style={{ transitionDelay: ".1s" }}>
+                <div className="card">
+                    <div className="card-head"><div><div className="card-title">Estado del mes</div><div className="card-sub">{hasBudgetPlan ? `Plan activo para ${monthLabel(overview.month)}` : `Sin plan para ${monthLabel(overview.month)} aún`}</div></div></div>
 
                     {!hasBudgetPlan && (
-                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-4 text-sm text-surface-600">
-                            <p className="font-semibold text-[#0f2233]">Recomendado para comenzar rápido</p>
-                            <ol className="mt-2 space-y-1.5">
-                                <li>1. Copia el plan del último mes parecido.</li>
-                                <li>2. Ajusta solo categorías grandes (vivienda, comida, transporte).</li>
-                                <li>3. Registra movimientos y revisa desvíos cada semana.</li>
-                            </ol>
+                        <div style={{ background: "var(--srf2)", border: "1px solid var(--brd)", borderRadius: "var(--r2)", padding: "16px", marginBottom: "14px" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "10px" }}>Empieza rápido</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                <div style={{ fontSize: "12.5px", color: "var(--tx2)", padding: "7px 0", borderBottom: "1px solid var(--brd)" }}>1. Copia el plan del último mes parecido.</div>
+                                <div style={{ fontSize: "12.5px", color: "var(--tx2)", padding: "7px 0", borderBottom: "1px solid var(--brd)" }}>2. Ajusta categorías grandes (vivienda, comida, transporte).</div>
+                                <div style={{ fontSize: "12.5px", color: "var(--tx2)", padding: "7px 0" }}>3. Registra movimientos y revisa desviaciones cada semana.</div>
+                            </div>
                         </div>
                     )}
 
                     {hasBudgetPlan && (
-                        <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] p-4 text-sm text-surface-600">
-                            <p className="font-semibold text-[#0f2233]">Lectura rápida</p>
-                            <p className="mt-1">
+                        <div style={{ background: "var(--srf2)", border: "1px solid var(--brd)", borderRadius: "var(--r2)", padding: "16px", marginBottom: "14px" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Lectura rápida</div>
+                            <div style={{ fontSize: "12.5px", color: "var(--tx2)" }}>
                                 {overBudgetCategories > 0
                                     ? `${overBudgetCategories} categorías ya pasaron su límite.`
                                     : "No tienes categorías pasadas por ahora."}
-                            </p>
+                            </div>
                         </div>
                     )}
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        <Link href="/dashboard/transactions/new" className="btn-primary text-sm no-underline hover:text-white">
-                            Registrar movimiento
-                        </Link>
-                        <Link href="/dashboard/categories" className="btn-secondary text-sm no-underline">
-                            Revisar categorías
-                        </Link>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        <Link href="/dashboard/transactions/new" className="plan-btn no-underline" style={{ flex: 1 }}>Registrar movimiento</Link>
+                        <Link href="/dashboard/categories" className="plan-btn no-underline" style={{ flex: 1, background: "var(--srf2)", color: "var(--tx)", boxShadow: "none", border: "1px solid var(--brd)" }}>Revisar categorías</Link>
                     </div>
-                </article>
+                </div>
 
-                <article className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                    <h3 className="text-base font-semibold text-[#10283b]">Copiar plan entre meses</h3>
-                    <p className="mt-1 text-sm text-surface-500">Ideal para pasar el plan de marzo a abril en un paso.</p>
-                    <div className="mt-4">
-                        <BudgetCopyForm targetMonth={month} sourceOptions={sourceOptions} />
-                    </div>
+                <div className="card">
+                    <div className="card-head"><div><div className="card-title">Copiar plan entre meses</div><div className="card-sub">Pasa el plan de un mes a otro en un paso</div></div></div>
+                    <BudgetCopyForm targetMonth={month} sourceOptions={sourceOptions} />
 
-                    <h3 className="mt-6 text-base font-semibold text-[#10283b]">Definir tope por categoría</h3>
-                    <p className="mt-1 text-sm text-surface-500">También puedes editar una categoría puntual sin copiar todo.</p>
-                    <div className="mt-4">
+                    <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid var(--brd)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "8px" }}>Definir tope por categoría</div>
+                        <div style={{ fontSize: "12px", color: "var(--tx2)", marginBottom: "10px" }}>Añade límites individuales para controlar cada rubro mensual.</div>
                         <BudgetSetForm month={month} categories={budgetCategories} />
                     </div>
-                </article>
-            </section>
+                </div>
+            </div>
 
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-base font-semibold text-[#10283b]">Ejecución por categoría</h3>
-                <p className="mt-1 text-sm text-surface-500">Barras comparativas entre límite del plan y gasto real.</p>
-                <div className="mt-4">
+            {/* Budget Bars Chart */}
+            {hasBudgetPlan && (
+                <div className="card fu in" style={{ transitionDelay: ".15s" }}>
+                    <div className="card-head"><div><div className="card-title">Ejecución por categoría</div><div className="card-sub">Barras comparativas entre límite y gasto real</div></div></div>
                     <BudgetBars rows={chartRows} currency={overview.currency || "USD"} />
                 </div>
-            </section>
+            )}
 
-            <section className="rounded-2xl border border-[#d9e2f0] bg-white p-6 shadow-card">
-                <h3 className="text-base font-semibold text-[#10283b]">Detalle por categoría</h3>
-                <p className="mt-1 text-sm text-surface-500">
-                    Tabla completa para revisar límite, gasto y diferencia.
-                </p>
-
+            {/* Detail Table */}
+            <div className="table-wrap fu in" style={{ transitionDelay: ".2s" }}>
                 {overview.rows.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-[#d9e2f0] bg-[#f8fbff] px-4 py-6 text-sm text-surface-500">
+                    <div className="table-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.4}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         Aún no tienes categorías con plan en este mes.
                     </div>
                 ) : (
-                    <div className="mt-4 overflow-x-auto rounded-xl border border-[#d9e2f0]">
-                        <table className="w-full min-w-[760px] text-sm">
-                            <thead className="bg-[#f5f9ff]">
-                                <tr className="text-left text-surface-500">
-                                    <th className="px-4 py-3 font-semibold">Categoría</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Límite</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Gastado</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Diferencia</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Uso</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-surface-200 bg-white">
-                                {overview.rows.map((row, index) => {
-                                    const rowVariance = row.actual - row.budget;
-                                    return (
-                                        <tr key={`${row.category}-${index}`}>
-                                            <td className="px-4 py-3 font-medium text-[#0f2233]">
-                                                {friendlyCategoryName(row.category)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-surface-600">
-                                                {currencyFormatter.format(row.budget)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-surface-600">
-                                                {currencyFormatter.format(row.actual)}
-                                            </td>
-                                            <td
-                                                className={`px-4 py-3 text-right font-semibold ${
-                                                    rowVariance <= 0 ? "text-positive-600" : "text-warning-600"
-                                                }`}
-                                            >
-                                                {rowVariance <= 0 ? "+" : "-"}
-                                                {currencyFormatter.format(Math.abs(rowVariance))}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-surface-600">
-                                                {Math.round(row.progress)}%
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                    <table className="table-v">
+                        <thead><tr><th>CATEGORÍA</th><th>LÍMITE</th><th>GASTADO</th><th>DIFERENCIA</th><th>USO</th></tr></thead>
+                        <tbody>
+                            {overview.rows.map((row, index) => {
+                                const rowVariance = row.actual - row.budget;
+                                return (
+                                    <tr key={`${row.category}-${index}`}>
+                                        <td style={{ fontWeight: 700 }}>{friendlyCategoryName(row.category)}</td>
+                                        <td style={{ color: "var(--tx2)" }}>{currencyFormatter.format(row.budget)}</td>
+                                        <td style={{ color: "var(--tx2)" }}>{currencyFormatter.format(row.actual)}</td>
+                                        <td><span className={rowVariance <= 0 ? "pos" : "neg"} style={{ fontWeight: 700 }}>{rowVariance <= 0 ? "+" : "-"}{currencyFormatter.format(Math.abs(rowVariance))}</span></td>
+                                        <td><span className={`ptag ${row.progress >= 100 ? "cr" : row.progress >= 70 ? "sg" : "if"}`}>{Math.round(row.progress)}%</span></td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 )}
-            </section>
+            </div>
+
+            {/* Period selector */}
+            <div className="card fu in" style={{ transitionDelay: ".25s" }}>
+                <div className="card-head"><div className="card-title">Cambiar periodo</div></div>
+                <form style={{ display: "flex", gap: "10px", alignItems: "center" }} method="get">
+                    <select className="filter-select" name="month" defaultValue={month} style={{ flex: 1, borderRadius: "var(--r3)" }}>
+                        {monthOptions.map((option) => (
+                            <option key={option} value={option}>{monthLabel(option)}</option>
+                        ))}
+                    </select>
+                    <button type="submit" className="filter-btn">Aplicar</button>
+                </form>
+            </div>
         </div>
     );
 }
