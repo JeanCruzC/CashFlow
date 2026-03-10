@@ -104,7 +104,7 @@ async function updatePetDecay(petData: Partial<PetState> & { id: string; last_in
     return (data || petData) as PetState;
 }
 
-export type PetActionType = 'feed' | 'play' | 'heal' | 'income' | 'save' | 'create_plan' | 'expense_ok' | 'expense_bad' | 'debt' | 'pay_debt' | 'goal_done' | 'streak_7';
+export type PetActionType = 'feed' | 'play' | 'heal' | 'pet' | 'income' | 'save' | 'create_plan' | 'expense_ok' | 'expense_bad' | 'debt' | 'pay_debt' | 'goal_done' | 'streak_7';
 
 export async function interactWithPet(action: PetActionType): Promise<PetState | null> {
     try {
@@ -121,7 +121,9 @@ export async function interactWithPet(action: PetActionType): Promise<PetState |
                 break;
             case 'play':
                 happiness = Math.min(100, happiness + 30);
-                hunger = Math.max(0, Math.floor(hunger - 10));
+                break;
+            case 'pet':
+                happiness = Math.min(100, happiness + 12);
                 break;
             case 'heal':
                 health = Math.min(100, health + 40);

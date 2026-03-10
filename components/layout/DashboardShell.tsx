@@ -109,7 +109,7 @@ export default function DashboardShell({
 
     const [levelUpData, setLevelUpData] = useState<{ show: boolean; level: number }>({ show: false, level: 0 });
 
-    const [pigTip, setPigTip] = useState('¡Ahorra hoy y gana una medalla!');
+    const [pigTip, setPigTip] = useState('');
 
     // Tamagotchi State
     const [isPetOpen, setIsPetOpen] = useState(false);
@@ -128,12 +128,57 @@ export default function DashboardShell({
         fetchPet();
     }, []);
 
+    // Smart tips based on real user context
     useEffect(() => {
-        const tips = ['¡Ahorra hoy y gana una medalla!', '7 días seguidos. ¡No pares!', 'Tu meta al 40%, sigue adelante', '¡Un reto nuevo te espera!', 'Registra hoy, sube de nivel mañana', 'Pequeños ahorros, grandes cambios'];
+        function buildSmartTips(): string[] {
+            const tips: string[] = [];
+            const hour = new Date().getHours();
+
+            // Pet-based tips
+            if (userPet) {
+                if (userPet.hunger < 30) tips.push('🍎 Tu cerdito tiene hambre. ¡Registra un ingreso!');
+                if (userPet.health < 40) tips.push('💊 CashPig está enfermo. Paga tus deudas para curarlo.');
+                if (userPet.happiness < 40) tips.push('😢 CashPig está triste. ¡Ahorra algo hoy!');
+                if (userPet.hunger > 80 && userPet.health > 80) tips.push('🐷 CashPig está feliz y sano. ¡Sigue así!');
+            }
+
+            // Gamification-based tips
+            if (gamification) {
+                if (gamification.current_streak >= 7) {
+                    tips.push(`🔥 Racha de ${gamification.current_streak} días. ¡Imparable!`);
+                } else if (gamification.current_streak >= 3) {
+                    tips.push(`🔥 ${gamification.current_streak} días seguidos. ¡No pares!`);
+                } else if (gamification.current_streak === 0) {
+                    tips.push('💡 Registra un movimiento para iniciar tu racha.');
+                }
+                const nextLevel = (gamification.current_level + 1) * 100;
+                const xpNeeded = nextLevel - gamification.xp_points;
+                if (xpNeeded > 0 && xpNeeded <= 50) {
+                    tips.push(`⭐ Te faltan solo ${xpNeeded} XP para subir de nivel.`);
+                }
+            }
+
+            // Time-based tips
+            if (hour >= 7 && hour < 12) {
+                tips.push('☀️ Buen día! Revisa tus gastos de ayer.');
+            } else if (hour >= 18 && hour < 22) {
+                tips.push('🌙 Antes de dormir, registra los gastos del día.');
+            }
+
+            // Generic financial tips (always have some fallback)
+            tips.push('💰 Pequños ahorros construyen grandes cambios.');
+            tips.push('📋 Crea un plan mensual y CashPig se cura al 100%.');
+            tips.push('🏆 Cumple una meta y tu cerdito será invencible.');
+
+            return tips;
+        }
+
+        const tips = buildSmartTips();
         let ti = 0;
-        const iv = setInterval(() => { ti = (ti + 1) % tips.length; setPigTip(tips[ti]); }, 4500);
+        setPigTip(tips[0] || '¡Hola! Soy tu cerdito financiero.');
+        const iv = setInterval(() => { ti = (ti + 1) % tips.length; setPigTip(tips[ti]); }, 5000);
         return () => clearInterval(iv);
-    }, []);
+    }, [userPet, gamification]);
 
     useEffect(() => {
         const listener = (e: Event) => {
