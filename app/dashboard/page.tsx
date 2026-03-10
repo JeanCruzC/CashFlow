@@ -374,19 +374,67 @@ export default async function DashboardPage() {
             </div>
 
             <div className="g3 fu in" style={{ transitionDelay: ".18s" }}>
-                <div className="c">
-                    <div className="c-head"><div className="c-t">Agenda de cobros</div><div className="c-a">Ver mes</div></div>
+                <div className="c" style={{ gridColumn: "1 / -1" }}>
+                    <div className="c-head"><div className="c-t">Agenda de cobros y sueldos</div><div className="c-a">Confirma cada evento</div></div>
+
+                    {/* Summary strip */}
+                    {scheduleReview && (
+                        <div style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}>
+                            {scheduleReview.summary.needsAttention > 0 && (
+                                <span className="ptag cr">{scheduleReview.summary.needsAttention} necesitan atención</span>
+                            )}
+                            {scheduleReview.summary.confirmed > 0 && (
+                                <span className="ptag if">{scheduleReview.summary.confirmed} confirmados</span>
+                            )}
+                            {scheduleReview.summary.upcoming > 0 && (
+                                <span className="ptag sg">{scheduleReview.summary.upcoming} próximos</span>
+                            )}
+                        </div>
+                    )}
+
                     {reviewItems.length === 0 ? (
-                        <div className="text-center py-4 text-[var(--tx2)] text-sm">Sin eventos en agenda.</div>
+                        <div style={{ textAlign: "center", padding: "24px 16px", color: "var(--tx2)", fontSize: "13px" }}>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.35} style={{ margin: "0 auto 8px" }}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                            <div>Sin eventos programados este mes.</div>
+                            <div style={{ fontSize: "11.5px", color: "var(--tx3)", marginTop: "4px" }}>Configura tu sueldo y tarjetas en <Link href="/dashboard/settings#perfil-financiero" style={{ color: "var(--acc)", textDecoration: "none", fontWeight: 600 }}>Configuración</Link></div>
+                        </div>
                     ) : (
                         <div className="ag-ls">
-                            {reviewItems.slice(0, 3).map((event) => (
-                                <div key={event.id} className="ag">
-                                    <div className="ag-dt"><div className="ag-d">{new Date(event.dueDate).getDate()}</div><div className="ag-m">Mar</div></div>
-                                    <div className="ag-info"><div className="ag-n">{event.title}</div><div className="ag-s">{event.subtitle}</div></div>
-                                    <div className="ag-a text-[var(--tx2)]">...</div>
-                                </div>
-                            ))}
+                            {reviewItems.map((event) => {
+                                const statusColors: Record<string, { bg: string; color: string; label: string }> = {
+                                    overdue: { bg: "var(--ng-l)", color: "var(--ng)", label: "Vencido" },
+                                    due_today: { bg: "#fff3e0", color: "#e65100", label: "Hoy" },
+                                    upcoming: { bg: "var(--acc-l)", color: "var(--acc)", label: "Próximo" },
+                                    confirmed: { bg: "var(--ok-l)", color: "var(--ok)", label: "✓ Confirmado" },
+                                };
+                                const st = statusColors[event.status] || statusColors.upcoming;
+                                const dueDay = new Date(event.dueDate).getDate();
+                                const dueMonth = new Intl.DateTimeFormat("es-PE", { month: "short" }).format(new Date(event.dueDate));
+
+                                return (
+                                    <div key={event.id} className="ag" style={{ alignItems: "flex-start" }}>
+                                        <div className="ag-dt"><div className="ag-d">{dueDay}</div><div className="ag-m">{dueMonth}</div></div>
+                                        <div className="ag-info" style={{ flex: 1 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                                <div className="ag-n">{event.title}</div>
+                                                <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: st.bg, color: st.color, whiteSpace: "nowrap" }}>{st.label}</span>
+                                            </div>
+                                            <div className="ag-s">{event.subtitle} · {format.money.format(event.amount)}</div>
+                                            <div style={{ fontSize: "11px", color: "var(--tx3)", marginTop: "3px" }}>{event.note}</div>
+                                            {event.status === "confirmed" && event.matchedAmount != null && (
+                                                <div style={{ fontSize: "11px", color: "var(--ok)", fontWeight: 600, marginTop: "2px" }}>Registrado: {format.money.format(event.matchedAmount)} el {event.matchedDate}</div>
+                                            )}
+                                        </div>
+                                        <div style={{ flexShrink: 0 }}>
+                                            {event.status !== "confirmed" ? (
+                                                <Link href={event.ctaHref} className="plan-btn no-underline" style={{ fontSize: "11px", padding: "5px 12px", whiteSpace: "nowrap" }}>{event.ctaLabel}</Link>
+                                            ) : (
+                                                <Link href="/dashboard/transactions" className="no-underline" style={{ fontSize: "11px", color: "var(--acc)", fontWeight: 600 }}>Ver registro</Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

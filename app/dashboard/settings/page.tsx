@@ -1,15 +1,27 @@
-import { getFinancialProfile, getOrgSettings } from "@/app/actions/settings";
+import { getFinancialProfile, getOrgSettings, getCreditCards, getSubscriptions, getSavingsGoals } from "@/app/actions/settings";
 import { AccountCreateForm } from "@/components/accounts/AccountCreateForm";
 import { CategoryCreateForm } from "@/components/categories/CategoryCreateForm";
 import { FinancialProfileForm } from "@/components/settings/FinancialProfileForm";
 import { OrgSettingsForm } from "@/components/settings/OrgSettingsForm";
+import { CreditCardManager } from "@/components/settings/CreditCardManager";
+import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
+import { SavingsGoalManager } from "@/components/settings/SavingsGoalManager";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 import Link from "next/link";
 
 export default async function SettingsPage() {
-    const [settings, financialProfile] = await Promise.all([
+    const [
+        settings,
+        financialProfile,
+        { data: creditCards },
+        { data: subscriptions },
+        { data: savingsGoals }
+    ] = await Promise.all([
         getOrgSettings(),
-        getFinancialProfile()
+        getFinancialProfile(),
+        getCreditCards(),
+        getSubscriptions(),
+        getSavingsGoals()
     ]);
 
     if (!settings || !financialProfile) {
@@ -103,6 +115,40 @@ export default async function SettingsPage() {
                             <CategoryCreateForm orgType={settings.type} />
                         </div>
                     </article>
+                </div>
+            </section>
+
+            {settings.type === "personal" && (
+                <>
+                    <section id="tarjetas" className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card scroll-mt-24">
+                        <h3 className="text-lg font-semibold text-[#10283b]">Tarjetas de Crédito</h3>
+                        <p className="mt-1 text-sm text-surface-500">
+                            Administra tus tarjetas, límites y días de pago para la agenda automática.
+                        </p>
+                        <div className="mt-6">
+                            <CreditCardManager initialCards={creditCards || []} defaultCurrency={settings.currency} />
+                        </div>
+                    </section>
+
+                    <section id="suscripciones" className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card scroll-mt-24">
+                        <h3 className="text-lg font-semibold text-[#10283b]">Suscripciones Recurrentes</h3>
+                        <p className="mt-1 text-sm text-surface-500">
+                            Servicios de cobro automático mensual.
+                        </p>
+                        <div className="mt-6">
+                            <SubscriptionManager initialSubscriptions={subscriptions || []} defaultCurrency={settings.currency} />
+                        </div>
+                    </section>
+                </>
+            )}
+
+            <section id="metas" className="rounded-3xl border border-surface-200 bg-white p-6 shadow-card scroll-mt-24">
+                <h3 className="text-lg font-semibold text-[#10283b]">Metas de Ahorro</h3>
+                <p className="mt-1 text-sm text-surface-500">
+                    Define fondos de emergencia, vacaciones o compras grandes.
+                </p>
+                <div className="mt-6">
+                    <SavingsGoalManager initialGoals={savingsGoals || []} defaultCurrency={settings.currency} />
                 </div>
             </section>
 
