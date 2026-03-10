@@ -37,16 +37,14 @@ export function TamagotchiPet({ initialPet }: { initialPet: PetState }) {
         }
     };
 
-    // Compact Widget View
     const renderWidget = () => (
-        <button
-            type="button"
+        <div
             onClick={() => setIsOpen(true)}
-            className="w-full text-left rounded-3xl border border-[#d9e2f0] bg-white p-4 shadow-card hover:shadow-card-hover hover:border-[#b8c5d6] transition-all duration-300 relative overflow-hidden group flex items-center justify-between outline-none focus:ring-2 focus:ring-[#1d4ed8]"
+            className="w-full text-left rounded-3xl border border-[#d9e2f0] bg-white p-4 shadow-card hover:shadow-card-hover hover:border-[#b8c5d6] transition-all duration-300 relative overflow-hidden group flex items-center justify-between cursor-pointer z-20 pointer-events-auto"
         >
             <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl transition-opacity duration-1000 ${pet.status === 'happy' ? 'bg-[#00cba9]/20' :
-                    pet.status === 'sick' ? 'bg-[#ff4757]/20' :
-                        pet.status === 'hungry' ? 'bg-[#ffa502]/20' : 'bg-[#5b738b]/10'
+                pet.status === 'sick' ? 'bg-[#ff4757]/20' :
+                    pet.status === 'hungry' ? 'bg-[#ffa502]/20' : 'bg-[#5b738b]/10'
                 }`} />
 
             <div className="flex items-center gap-4 relative z-10 w-full">
@@ -59,8 +57,8 @@ export function TamagotchiPet({ initialPet }: { initialPet: PetState }) {
                     </h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`h-2 w-2 rounded-full ${pet.status === 'happy' ? 'bg-[#2ed573] animate-pulse-soft' :
-                                pet.status === 'sick' ? 'bg-[#ff4757]' :
-                                    pet.status === 'hungry' ? 'bg-[#ffa502]' : 'bg-[#5b738b]'
+                            pet.status === 'sick' ? 'bg-[#ff4757]' :
+                                pet.status === 'hungry' ? 'bg-[#ffa502]' : 'bg-[#5b738b]'
                             }`} />
                         <span className="text-[11px] font-semibold text-surface-500 uppercase tracking-widest">
                             {pet.status === 'happy' ? 'Feliz' :
@@ -73,7 +71,7 @@ export function TamagotchiPet({ initialPet }: { initialPet: PetState }) {
                     Ver Mascota
                 </div>
             </div>
-        </button>
+        </div>
     );
 
     // Retro Virtual Tamagotchi View
@@ -160,8 +158,8 @@ export function TamagotchiPet({ initialPet }: { initialPet: PetState }) {
                                     <div className="absolute bottom-[10%] w-20 h-4 bg-[#3b4433]/20 rounded-[100%] blur-[2px]" />
 
                                     <span className={`text-[5.5rem] drop-shadow-sm z-10 transition-transform duration-300 origin-bottom ${animatingAction === 'play' ? 'animate-[bounce_0.5s_infinite]' :
-                                            animatingAction === 'feed' ? 'scale-110' :
-                                                pet.status === 'happy' ? 'animate-[pulse_2s_infinite]' : ''
+                                        animatingAction === 'feed' ? 'scale-110' :
+                                            pet.status === 'happy' ? 'animate-[pulse_2s_infinite]' : ''
                                         }`}>
                                         {getPetEmoji()}
                                     </span>
