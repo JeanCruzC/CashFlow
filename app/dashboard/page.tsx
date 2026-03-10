@@ -2,10 +2,8 @@ import Link from "next/link";
 import { getDashboardKPIs, getRecentTransactions } from "@/app/actions/dashboard";
 import { getUserGamification } from "@/app/actions/gamification";
 import { getActiveChallenges, UserChallenge } from "@/app/actions/challenges";
-import { getUserPet, PetState } from "@/app/actions/pets";
 import { ModuleHero } from "@/components/ui/ModuleHero";
 import { ActionButton, ActionDiv } from "@/components/dashboard/DashboardClientActions";
-import { TamagotchiPet } from "@/components/gamification/TamagotchiPet";
 
 type Locale = "es" | "en";
 
@@ -112,22 +110,19 @@ export default async function DashboardPage() {
     let groupedDailyMovements: ReturnType<typeof groupMovementsByDate> = [];
     let gamification = null;
     let challenges: UserChallenge[] = [];
-    let pet: PetState | null = null;
 
     try {
-        const [kpis, recentRaw, gam, userChalls, userPet] = await Promise.all([
+        const [kpis, recentRaw, gam, userChalls] = await Promise.all([
             getDashboardKPIs(),
             getRecentTransactions(),
             getUserGamification(),
-            getActiveChallenges(),
-            getUserPet()
+            getActiveChallenges()
         ]);
         kpiBundle = kpis;
         recentMovements = mapRecentMovements((recentRaw || []) as Array<Record<string, unknown>>);
         groupedDailyMovements = groupMovementsByDate(recentMovements);
         gamification = gam;
         challenges = userChalls;
-        pet = userPet;
     } catch (error) {
         console.error("Dashboard page data fetch failed:", error);
         kpiBundle = {
@@ -348,10 +343,6 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="flex flex-col gap-[15px]">
-                    {pet && (
-                        <TamagotchiPet initialPet={pet} />
-                    )}
-
                     <div className="goal">
                         <div className="c-head">
                             <div className="c-t"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffa502" strokeWidth="2.5" style={{ marginRight: 5, verticalAlign: "-1px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> Meta de ahorro</div>
@@ -499,11 +490,10 @@ export default async function DashboardPage() {
                         <div className="plan-mt">
                             <div className="text-3xl font-bold text-[var(--ok)]">{format.percent.format(monthUsagePct)}%</div>
                             <p className="mt-2 text-[var(--tx2)] font-medium">del plan usado.</p>
-                            <div className="mt-4"><ActionButton type="plan" className="plan-btn">Revisar presupuesto</ActionButton></div>
                         </div>
                     )}
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

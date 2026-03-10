@@ -8,6 +8,8 @@ import { setActiveWorkspace, WorkspaceSummary } from "@/app/actions/workspaces";
 import { type GamificationState } from "@/app/actions/gamification";
 import { GlobalLoader } from "@/components/ui/GlobalLoader";
 import { LevelUpPopup } from "@/components/ui/LevelUpPopup";
+import { TamagotchiModal } from "@/components/gamification/TamagotchiModal";
+import { PetState, getUserPet } from "@/app/actions/pets";
 
 // Redesign SVG Icons
 const IconHome = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>;
@@ -108,6 +110,23 @@ export default function DashboardShell({
     const [levelUpData, setLevelUpData] = useState<{ show: boolean; level: number }>({ show: false, level: 0 });
 
     const [pigTip, setPigTip] = useState('¡Ahorra hoy y gana una medalla!');
+
+    // Tamagotchi State
+    const [isPetOpen, setIsPetOpen] = useState(false);
+    const [userPet, setUserPet] = useState<PetState | null>(null);
+
+    // Fetch Pet Data on mount
+    useEffect(() => {
+        async function fetchPet() {
+            try {
+                const pet = await getUserPet();
+                setUserPet(pet);
+            } catch (error) {
+                console.error("Failed to load pet data in shell:", error);
+            }
+        }
+        fetchPet();
+    }, []);
 
     useEffect(() => {
         const tips = ['¡Ahorra hoy y gana una medalla!', '7 días seguidos. ¡No pares!', 'Tu meta al 40%, sigue adelante', '¡Un reto nuevo te espera!', 'Registra hoy, sube de nivel mañana', 'Pequeños ahorros, grandes cambios'];
@@ -307,7 +326,7 @@ export default function DashboardShell({
             </main>
 
             {/* MASCOT PIG */}
-            <div id="pig">
+            <div id="pig" onClick={() => setIsPetOpen(true)} className="cursor-pointer hover:scale-105 transition-transform duration-300">
                 <div className="p-bbl" id="pigTip">{pigTip}</div>
                 <svg className="p-svg" width="64" height="64" viewBox="0 0 100 100" fill="none">
                     <ellipse cx="50" cy="60" rx="30" ry="27" fill="#f4f5f9" stroke="#6c63ff" strokeWidth="2" />
@@ -357,6 +376,13 @@ export default function DashboardShell({
                 level={levelUpData.level}
                 onClose={() => setLevelUpData({ ...levelUpData, show: false })}
             />
+            {userPet && (
+                <TamagotchiModal
+                    initialPet={userPet}
+                    isOpen={isPetOpen}
+                    onClose={() => setIsPetOpen(false)}
+                />
+            )}
         </div>
     );
 }
