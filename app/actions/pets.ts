@@ -13,7 +13,7 @@ export interface PetState {
     last_interacted_at: string;
 }
 
-const DECAY_RATE_HOURS = 4; // Stats drop every 4 hours
+const DECAY_RATE_HOURS = 0.5; // Stats drop every 30 minutes
 
 export async function getUserPet(): Promise<PetState | null> {
     try {
@@ -31,7 +31,7 @@ export async function getUserPet(): Promise<PetState | null> {
             // Create default pet
             const initialPet = {
                 user_id: user.id,
-                name: 'Cerdito',
+                name: 'CashPig',
                 pet_type: 'piggy',
                 health: 100,
                 hunger: 100,
@@ -73,14 +73,15 @@ async function updatePetDecay(petData: Partial<PetState> & { id: string; last_in
     }
 
     // Decay logic
-    const decayAmount = Math.floor(hoursPassed / DECAY_RATE_HOURS) * 5; // -5 per DECAY_RATE_HOURS
+    const decaySteps = Math.floor(hoursPassed / DECAY_RATE_HOURS);
+    const decayAmount = decaySteps * 5; // -5 per 30 mins
 
     const newHunger = Math.max(0, petData.hunger - decayAmount);
     const newHappiness = Math.max(0, petData.happiness - Math.floor(decayAmount / 2));
     let newHealth = petData.health;
 
     if (newHunger === 0) {
-        newHealth = Math.max(0, newHealth - 10);
+        newHealth = Math.max(0, newHealth - (decaySteps * 2));
     }
 
     let newStatus = 'happy';
@@ -88,8 +89,6 @@ async function updatePetDecay(petData: Partial<PetState> & { id: string; last_in
     else if (newHunger < 40) newStatus = 'hungry';
     else if (newHappiness < 50) newStatus = 'sad';
 
-    // Actually, only update decay, don't reset last interaction entirely unless they interact
-    // Just update the stats in DB
     const { data } = await supabase
         .from("user_pets")
         .update({
@@ -105,7 +104,9 @@ async function updatePetDecay(petData: Partial<PetState> & { id: string; last_in
     return (data || petData) as PetState;
 }
 
-export async function interactWithPet(action: 'feed' | 'play' | 'heal' | 'save_money'): Promise<PetState | null> {
+export type PetActionType = 'feed' | 'play' | 'heal' | 'income' | 'save' | 'create_plan' | 'expense_ok' | 'expense_bad' | 'debt' | 'pay_debt' | 'goal_done' | 'streak_7';
+
+export async function interactWithPet(action: PetActionType): Promise<PetState | null> {
     try {
         const supabase = await createClient();
         const pet = await getUserPet();
@@ -113,26 +114,61 @@ export async function interactWithPet(action: 'feed' | 'play' | 'heal' | 'save_m
 
         let { hunger, happiness, health } = pet;
 
-        if (action === 'feed') {
-            hunger = Math.min(100, hunger + 30);
-            happiness = Math.min(100, happiness + 5);
-        } else if (action === 'play') {
-            happiness = Math.min(100, happiness + 30);
-            hunger = Math.max(0, hunger - 10);
-        } else if (action === 'heal') {
-            health = Math.min(100, health + 40);
-            happiness = Math.min(100, happiness - 10); // Doesn't like medicine
-        } else if (action === 'save_money') {
-            // Good habits impact pet positively
-            health = Math.min(100, health + 5);
-            happiness = Math.min(100, happiness + 15);
-            hunger = Math.min(100, hunger + 10);
+        switch (action) {
+            case 'feed':
+                hunger = Math.min(100, hunger + 30);
+                happiness = Math.min(100, happiness + 5);
+                break;
+            case 'play':
+                happiness = Math.min(100, happiness + 30);
+                hunger = Math.max(0, Math.floor(hunger - 10));
+                break;
+            case 'heal':
+                health = Math.min(100, health + 40);
+                happiness = Math.max(0, Math.floor(happiness - 10));
+                break;
+            case 'income':
+                hunger = Math.min(100, hunger + 15);
+                happiness = Math.min(100, happiness + 10);
+                break;
+            case 'save':
+                health = Math.min(100, health + 25);
+                happiness = Math.min(100, happiness + 20);
+                break;
+            case 'create_plan':
+                health = 100;
+                break;
+            case 'expense_ok':
+                // Gasto normal dentro de presupuesto
+                hunger = Math.max(0, hunger - 5);
+                break;
+            case 'expense_bad':
+                // Fuera de presupuesto
+                health = Math.max(0, health - 20);
+                break;
+            case 'debt':
+                health = Math.max(0, health - 15);
+                break;
+            case 'pay_debt':
+                health = Math.min(100, health + 30);
+                break;
+            case 'goal_done':
+                health = 100;
+                happiness = 100;
+                break;
+            case 'streak_7':
+                health = 100; // Energía al 100%
+                happiness = 100;
+                break;
         }
 
         let status = 'happy';
         if (health < 50) status = 'sick';
         else if (hunger < 40) status = 'hungry';
         else if (happiness < 50) status = 'sad';
+
+        // Forzar cara mala instantánea en expense_bad si amerita (estético, se pisará rápido si curan)
+        if (action === 'expense_bad' && health < 50) status = 'sick';
 
         const now = new Date().toISOString();
 

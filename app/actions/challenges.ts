@@ -3,6 +3,7 @@
 
 
 import { createClient } from "@/lib/supabase/server";
+import { interactWithPet } from "@/app/actions/pets";
 
 
 export interface Challenge {
@@ -180,6 +181,8 @@ export async function updateChallengeProgress(amountSaved: number = 0, isConstru
                         xp_points: gamData.xp_points + uc.challenge.reward_xp
                     }).eq('user_id', user.id);
                 }
+
+                interactWithPet('goal_done').catch(e => console.error("Error on pet goal_done:", e));
             }
 
             await supabase.from("user_challenges").update(updatePayload).eq("id", uc.id);

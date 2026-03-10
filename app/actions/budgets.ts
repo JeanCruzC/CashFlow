@@ -6,6 +6,7 @@ import { requireOrgActorContext } from "@/lib/server/context";
 import { revalidatePath } from "next/cache";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { logError } from "@/lib/server/logger";
+import { interactWithPet } from "@/app/actions/pets";
 
 interface BudgetRow {
     category: string;
@@ -223,6 +224,8 @@ export async function copyBudgetPlan(input: CopyBudgetPlanInput) {
     revalidatePath("/dashboard/budget");
     revalidatePath("/dashboard");
 
+    interactWithPet('create_plan').catch(e => console.error("Error healing pet on budget copy:", e));
+
     return {
         success: true,
         copiedCount: insertRows.length,
@@ -290,5 +293,8 @@ export async function upsertBudget(input: BudgetInput) {
 
     revalidatePath("/dashboard/budget");
     revalidatePath("/dashboard");
+
+    interactWithPet('create_plan').catch(e => console.error("Error healing pet on budget upsert:", e));
+
     return { success: true };
 }

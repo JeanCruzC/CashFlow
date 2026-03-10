@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { interactWithPet } from "@/app/actions/pets";
 
 export interface GamificationState {
     xp_points: number;
@@ -87,6 +88,10 @@ export async function processGamificationAction(actionType: 'transaction' | 'goa
             if (lastActionStr === yesterdayStr) {
                 current_streak += 1;
                 xpReward += 10; // Bonus for extending streak
+
+                if (current_streak % 7 === 0) {
+                    interactWithPet('streak_7').catch(e => console.error("Error rewarding 7-day streak pet:", e));
+                }
             } else {
                 brokeStreak = true;
                 current_streak = 1;

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashPig</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─── */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#0d0020;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  font-family:'Press Start 2P',monospace;
+  overflow:hidden;
+}
+
+/* ─── LCD WIDGET ONLY ─── */
+.tama{
+  width:220px;
+  position:relative;
+}
+
+/* screen glass */
+.screen{
+  width:220px;height:180px;
+  background:#a8bc8a;
+  border-radius:10px;
+  border:3px solid #3a2a6e;
+  position:relative;overflow:hidden;
+  box-shadow:
+    inset 0 0 24px rgba(0,30,0,.3),
+    inset 0 2px 4px rgba(0,0,0,.15),
+    0 2px 0 #2a1a5e;
+  image-rendering:pixelated;
+}
+/* scanlines */
+.screen::before{
+  content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(
+    0deg,transparent 0,transparent 1px,rgba(0,0,0,.06) 1px,rgba(0,0,0,.06) 2px
+  );
+  pointer-events:none;z-index:20;
+}
+/* glare */
+.screen::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:40%;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),transparent);
+  pointer-events:none;z-index:21;border-radius:8px 8px 0 0;
+}
+
+/* ─── STATUS ROW ─── */
+.s-row{
+  position:absolute;top:0;left:0;right:0;height:18px;
+  background:rgba(0,20,0,.18);border-bottom:1px solid rgba(0,50,0,.2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 6px;z-index:10;
+}
+.s-txt{font-size:5px;color:#253e14;letter-spacing:.04em;}
+.s-dot{width:5px;height:5px;border-radius:50%;background:#253e14;opacity:0;}
+.s-dot.on{opacity:1;animation:.5s step-end infinite sdot;}
+@keyframes sdot{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ─── PIG STAGE ─── */
+.stage{
+  position:absolute;top:18px;left:0;right:0;bottom:34px;
+  display:flex;align-items:center;justify-content:center;
+  z-index:5;
+}
+
+/* pig animations */
+.pig-g{cursor:pointer;}
+.pig-g.idle  {animation:1.4s ease-in-out infinite pigIdle;}
+.pig-g.happy {animation:.14s ease-in-out 6 pigHappy;}
+.pig-g.sleep {animation:2.4s ease-in-out infinite pigSleep;}
+.pig-g.sick  {animation:.35s ease-in-out infinite pigSick;filter:hue-rotate(80deg) brightness(.85);}
+.pig-g.eat   {animation:.18s steps(2) 5 pigEat;}
+.pig-g.dead  {animation:none;filter:grayscale(1)brightness(.6);transform:rotate(90deg)translateY(8px);}
+.pig-g.evo   {animation:.3s ease-in-out 4 pigEvo;}
+
+@keyframes pigIdle  {0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes pigHappy {0%,100%{transform:rotate(0)}25%{transform:rotate(-9deg)scale(1.06)}75%{transform:rotate(9deg)scale(1.06)}}
+@keyframes pigSleep {0%,100%{transform:translateY(0)rotate(-6deg)}50%{transform:translateY(2px)rotate(-6deg)}}
+@keyframes pigSick  {0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
+@keyframes pigEat   {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)scaleY(1.1)}}
+@keyframes pigEvo   {0%,100%{transform:scale(1)}50%{transform:scale(1.18)rotate(5deg)}}
+
+/* speech bubble */
+.bubble{
+  position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  background:rgba(168,188,138,.95);border:1.5px solid #253e14;
+  border-radius:5px;padding:3px 6px;
+  font-size:6px;color:#1a2e0d;white-space:nowrap;
+  opacity:0;transition:opacity .2s;
+  pointer-events:none;z-index:15;
+}
+.bubble::after{
+  content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+  border:3px solid transparent;border-top-color:#253e14;
+}
+.bubble.on{opacity:1;}
+
+/* zzz */
+.zzz-wrap{position:absolute;top:4px;right:10px;opacity:0;transition:opacity .3s;}
+.zzz-wrap.on{opacity:1;}
+.zzz-txt{font-size:7px;color:#253e14;animation:2s ease-in-out infinite zzzf;}
+@keyframes zzzf{0%,100%{transform:translateY(0)scale(1);opacity:.9}50%{transform:translateY(-7px)scale(1.2);opacity:.4}}
+
+/* poop */
+.poop{position:absolute;bottom:6px;font-size:12px;opacity:0;transition:opacity .3s;z-index:6;}
+.poop.on{opacity:1;}
+
+/* item pop */
+.item-pop{
+  position:absolute;font-size:15px;
+  opacity:0;z-index:15;pointer-events:none;
+  transition:none;
+}
+.item-pop.go{animation:.7s ease-out itemPop forwards;}
+@keyframes itemPop{
+  0%  {opacity:1;transform:scale(.5)translateY(0)}
+  60% {opacity:1;transform:scale(1.3)translateY(-14px)}
+  100%{opacity:0;transform:scale(1)translateY(-24px)}
+}
+
+/* hearts */
+.heart{position:absolute;pointer-events:none;animation:.9s ease-out forwards heartf;z-index:15;}
+@keyframes heartf{0%{opacity:1;transform:translateY(0)scale(1)}100%{opacity:0;transform:translateY(-28px)scale(1.6)}}
+
+/* ─── STAT BARS ─── */
+.bars{
+  position:absolute;bottom:0;left:0;right:0;height:34px;
+  background:rgba(0,20,0,.15);border-top:1px solid rgba(0,50,0,.2);
+  display:flex;align-items:center;gap:5px;padding:0 6px;z-index:10;
+}
+.bar-blk{flex:1;}
+.bar-lbl{font-size:4.5px;color:#253e14;margin-bottom:2px;letter-spacing:.04em;}
+.bar-bg{height:5px;background:rgba(0,30,0,.2);border:1px solid #253e14;}
+.bar-fill{height:100%;background:#253e14;transition:width .6s ease;}
+.bar-fill.low{background:#5c2800;animation:.7s ease-in-out infinite lowp;}
+@keyframes lowp{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─── OVERLAY SCREENS ─── */
+.ov{
+  position:absolute;inset:18px 0 34px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:7px;padding:8px;z-index:18;
+  opacity:0;pointer-events:none;transition:opacity .18s;
+}
+.ov.on{opacity:1;pointer-events:all;}
+.ov-bg{background:rgba(168,188,138,.97);}
+.ov-line{font-size:6.5px;color:#1a2e0d;text-align:center;line-height:1.9;}
+.ov-blink{animation:blink .7s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* mini-game */
+.mg-targets{display:flex;gap:12px;}
+.mg-tgt{
+  width:20px;height:20px;background:#253e14;border-radius:50%;
+  cursor:pointer;transition:all .12s;
+}
+.mg-tgt:active{transform:scale(.85);}
+.mg-tgt.miss{background:rgba(0,30,0,.2);}
+.mg-score{font-size:6px;color:#1a2e0d;}
+
+/* menu */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;width:100%;}
+.mi{
+  background:rgba(0,30,0,.12);border:1px solid #253e14;
+  padding:5px 4px;text-align:center;cursor:pointer;
+  transition:all .1s;border-radius:2px;
+}
+.mi:hover,.mi.sel{background:#253e14;}
+.mi-ico{font-size:11px;display:block;margin-bottom:2px;}
+.mi-lbl{font-size:5px;color:#1a2e0d;display:block;}
+.mi.sel .mi-lbl,.mi:hover .mi-lbl{color:#a8bc8a;}
+.mi-close{font-size:5.5px;color:#1a2e0d;margin-top:4px;cursor:pointer;}
+.mi-close:hover{text-decoration:underline;}
+
+/* event feed */
+.event-feed{
+  position:absolute;top:18px;left:0;right:0;
+  display:flex;flex-direction:column;gap:2px;
+  padding:3px 5px;z-index:16;pointer-events:none;
+}
+.ev-chip{
+  font-size:5px;color:#1a2e0d;background:rgba(168,188,138,.88);
+  border:1px solid #253e14;border-radius:3px;padding:2px 5px;
+  opacity:0;transform:translateX(-8px);transition:opacity .2s,transform .2s;
+  white-space:nowrap;
+}
+.ev-chip.on{opacity:1;transform:translateX(0);}
+
+/* flash */
+.flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:25;border-radius:8px;pointer-events:none;}
+.flash.go{animation:.5s ease-out flashAnim;}
+@keyframes flashAnim{0%{opacity:.9}100%{opacity:0}}
+
+/* ─── BUTTONS BELOW SCREEN ─── */
+.tama-btns{
+  display:flex;justify-content:center;gap:10px;
+  margin-top:8px;
+}
+.t-btn{
+  width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+  font-size:9px;display:flex;align-items:center;justify-content:center;
+  transition:all .1s;font-family:'Press Start 2P',monospace;color:#fff;
+}
+.t-btn:active{transform:translateY(2px);}
+.t-btn.purple{background:linear-gradient(145deg,#7c4fdb,#4a259e);box-shadow:0 3px 0 #2d1060;}
+.t-btn.orange{background:linear-gradient(145deg,#f59e0b,#d97706);box-shadow:0 3px 0 #92400e;}
+.t-btn.small{width:24px;height:24px;font-size:7px;}
+
+/* ─── TOAST ─── */
+.toast{
+  position:fixed;top:14px;left:50%;transform:translateX(-50%);
+  background:#1a0a44;border:1.5px solid #f59e0b;border-radius:5px;
+  padding:6px 12px;font-size:7px;color:#f59e0b;
+  opacity:0;transition:opacity .2s;z-index:200;
+  letter-spacing:.04em;white-space:nowrap;
+  text-shadow:0 0 8px rgba(245,158,11,.4);
+}
+.toast.on{opacity:1;}
+
+/* ─── SAVINGS DISPLAY ─── */
+.sav-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:5px;padding:4px 8px;
+  background:#1a0a44;border-radius:5px;
+  border:1px solid rgba(245,158,11,.3);
+}
+.sav-lbl{font-size:5.5px;color:rgba(255,255,255,.45);letter-spacing:.1em;}
+.sav-val{font-size:8px;color:#f59e0b;text-shadow:0 0 6px rgba(245,158,11,.4);}
+
+/* age/gen */
+.meta-row{
+  display:flex;justify-content:space-between;
+  margin-top:3px;padding:0 2px;
+}
+.meta-chip{font-size:5px;color:rgba(255,255,255,.3);}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="tama">
+  <!-- SCREEN -->
+  <div class="screen" id="screen">
+
+    <!-- status row -->
+    <div class="s-row">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div class="s-dot" id="alertDot"></div>
+        <span class="s-txt" id="sAge">AGE:0d</span>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;">
+        <span class="s-txt" id="sSick" style="opacity:0;">★SICK</span>
+        <span class="s-txt" id="sStage">BABY</span>
+      </div>
+    </div>
+
+    <!-- pig area -->
+    <div class="stage" id="stage">
+
+      <!-- speech bubble -->
+      <div class="bubble" id="bubble">...</div>
+
+      <!-- ZZZ -->
+      <div class="zzz-wrap" id="zzz"><span class="zzz-txt">ZZZ</span></div>
+
+      <!-- THE PIG SVG — exact colors from image: purple outlines, orange nose, blue pupils -->
+      <svg id="pigSvg" width="74" height="74" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g class="pig-g idle" id="pigG" onclick="petPig()">
+          <!-- shadow -->
+          <ellipse cx="50" cy="97" rx="20" ry="3.5" fill="rgba(0,30,0,.22)"/>
+          <!-- body -->
+          <ellipse cx="50" cy="63" rx="30" ry="27" fill="none" stroke="#4a259e" stroke-width="3"/>
+          <!-- body fill (LCD tint) -->
+          <ellipse cx="50" cy="63" rx="27" ry="24" fill="rgba(168,188,138,.18)"/>
+          <!-- tummy oval -->
+          <ellipse cx="50" cy="71" rx="10" ry="7.5" fill="none" stroke="#4a259e" stroke-width="1.8"/>
+          <!-- left ear -->
+          <ellipse cx="23" cy="56" rx="6.5" ry="8.5" fill="none" stroke="#4a259e" stroke-width="2.8" id="earL"/>
+          <!-- right ear -->
+          <ellipse cx="77" cy="56" rx="6.5" ry="8.5" fill="none" stroke="#4a259e" stroke-width="2.8" id="earR"/>
+          <!-- ear inner dots -->
+          <circle cx="23" cy="54" r="2" fill="#4a259e"/>
+          <circle cx="77" cy="54" r="2" fill="#4a259e"/>
+          <!-- left eye -->
+          <circle cx="41" cy="57" r="4" fill="none" stroke="#4a259e" stroke-width="2.5"/>
+          <!-- right eye -->
+          <circle cx="59" cy="57" r="4" fill="none" stroke="#4a259e" stroke-width="2.5"/>
+          <!-- pupils (blue — matching mascot image) -->
+          <circle cx="41" cy="57" r="1.8" fill="#3b5bdb" id="pupL"/>
+          <circle cx="59" cy="57" r="1.8" fill="#3b5bdb" id="pupR"/>
+          <!-- highlight dots -->
+          <circle cx="42.5" cy="55.5" r=".7" fill="rgba(168,188,138,.8)"/>
+          <circle cx="60.5" cy="55.5" r=".7" fill="rgba(168,188,138,.8)"/>
+          <!-- nose (orange — matching mascot image) -->
+          <ellipse cx="50" cy="69" rx="8.5" ry="6.5" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+          <circle cx="46.5" cy="69" r="2" fill="#f59e0b"/>
+          <circle cx="53.5" cy="69" r="2" fill="#f59e0b"/>
+          <!-- mouth (default smile) -->
+          <path d="M44 79 Q50 85 56 79" stroke="#4a259e" stroke-width="2.3" fill="none" stroke-linecap="round" id="mouth"/>
+          <!-- legs -->
+          <rect x="31" y="85" width="9.5" height="11" rx="4.8" fill="none" stroke="#4a259e" stroke-width="2.5"/>
+          <rect x="44.8" y="85" width="9.5" height="11" rx="4.8" fill="none" stroke="#4a259e" stroke-width="2.5"/>
+          <rect x="58.5" y="85" width="9.5" height="11" rx="4.8" fill="none" stroke="#4a259e" stroke-width="2.5"/>
+          <!-- tail curl -->
+          <path d="M80 65 Q93 56 88 73" stroke="#4a259e" stroke-width="2.3" fill="none" stroke-linecap="round"/>
+          <!-- coin slot on head -->
+          <rect x="43.5" y="34" width="13" height="3.8" rx="1.9" fill="#f59e0b"/>
+          <!-- cheek blush -->
+          <ellipse cx="29" cy="68" rx="5.5" ry="3.5" fill="#4a259e" opacity=".1"/>
+          <ellipse cx="71" cy="68" rx="5.5" ry="3.5" fill="#4a259e" opacity=".1"/>
+        </g>
+      </svg>
+
+      <!-- poop icons -->
+      <div class="poop" id="p1" style="left:7px">💩</div>
+      <div class="poop" id="p2" style="right:7px">💩</div>
+
+      <!-- item pop -->
+      <div class="item-pop" id="itemPop" style="bottom:50px;left:50%;transform:translateX(-50%)"></div>
+
+      <!-- heart container -->
+      <div id="heartBox" style="position:absolute;inset:0;pointer-events:none;z-index:16;"></div>
+
+      <!-- event feed -->
+      <div class="event-feed" id="eventFeed">
+        <div class="ev-chip" id="ef0"></div>
+        <div class="ev-chip" id="ef1"></div>
+      </div>
+    </div>
+
+    <!-- stat bars -->
+    <div class="bars">
+      <div class="bar-blk"><div class="bar-lbl">HAMBRE</div><div class="bar-bg"><div class="bar-fill" id="bH" style="width:100%"></div></div></div>
+      <div class="bar-blk"><div class="bar-lbl">FELIZ</div><div class="bar-bg"><div class="bar-fill" id="bF" style="width:80%"></div></div></div>
+      <div class="bar-blk"><div class="bar-lbl">SALUD</div><div class="bar-bg"><div class="bar-fill" id="bS" style="width:100%"></div></div></div>
+      <div class="bar-blk"><div class="bar-lbl">ENERGIA</div><div class="bar-bg"><div class="bar-fill" id="bE" style="width:90%"></div></div></div>
+    </div>
+
+    <!-- MSG overlay -->
+    <div class="ov ov-bg" id="ovMsg">
+      <div class="ov-line" id="ml1"></div>
+      <div class="ov-line" id="ml2"></div>
+      <div class="ov-line ov-blink" id="ml3"></div>
+    </div>
+
+    <!-- MINIGAME overlay -->
+    <div class="ov ov-bg" id="ovGame">
+      <div class="ov-line">ATRAPA EL COIN!</div>
+      <div class="mg-targets">
+        <div class="mg-tgt" id="t0" onclick="hitTgt(0)"></div>
+        <div class="mg-tgt" id="t1" onclick="hitTgt(1)"></div>
+        <div class="mg-tgt" id="t2" onclick="hitTgt(2)"></div>
+      </div>
+      <div class="mg-score">PUNTOS: <span id="mgSc">0</span></div>
+    </div>
+
+    <!-- MENU overlay -->
+    <div class="ov ov-bg" id="ovMenu">
+      <div class="menu-grid">
+        <div class="mi sel" id="mi0" onclick="doMenu(0)"><span class="mi-ico">🍎</span><span class="mi-lbl">COMER</span></div>
+        <div class="mi" id="mi1" onclick="doMenu(1)"><span class="mi-ico">💧</span><span class="mi-lbl">AGUA</span></div>
+        <div class="mi" id="mi2" onclick="doMenu(2)"><span class="mi-ico">🎮</span><span class="mi-lbl">JUGAR</span></div>
+        <div class="mi" id="mi3" onclick="doMenu(3)"><span class="mi-ico">💊</span><span class="mi-lbl">MEDICINA</span></div>
+        <div class="mi" id="mi4" onclick="doMenu(4)"><span class="mi-ico">🚿</span><span class="mi-lbl">LIMPIAR</span></div>
+        <div class="mi" id="mi5" onclick="doMenu(5)"><span class="mi-ico">💤</span><span class="mi-lbl">DORMIR</span></div>
+      </div>
+      <div class="mi-close" onclick="closeMenu()">[ CERRAR ]</div>
+    </div>
+
+    <!-- Flash -->
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="tama-btns">
+    <button class="t-btn purple small" onclick="navMenu(-1)" title="Anterior en menú">◀</button>
+    <button class="t-btn purple" onclick="openMenu()" title="Menú">☰</button>
+    <button class="t-btn orange" onclick="doPet()" title="Acariciar (OK)">♥</button>
+    <button class="t-btn purple small" onclick="navMenu(1)" title="Siguiente en menú">▶</button>
+  </div>
+
+  <!-- savings + meta -->
+  <div class="sav-row">
+    <span class="sav-lbl">S/ AHORROS</span>
+    <span class="sav-val" id="savVal">0.00</span>
+  </div>
+  <div class="meta-row">
+    <span class="meta-chip" id="metaAge">Edad: 0 días</span>
+    <span class="meta-chip" id="metaGen">GEN 1</span>
+    <span class="meta-chip" id="metaStage">BABY</span>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CASHPIG ENGINE
+   
+   DINÁMICAS FINANCIERAS:
+   ─────────────────────
+   INGRESO registrado    → +Hambre+20 +Feliz+15 +coins
+   GASTO registrado      → -Hambre-10 (normal) o -Salud-10 si es gasto excesivo
+   AHORRO movimiento     → +Energía+25 +Feliz+20 +coins dobles
+   PLAN MENSUAL creado   → +Salud al max +Feliz+30
+   DEUDA sin pagar       → -Salud-8 por tick nocturno
+   CATEGORÍA ORDENADA    → +Feliz+10
+   RACHA de días activos → Evolución +rápida
+   SIN ACTIVIDAD 24h     → -Hambre acelerado -Feliz
+   GASTO EXCESIVO (>plan)→ CashPig enferma
+   META CUMPLIDA         → Evolución especial + flash
+   
+   La app llama a estos eventos via: window.cashpig.event(type,data)
+═══════════════════════════════════════════════ */
+
+const STAGES = ['BABY','PIGLET','TEEN','ADULT','WISE PIG'];
+const EVO_AGES = [0, 4, 12, 25, 50];
+
+let pg = {
+  hunger: 100, happy: 80, health: 100, energy: 90,
+  age: 0, weight: 5, stage: 0, poop: 0,
+  savings: 0, sick: false, sleeping: false, dead: false,
+  ticks: 0, gen: 1, debt: 0, streak: 0,
+  lastActivity: Date.now(),
+};
+
+let menuOpen = false, selMenu = 0;
+let mgActive = false, mgTgt = -1, mgScore = 0, mgTimer = null;
+let msgTimer = null;
+let efQueue = [];
+
+/* ── RENDER ── */
+function render() {
+  if (pg.dead) return;
+
+  const b = (id, v) => {
+    const el = document.getElementById(id);
+    const pct = Math.max(0, Math.min(100, v));
+    el.style.width = pct + '%';
+    el.classList.toggle('low', pct < 25);
+  };
+  b('bH', pg.hunger); b('bF', pg.happy); b('bS', pg.health); b('bE', pg.energy);
+
+  document.getElementById('sAge').textContent = 'AGE:' + pg.age + 'd';
+  document.getElementById('sStage').textContent = STAGES[pg.stage];
+  document.getElementById('savVal').textContent = pg.savings.toFixed(2);
+  document.getElementById('metaAge').textContent = 'Edad: ' + pg.age + ' días';
+  document.getElementById('metaGen').textContent = 'GEN ' + pg.gen;
+  document.getElementById('metaStage').textContent = STAGES[pg.stage];
+
+  // sick indicator
+  document.getElementById('sSick').style.opacity = pg.sick ? '1' : '0';
+
+  // alert dot
+  const danger = pg.hunger < 25 || pg.happy < 25 || pg.health < 25 || pg.poop >= 2;
+  document.getElementById('alertDot').classList.toggle('on', danger);
+
+  // poop
+  document.getElementById('p1').classList.toggle('on', pg.poop >= 1);
+  document.getElementById('p2').classList.toggle('on', pg.poop >= 2);
+
+  // zzz
+  document.getElementById('zzz').classList.toggle('on', pg.sleeping);
+
+  // pig animation
+  const g = document.getElementById('pigG');
+  if (!pg.dead) {
+    if (pg.sleeping) setAnim('sleep');
+    else if (pg.sick) setAnim('sick');
+  }
+
+  // bubble
+  const bbl = document.getElementById('bubble');
+  let msg = '';
+  if (pg.hunger < 20) msg = 'TENGO HAMBRE!';
+  else if (pg.happy < 20) msg = 'ESTOY TRISTE';
+  else if (pg.health < 20) msg = 'ME SIENTO MAL';
+  else if (pg.poop >= 2) msg = 'LIMPIAME!';
+  else if (pg.debt > 0) msg = 'HAY DEUDAS!';
+  if (msg) { bbl.textContent = msg; bbl.classList.add('on'); }
+  else { bbl.classList.remove('on'); }
+}
+
+function setAnim(cls) {
+  const g = document.getElementById('pigG');
+  const base = 'pig-g ';
+  if (pg.dead) { g.className = base + 'dead'; return; }
+  g.className = base + cls;
+}
+
+/* ── TICK (every 2s) ── */
+function tick() {
+  if (pg.dead) return;
+  if (pg.sleeping) {
+    pg.energy = Math.min(100, pg.energy + 6);
+    pg.hunger = Math.max(0, pg.hunger - 1.5);
+    render(); return;
+  }
+
+  pg.ticks++;
+
+  // inactivity penalty: >30 min without app use
+  const inactiveMin = (Date.now() - pg.lastActivity) / 60000;
+  const inactiveMult = inactiveMin > 30 ? 2 : 1;
+
+  pg.hunger  = Math.max(0, pg.hunger  - (pg.sick ? 3.5 : 1.8) * inactiveMult);
+  pg.happy   = Math.max(0, pg.happy   - 1.5 * inactiveMult);
+  pg.energy  = Math.max(0, pg.energy  - 1.2);
+
+  // poop every ~25 ticks
+  if (pg.ticks % 25 === 0 && pg.poop < 3) {
+    pg.poop++;
+    if (pg.poop >= 2) pg.sick = true;
+  }
+
+  // debt penalty every 60 ticks
+  if (pg.debt > 0 && pg.ticks % 60 === 0) {
+    pg.health = Math.max(0, pg.health - 8);
+    feedEvent('DEUDA -SALUD 💸');
+  }
+
+  // age every 60 ticks (~2 min real)
+  if (pg.ticks % 60 === 0) {
+    pg.age++;
+    pg.weight = Math.max(1, pg.weight + (pg.hunger > 60 ? 1 : -1));
+    checkEvo();
+  }
+
+  // health decay
+  if (pg.hunger < 10) pg.health = Math.max(0, pg.health - 4);
+  if (pg.poop >= 3) pg.health = Math.max(0, pg.health - 4);
+  if (pg.sick) pg.health = Math.max(0, pg.health - 2.5);
+
+  if (pg.health <= 0 || (pg.hunger === 0 && pg.age > 2)) { die(); return; }
+
+  render();
+}
+
+/* ── EVOLUTION ── */
+function checkEvo() {
+  for (let i = STAGES.length - 1; i > pg.stage; i--) {
+    if (pg.age >= EVO_AGES[i]) { evolve(i); break; }
+  }
+}
+function evolve(ns) {
+  pg.stage = ns;
+  doFlash();
+  setAnim('evo');
+  setTimeout(() => setAnim('happy'), 1200);
+  showMsg('EVOLUCION!', '→ ' + STAGES[ns], '★ ★ ★', 2800);
+  hearts(8); toast('Evolucionó: ' + STAGES[ns] + '!');
+  pg.savings += 10; // reward for growing
+}
+
+/* ── DEATH / REVIVE ── */
+function die() {
+  pg.dead = true;
+  setAnim('dead');
+  document.getElementById('pupL').setAttribute('r', '0');
+  document.getElementById('pupR').setAttribute('r', '0');
+  document.getElementById('mouth').setAttribute('d', 'M44 82 Q50 78 56 82');
+  showMsg('OH NO...', 'CASHPIG SE FUE', '[MENU=REVIVIR]', 999999);
+  toast('CashPig murió... presiona ♥ para continuar');
+}
+function revive() {
+  pg = { hunger:100, happy:80, health:100, energy:90, age:0, weight:5,
+    stage:0, poop:0, savings: pg.savings, sick:false, sleeping:false,
+    dead:false, ticks:0, gen: pg.gen+1, debt:pg.debt, streak:0, lastActivity:Date.now() };
+  document.getElementById('pigG').className = 'pig-g idle';
+  document.getElementById('pupL').setAttribute('r', '1.8');
+  document.getElementById('pupR').setAttribute('r', '1.8');
+  document.getElementById('mouth').setAttribute('d', 'M44 79 Q50 85 56 79');
+  closeMsg();
+  doFlash();
+  hearts(6);
+  toast('Gen ' + pg.gen + ' comienza!');
+  render();
+}
+
+/* ══════════════════════════════════════
+   FINANCIAL EVENTS — llamados desde la app
+══════════════════════════════════════ */
+window.cashpig = {
+  /* Registrar ingreso */
+  income(amount) {
+    if (pg.dead || pg.sleeping) return;
+    pg.lastActivity = Date.now();
+    pg.hunger  = Math.min(100, pg.hunger + 20);
+    pg.happy   = Math.min(100, pg.happy  + 15);
+    pg.savings = Math.min(9999, pg.savings + amount * 0.05);
+    setAnim('happy'); popItem('💵'); hearts(3);
+    feedEvent('+INGRESO +S/'+amount+' 💵');
+    toast('+INGRESO S/' + amount + '  CashPig feliz!');
+    render();
+  },
+  /* Registrar gasto normal (dentro de plan) */
+  expense(amount, overBudget) {
+    if (pg.dead) return;
+    pg.lastActivity = Date.now();
+    if (overBudget) {
+      pg.health = Math.max(0, pg.health - 12);
+      pg.happy  = Math.max(0, pg.happy  - 15);
+      pg.sick   = true;
+      setAnim('sick'); popItem('😱');
+      feedEvent('GASTO EXCESIVO -SALUD ⚠️');
+      toast('Gasto fuera de plan → CashPig enfermó!');
+    } else {
+      pg.hunger = Math.max(0, pg.hunger - 8);
+      popItem('🛒'); feedEvent('GASTO -S/'+amount);
+    }
+    render();
+  },
+  /* Ahorrar / mover a meta */
+  save(amount) {
+    if (pg.dead) return;
+    pg.lastActivity = Date.now();
+    pg.energy  = Math.min(100, pg.energy + 25);
+    pg.happy   = Math.min(100, pg.happy  + 20);
+    pg.savings = Math.min(9999, pg.savings + amount);
+    pg.weight  = Math.max(1, pg.weight + 1); // fed coin
+    setAnim('eat'); popItem('💰'); hearts(5);
+    feedEvent('+AHORRO S/'+amount+' 💰');
+    toast('+AHORRO S/' + amount + '!');
+    render();
+  },
+  /* Crear/actualizar plan mensual */
+  plan() {
+    if (pg.dead) return;
+    pg.lastActivity = Date.now();
+    pg.health = 100;
+    pg.happy  = Math.min(100, pg.happy + 30);
+    setAnim('happy'); hearts(4); doFlash();
+    feedEvent('PLAN CREADO +SALUD 📋');
+    toast('Plan mensual creado → CashPig al 100%!');
+    render();
+  },
+  /* Registrar deuda */
+  debt(amount) {
+    pg.debt = amount;
+    feedEvent('DEUDA S/'+amount+' 💸');
+    toast('Deuda registrada → CashPig preocupado...');
+    render();
+  },
+  /* Pagar deuda */
+  payDebt() {
+    pg.lastActivity = Date.now();
+    pg.debt = 0;
+    pg.health = Math.min(100, pg.health + 20);
+    setAnim('happy'); hearts(4);
+    feedEvent('DEUDA PAGADA ✅');
+    toast('Deuda pagada → CashPig aliviado!');
+    render();
+  },
+  /* Meta de ahorro cumplida */
+  goalReached(name) {
+    pg.lastActivity = Date.now();
+    pg.health = 100; pg.happy = 100; pg.hunger = Math.min(100, pg.hunger + 30);
+    doFlash(); setAnim('evo');
+    setTimeout(() => setAnim('happy'), 1400);
+    hearts(12);
+    showMsg('META!', name.substring(0,10), 'LOGRADO! ★', 3000);
+    toast('¡Meta cumplida: ' + name + '!');
+    pg.savings += 50;
+    render();
+  },
+  /* Streak diario */
+  streakDay(days) {
+    pg.streak = days;
+    pg.lastActivity = Date.now();
+    if (days % 7 === 0) {
+      pg.energy = 100; pg.happy = Math.min(100, pg.happy + 25);
+      hearts(7); doFlash();
+      toast('Racha ' + days + ' días → CashPig super cargado!');
+    }
+    feedEvent('RACHA ' + days + 'd 🔥');
+    render();
+  },
+};
+
+/* ── MANUAL ACTIONS ── */
+function feedManual() {
+  if (pg.dead) { revive(); return; }
+  if (pg.sleeping) { wakeUp(); return; }
+  pg.hunger  = Math.min(100, pg.hunger  + 28);
+  pg.weight  = Math.min(99, pg.weight + 2);
+  pg.savings = Math.max(0, pg.savings - 0.50);
+  setAnim('eat'); popItem('🍎'); hearts(2);
+  toast('+HAMBRE  -S/0.50');
+  render();
+}
+function waterManual() {
+  if (pg.dead) return;
+  pg.health = Math.min(100, pg.health + 14);
+  pg.hunger = Math.min(100, pg.hunger + 8);
+  setAnim('eat'); popItem('💧');
+  toast('+SALUD  +HAMBRE');
+  render();
+}
+function medicineManual() {
+  if (pg.dead) return;
+  if (!pg.sick && pg.health > 85) { showMsg('CASHPIG', 'ESTA SANO!', '¡No necesita!'); return; }
+  pg.sick   = false;
+  pg.health = Math.min(100, pg.health + 40);
+  pg.savings = Math.max(0, pg.savings - 2.00);
+  setAnim('happy'); popItem('💊'); hearts(3);
+  toast('+SALUD  -S/2.00');
+  render();
+}
+function cleanManual() {
+  if (pg.poop === 0) { showMsg('NO HAY', 'NADA QUE', 'LIMPIAR!'); return; }
+  pg.poop = 0; pg.sick = false;
+  setAnim('happy'); popItem('🚿'); hearts(3);
+  toast('Limpio!');
+  render();
+}
+function sleepManual() {
+  if (pg.sleeping) { wakeUp(); return; }
+  pg.sleeping = true;
+  closeMenu();
+  toast('CashPig duerme...');
+  render();
+}
+function wakeUp() {
+  pg.sleeping = false;
+  setAnim('idle');
+  toast('Despertó!');
+  render();
+}
+function doPet() {
+  if (pg.dead) { revive(); return; }
+  if (pg.sleeping) { wakeUp(); return; }
+  pg.happy = Math.min(100, pg.happy + 14);
+  setAnim('happy'); hearts(3);
+  render();
+}
+function petPig() { doPet(); }
+
+/* ── MINI GAME ── */
+function startGame() {
+  closeMenu();
+  if (pg.energy < 18) { showMsg('SIN', 'ENERGIA!', 'Descansa'); return; }
+  mgScore = 0; mgActive = true;
+  document.getElementById('mgSc').textContent = '0';
+  document.getElementById('ovGame').classList.add('on');
+  document.getElementById('stage').style.opacity = '0.1';
+  nextTgt();
+}
+function nextTgt() {
+  if (!mgActive) return;
+  for (let i = 0; i < 3; i++) { document.getElementById('t'+i).classList.remove('miss'); document.getElementById('t'+i).style.background = ''; }
+  mgTgt = Math.floor(Math.random() * 3);
+  document.getElementById('t' + mgTgt).style.background = '#f59e0b';
+  clearTimeout(mgTimer);
+  mgTimer = setTimeout(() => {
+    if (mgActive) { document.getElementById('t'+mgTgt).classList.add('miss'); endGame(); }
+  }, 1100);
+}
+function hitTgt(i) {
+  if (!mgActive || i !== mgTgt) return;
+  clearTimeout(mgTimer);
+  mgScore++;
+  document.getElementById('mgSc').textContent = mgScore;
+  document.getElementById('t'+i).style.background = '#253e14';
+  if (mgScore >= 5) endGame(true); else setTimeout(nextTgt, 280);
+}
+function endGame(won) {
+  mgActive = false; clearTimeout(mgTimer);
+  document.getElementById('ovGame').classList.remove('on');
+  document.getElementById('stage').style.opacity = '1';
+  if (mgScore > 0) {
+    pg.happy  = Math.min(100, pg.happy + mgScore * 7);
+    pg.energy = Math.max(0, pg.energy - 18);
+    pg.savings += mgScore * 0.10;
+    setAnim('happy'); hearts(mgScore);
+    toast('JUEGO:' + mgScore + 'pts +S/' + (mgScore * 0.10).toFixed(2));
+  } else {
+    pg.energy = Math.max(0, pg.energy - 10);
+    toast('Intenta de nuevo...');
+  }
+  render();
+}
+
+/* ── MENU ── */
+const menuFns = [feedManual, waterManual, startGame, medicineManual, cleanManual, sleepManual];
+function openMenu() {
+  if (pg.dead) { revive(); return; }
+  menuOpen = true;
+  document.getElementById('ovMenu').classList.add('on');
+}
+function closeMenu() {
+  menuOpen = false;
+  document.getElementById('ovMenu').classList.remove('on');
+}
+function doMenu(i) {
+  document.getElementById('mi'+selMenu).classList.remove('sel');
+  selMenu = i;
+  document.getElementById('mi'+i).classList.add('sel');
+  closeMenu();
+  menuFns[i]();
+}
+function navMenu(dir) {
+  if (!menuOpen) { openMenu(); return; }
+  document.getElementById('mi'+selMenu).classList.remove('sel');
+  selMenu = (selMenu + dir + 6) % 6;
+  document.getElementById('mi'+selMenu).classList.add('sel');
+}
+
+/* ── HELPERS ── */
+function showMsg(l1, l2, l3, dur = 2400) {
+  clearTimeout(msgTimer);
+  document.getElementById('ml1').textContent = l1;
+  document.getElementById('ml2').textContent = l2;
+  document.getElementById('ml3').textContent = l3;
+  document.getElementById('ovMsg').classList.add('on');
+  document.getElementById('stage').style.opacity = '0.15';
+  if (dur < 999999) msgTimer = setTimeout(closeMsg, dur);
+}
+function closeMsg() {
+  document.getElementById('ovMsg').classList.remove('on');
+  document.getElementById('stage').style.opacity = '1';
+}
+function popItem(e) {
+  const el = document.getElementById('itemPop');
+  el.textContent = e;
+  el.classList.remove('go');
+  void el.offsetWidth;
+  el.classList.add('go');
+}
+function hearts(n) {
+  const box = document.getElementById('heartBox');
+  const emojis = ['💜','💰','⭐','✨','💎'];
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const h = document.createElement('div');
+      h.className = 'heart';
+      h.textContent = emojis[i % emojis.length];
+      h.style.left  = (15 + Math.random() * 70) + '%';
+      h.style.bottom = (10 + Math.random() * 40) + 'px';
+      h.style.fontSize = (8 + Math.random() * 5) + 'px';
+      box.appendChild(h);
+      setTimeout(() => h.remove(), 950);
+    }, i * 110);
+  }
+}
+function doFlash() {
+  const f = document.getElementById('flash');
+  f.classList.remove('go');
+  void f.offsetWidth;
+  f.classList.add('go');
+}
+function feedEvent(txt) {
+  efQueue.push(txt);
+  if (efQueue.length > 2) efQueue.shift();
+  efQueue.forEach((t, i) => {
+    const el = document.getElementById('ef' + i);
+    el.textContent = t;
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), 3000);
+  });
+}
+let toastTmr;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => t.classList.remove('on'), 2400);
+}
+
+/* ── KEYBOARD ── */
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'arrowleft' || k === 'a')  navMenu(-1);
+  else if (k === 'arrowright' || k === 'd') navMenu(1);
+  else if (k === 'enter' || k === ' ') { if (menuOpen) doMenu(selMenu); else doPet(); }
+  else if (k === 'm') openMenu();
+  else if (k === 'f') feedManual();
+  else if (k === 'escape') closeMenu();
+});
+
+/* ── START ── */
+setInterval(tick, 2000);
+render();
+setTimeout(() => { showMsg('CASHPIG!', 'CUIDAME!', 'USA LA APP ♥'); hearts(5); }, 700);
+
+/* ── DEMO: simula eventos de la app cada 8 segundos ── */
+const demoEvents = [
+  () => window.cashpig.income(3200),
+  () => window.cashpig.save(200),
+  () => window.cashpig.expense(180, false),
+  () => window.cashpig.streakDay(7),
+  () => window.cashpig.plan(),
+  () => window.cashpig.expense(500, true),
+  () => window.cashpig.goalReached('Fondo emergencias'),
+];
+let demoIdx = 0;
+setInterval(() => {
+  demoEvents[demoIdx % demoEvents.length]();
+  demoIdx++;
+}, 8000);
+</script>
+</body>
+</html>

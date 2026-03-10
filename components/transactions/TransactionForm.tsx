@@ -6,7 +6,7 @@ import { FormEvent, useMemo, useRef, useState } from "react";
 import { createTransaction, createTransactionsBatch, updateTransaction } from "@/app/actions/transactions";
 import { processGamificationAction } from "@/app/actions/gamification";
 import { updateChallengeProgress } from "@/app/actions/challenges";
-import { interactWithPet } from "@/app/actions/pets";
+import { interactWithPet, PetActionType } from "@/app/actions/pets";
 import { Select } from "@/components/ui/Select";
 import { Account, CategoryGL } from "@/lib/types/finance";
 
@@ -179,6 +179,25 @@ export function TransactionForm({
         };
     }
 
+    function determinePetAction(payload: ReturnType<typeof buildPayloadFromValues>): PetActionType {
+        if (payload.savings_goal_id) return 'save';
+
+        const account = accounts.find(a => a.id === payload.account_id);
+        const isCreditOrLoan = account?.account_type === 'credit_card' || account?.account_type === 'loan';
+
+        if (payload.amount >= 0) {
+            // Income or paying off a debt account directly
+            return isCreditOrLoan ? 'pay_debt' : 'income';
+        }
+
+        // Expense
+        if (isCreditOrLoan) return 'debt';
+
+        // Simplification for now: assuming expense_ok. 
+        // We'd need to compare against the user's budget dynamically to return expense_bad.
+        return 'expense_ok';
+    }
+
     async function persistTransaction(payload: ReturnType<typeof buildPayloadFromValues>) {
         const result =
             mode === "edit" && transactionId
@@ -193,11 +212,12 @@ export function TransactionForm({
         try {
             const isConstructive = payload.amount >= 0 || !!payload.savings_goal_id;
             const amountSaved = Math.abs(payload.amount);
+            const petAction = determinePetAction(payload);
 
             // Sync gamification in background
             Promise.all([
                 updateChallengeProgress(amountSaved, isConstructive),
-                interactWithPet(isConstructive ? 'save_money' : 'feed')
+                interactWithPet(petAction)
             ]).catch(e => console.error("Error updating challenges/pet:", e));
 
             const gamificationResult = await processGamificationAction("transaction");
@@ -254,9 +274,13 @@ export function TransactionForm({
             const isConstructive = payloads.some(p => p.amount >= 0 || !!p.savings_goal_id);
             const amountSaved = payloads.reduce((acc, p) => acc + Math.abs(p.amount), 0);
 
+            // For batches, we map each payload to a pet action and just trigger them sequentially or just trigger the most impactful one
+            // We'll just run them all individually as promises
+            const petPromises = payloads.map(p => interactWithPet(determinePetAction(p)));
+
             Promise.all([
                 updateChallengeProgress(amountSaved, isConstructive),
-                interactWithPet(isConstructive ? 'save_money' : 'feed')
+                ...petPromises
             ]).catch(e => console.error("Error updating challenges/pet:", e));
 
             const gamificationResult = await processGamificationAction("transaction");
