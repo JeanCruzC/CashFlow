@@ -108,22 +108,34 @@ export function TamagotchiModal({
             {/* Dark card container */}
             <div
                 style={{
-                    background: "#0d0020",
-                    borderRadius: 14,
-                    padding: "12px 12px 8px",
-                    boxShadow: "0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(124,79,219,.25)",
+                    background: "linear-gradient(145deg, #0d0020, #1a0a44)",
+                    borderRadius: 18,
+                    padding: "14px 14px 10px",
+                    boxShadow: "0 16px 48px rgba(0,0,0,.7), 0 0 0 2px rgba(124,79,219,.35), 0 0 20px rgba(124,79,219,.15)",
                 }}
             >
+                {/* Title */}
+                <div
+                    className="text-center mb-2"
+                    style={{
+                        fontSize: 9,
+                        fontFamily: "'Press Start 2P', monospace",
+                        color: "rgba(255,255,255,.5)",
+                        letterSpacing: ".2em",
+                    }}
+                >
+                    CASHPIG
+                </div>
                 {/* Toast */}
                 {eventFeed.length > 0 && (
                     <div
-                        className="absolute -top-8 left-1/2 -translate-x-1/2 z-[200] px-3 py-1 rounded-md whitespace-nowrap"
+                        className="absolute -top-10 left-1/2 -translate-x-1/2 z-[200] px-4 py-1.5 rounded-lg whitespace-nowrap"
                         style={{
-                            fontSize: 7,
+                            fontSize: 9,
                             fontFamily: "'Press Start 2P', monospace",
                             color: "#f59e0b",
                             background: "#1a0a44",
-                            border: "1px solid rgba(245,158,11,.4)",
+                            border: "1.5px solid rgba(245,158,11,.4)",
                             textShadow: "0 0 8px rgba(245,158,11,.4)",
                         }}
                     >
@@ -135,13 +147,13 @@ export function TamagotchiModal({
                 <div
                     className="relative overflow-hidden"
                     style={{
-                        width: 220,
-                        height: 180,
+                        width: 320,
+                        height: 260,
                         background: "#a8bc8a",
-                        borderRadius: 10,
+                        borderRadius: 12,
                         border: "3px solid #3a2a6e",
                         boxShadow:
-                            "inset 0 0 24px rgba(0,30,0,.3), inset 0 2px 4px rgba(0,0,0,.15), 0 2px 0 #2a1a5e, 0 8px 32px rgba(0,0,0,.5)",
+                            "inset 0 0 30px rgba(0,30,0,.3), inset 0 2px 6px rgba(0,0,0,.15), 0 2px 0 #2a1a5e",
                         imageRendering: "pixelated" as const,
                         fontFamily: "'Press Start 2P', monospace",
                     }}
@@ -168,49 +180,49 @@ export function TamagotchiModal({
                     <div
                         className="absolute top-0 left-0 right-0 flex items-center justify-between z-10"
                         style={{
-                            height: 18,
+                            height: 26,
                             background: "rgba(0,20,0,.18)",
                             borderBottom: "1px solid rgba(0,50,0,.2)",
-                            padding: "0 6px",
+                            padding: "0 10px",
                         }}
                     >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                             {danger && (
                                 <div
                                     className="rounded-full"
                                     style={{
-                                        width: 5, height: 5,
+                                        width: 7, height: 7,
                                         background: "#253e14",
                                         animation: ".5s step-end infinite sdot",
                                     }}
                                 />
                             )}
-                            <span style={{ fontSize: 5, color: "#253e14", letterSpacing: ".04em" }}>
+                            <span style={{ fontSize: 7, color: "#253e14", letterSpacing: ".04em" }}>
                                 {pet.name || "CashPig"}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                             {pet.status === "sick" && (
-                                <span style={{ fontSize: 5, color: "#253e14" }}>★SICK</span>
+                                <span style={{ fontSize: 7, color: "#253e14" }}>★SICK</span>
                             )}
-                            <span style={{ fontSize: 5, color: "#253e14" }}>PIGGY</span>
+                            <span style={{ fontSize: 7, color: "#253e14" }}>PIGGY</span>
                         </div>
                     </div>
 
                     {/* ─── PIG STAGE ─── */}
                     <div
                         className="absolute flex items-center justify-center z-[5]"
-                        style={{ top: 18, left: 0, right: 0, bottom: 34 }}
+                        style={{ top: 26, left: 0, right: 0, bottom: 48 }}
                     >
                         {/* Speech bubble */}
                         {bubble && (
                             <div
                                 className="absolute z-[15]"
                                 style={{
-                                    top: 2, left: "50%", transform: "translateX(-50%)",
+                                    top: 4, left: "50%", transform: "translateX(-50%)",
                                     background: "rgba(168,188,138,.95)",
-                                    border: "1.5px solid #253e14", borderRadius: 5,
-                                    padding: "3px 6px", fontSize: 6,
+                                    border: "1.5px solid #253e14", borderRadius: 6,
+                                    padding: "4px 10px", fontSize: 8,
                                     color: "#1a2e0d", whiteSpace: "nowrap",
                                 }}
                             >
@@ -223,8 +235,8 @@ export function TamagotchiModal({
                             <div
                                 className="absolute z-[15] pointer-events-none"
                                 style={{
-                                    bottom: 50, left: "50%", transform: "translateX(-50%)",
-                                    fontSize: 15, animation: ".7s ease-out itemPop forwards",
+                                    bottom: 60, left: "50%", transform: "translateX(-50%)",
+                                    fontSize: 22, animation: ".7s ease-out itemPop forwards",
                                 }}
                             >
                                 {itemPop}
@@ -240,10 +252,10 @@ export function TamagotchiModal({
                                 <div
                                     key={`${ev}-${i}`}
                                     style={{
-                                        fontSize: 5, color: "#1a2e0d",
+                                        fontSize: 7, color: "#1a2e0d",
                                         background: "rgba(168,188,138,.88)",
-                                        border: "1px solid #253e14", borderRadius: 3,
-                                        padding: "2px 5px", whiteSpace: "nowrap",
+                                        border: "1px solid #253e14", borderRadius: 4,
+                                        padding: "3px 8px", whiteSpace: "nowrap",
                                     }}
                                 >
                                     {ev}
@@ -253,7 +265,7 @@ export function TamagotchiModal({
 
                         {/* ─── THE PIG SVG ─── */}
                         <svg
-                            width="74" height="74" viewBox="0 0 100 100" fill="none"
+                            width="110" height="110" viewBox="0 0 100 100" fill="none"
                             xmlns="http://www.w3.org/2000/svg"
                             onClick={doPet} className="cursor-pointer"
                             style={{
@@ -298,10 +310,10 @@ export function TamagotchiModal({
 
                     {/* ─── STAT BARS ─── */}
                     <div
-                        className="absolute bottom-0 left-0 right-0 flex items-center gap-[5px] z-10"
+                        className="absolute bottom-0 left-0 right-0 flex items-center gap-2 z-10"
                         style={{
-                            height: 34, background: "rgba(0,20,0,.15)",
-                            borderTop: "1px solid rgba(0,50,0,.2)", padding: "0 6px",
+                            height: 48, background: "rgba(0,20,0,.15)",
+                            borderTop: "1px solid rgba(0,50,0,.2)", padding: "0 10px",
                         }}
                     >
                         {[
@@ -310,10 +322,10 @@ export function TamagotchiModal({
                             { label: "SALUD", value: pet.health },
                         ].map((stat) => (
                             <div key={stat.label} className="flex-1">
-                                <div style={{ fontSize: 4.5, color: "#253e14", marginBottom: 2, letterSpacing: ".04em" }}>
+                                <div style={{ fontSize: 7, color: "#253e14", marginBottom: 3, letterSpacing: ".04em" }}>
                                     {stat.label}
                                 </div>
-                                <div style={{ height: 5, background: "rgba(0,30,0,.2)", border: "1px solid #253e14" }}>
+                                <div style={{ height: 8, background: "rgba(0,30,0,.2)", border: "1px solid #253e14", borderRadius: 1 }}>
                                     <div
                                         style={{
                                             height: "100%", width: `${barPct(stat.value)}%`,
@@ -332,11 +344,11 @@ export function TamagotchiModal({
                         <div
                             className="absolute flex flex-col items-center justify-center z-[18]"
                             style={{
-                                top: 18, left: 0, right: 0, bottom: 34,
-                                background: "rgba(168,188,138,.97)", gap: 7, padding: 8,
+                                top: 26, left: 0, right: 0, bottom: 48,
+                                background: "rgba(168,188,138,.97)", gap: 10, padding: 12,
                             }}
                         >
-                            <div className="grid w-full" style={{ gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                            <div className="grid w-full" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                                 {MENU_ITEMS.map((mi, idx) => (
                                     <div
                                         key={mi.label}
@@ -345,11 +357,11 @@ export function TamagotchiModal({
                                         style={{
                                             background: idx === selMenu ? "#253e14" : "rgba(0,30,0,.12)",
                                             border: "1px solid #253e14",
-                                            padding: "5px 4px", borderRadius: 2, transition: "all .1s",
+                                            padding: "8px 4px", borderRadius: 4, transition: "all .1s",
                                         }}
                                     >
-                                        <span style={{ fontSize: 11, display: "block", marginBottom: 2 }}>{mi.icon}</span>
-                                        <span style={{ fontSize: 5, color: idx === selMenu ? "#a8bc8a" : "#1a2e0d", display: "block" }}>
+                                        <span style={{ fontSize: 16, display: "block", marginBottom: 3 }}>{mi.icon}</span>
+                                        <span style={{ fontSize: 7, color: idx === selMenu ? "#a8bc8a" : "#1a2e0d", display: "block" }}>
                                             {mi.label}
                                         </span>
                                     </div>
@@ -358,7 +370,7 @@ export function TamagotchiModal({
                             <div
                                 onClick={() => setMenuOpen(false)}
                                 className="cursor-pointer hover:underline"
-                                style={{ fontSize: 5.5, color: "#1a2e0d", marginTop: 4 }}
+                                style={{ fontSize: 8, color: "#1a2e0d", marginTop: 6 }}
                             >
                                 [ CERRAR ]
                             </div>
@@ -367,17 +379,17 @@ export function TamagotchiModal({
                 </div>
 
                 {/* ─── BUTTONS ─── */}
-                <div className="flex justify-center gap-[10px]" style={{ marginTop: 8 }}>
+                <div className="flex justify-center gap-3" style={{ marginTop: 10 }}>
                     {[
-                        { label: "◀", size: 24, fs: 7, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 3px 0 #2d1060", onClick: () => navMenu(-1) },
-                        { label: "☰", size: 30, fs: 9, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 3px 0 #2d1060", onClick: () => setMenuOpen(!menuOpen) },
-                        { label: "♥", size: 30, fs: 9, bg: "linear-gradient(145deg,#f59e0b,#d97706)", shadow: "0 3px 0 #92400e", onClick: doPet },
-                        { label: "▶", size: 24, fs: 7, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 3px 0 #2d1060", onClick: () => navMenu(1) },
+                        { label: "◀", size: 32, fs: 10, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 4px 0 #2d1060", onClick: () => navMenu(-1) },
+                        { label: "☰", size: 40, fs: 13, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 4px 0 #2d1060", onClick: () => setMenuOpen(!menuOpen) },
+                        { label: "♥", size: 40, fs: 13, bg: "linear-gradient(145deg,#f59e0b,#d97706)", shadow: "0 4px 0 #92400e", onClick: doPet },
+                        { label: "▶", size: 32, fs: 10, bg: "linear-gradient(145deg,#7c4fdb,#4a259e)", shadow: "0 4px 0 #2d1060", onClick: () => navMenu(1) },
                     ].map((btn) => (
                         <button
                             key={btn.label}
                             onClick={btn.onClick}
-                            className="flex items-center justify-center border-none cursor-pointer"
+                            className="flex items-center justify-center border-none cursor-pointer active:translate-y-[3px]"
                             style={{
                                 width: btn.size, height: btn.size, borderRadius: "50%",
                                 background: btn.bg, boxShadow: btn.shadow,
@@ -390,12 +402,12 @@ export function TamagotchiModal({
                     ))}
                 </div>
 
-                {/* Close hint */}
+                {/* Close button */}
                 <div
-                    className="text-center mt-1.5 cursor-pointer hover:opacity-80"
+                    className="text-center mt-2 cursor-pointer hover:opacity-80"
                     style={{
-                        fontSize: 5, color: "rgba(255,255,255,.35)",
-                        fontFamily: "'Press Start 2P', monospace", letterSpacing: ".08em",
+                        fontSize: 7, color: "rgba(255,255,255,.4)",
+                        fontFamily: "'Press Start 2P', monospace", letterSpacing: ".1em",
                     }}
                     onClick={onClose}
                 >
